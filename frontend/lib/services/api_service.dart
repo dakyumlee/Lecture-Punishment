@@ -116,6 +116,7 @@ class ApiService {
         'file',
         file.bytes!,
         filename: file.name,
+        contentType: http.MediaType('application', 'pdf'),
       ));
     }
     
@@ -125,7 +126,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(responseBody);
     } else {
-      throw Exception('Failed to create worksheet');
+      throw Exception('Failed to create worksheet: $responseBody');
     }
   }
 
