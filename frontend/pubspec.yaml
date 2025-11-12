@@ -1,0 +1,29 @@
+name: heotaehoon_dungeon
+description: 허태훈의 분노 던전
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  provider: ^6.0.5
+  http: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/audio/
+  fonts:
+    - family: JoseonGulim
+      fonts:
+        - asset: assets/fonts/ChosunGu.ttf

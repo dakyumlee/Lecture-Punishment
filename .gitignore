@@ -1,0 +1,7 @@
+backend/target/
+backend/.mvn/
+backend/*.log
+frontend/build/
+frontend/.dart_tool/
+.DS_Store
+*.env
