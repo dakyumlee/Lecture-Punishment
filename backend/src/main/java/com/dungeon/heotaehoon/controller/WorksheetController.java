@@ -74,7 +74,20 @@ public class WorksheetController {
         );
         return ResponseEntity.ok(result);
     }
-}
+
+    @GetMapping("/{worksheetId}/view")
+    public ResponseEntity<byte[]> viewPdf(@PathVariable String worksheetId) {
+        try {
+            PdfWorksheet worksheet = worksheetService.getWorksheetById(worksheetId);
+            
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "inline; filename=\"" + worksheet.getFileName() + "\"")
+                    .body(worksheet.getPdfContent());
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
     @GetMapping("/{worksheetId}/pdf")
     public ResponseEntity<byte[]> downloadPdf(@PathVariable String worksheetId) {
@@ -98,19 +111,5 @@ public class WorksheetController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
-
-    @GetMapping("/{worksheetId}/view")
-    public ResponseEntity<byte[]> viewPdf(@PathVariable String worksheetId) {
-        try {
-            PdfWorksheet worksheet = worksheetService.getWorksheetById(worksheetId);
-            
-            return ResponseEntity.ok()
-                    .header("Content-Type", "application/pdf")
-                    .header("Content-Disposition", "inline; filename=\"" + worksheet.getFileName() + "\"")
-                    .body(worksheet.getPdfContent());
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
     }
-
-    }
+}

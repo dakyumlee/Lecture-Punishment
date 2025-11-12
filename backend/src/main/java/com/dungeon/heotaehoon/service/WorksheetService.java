@@ -195,7 +195,6 @@ public class WorksheetService {
             .orElseThrow(() -> new RuntimeException("Student not found"));
         return submissionRepository.findByStudentOrderBySubmittedAtDesc(student);
     }
-}
 
     public PdfWorksheet getWorksheetById(String worksheetId) {
         return worksheetRepository.findById(worksheetId)
