@@ -5,15 +5,16 @@ import com.dungeon.heotaehoon.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class WorksheetService {
 
     private final PdfWorksheetRepository worksheetRepository;
@@ -21,234 +22,171 @@ public class WorksheetService {
     private final StudentSubmissionRepository submissionRepository;
     private final SubmissionAnswerRepository answerRepository;
     private final StudentRepository studentRepository;
-    private final InstructorRepository instructorRepository;
-    private final ExpLogRepository expLogRepository;
-    private final SimilarityService similarityService;
-    private final AIService aiService;
 
-    @Transactional
-    public PdfWorksheet createWorksheet(Map<String, Object> worksheetData) {
-        Instructor instructor = instructorRepository.findByName("허태훈")
-            .orElseThrow(() -> new RuntimeException("Instructor not found"));
-
+    public PdfWorksheet createWorksheet(String title, String description, String category, MultipartFile pdfFile) throws IOException {
         PdfWorksheet worksheet = PdfWorksheet.builder()
-            .instructor(instructor)
-            .title((String) worksheetData.get("title"))
-            .description((String) worksheetData.get("description"))
-            .subject((String) worksheetData.get("subject"))
-            .category((String) worksheetData.get("category"))
-            .difficultyLevel((Integer) worksheetData.get("difficultyLevel"))
-            .pdfUrl((String) worksheetData.get("pdfUrl"))
-            .isActive(true)
+            .title(title)
+            .description(description)
+            .category(category)
+            .pdfData(pdfFile.getBytes())
+            .fileName(pdfFile.getOriginalFilename())
             .build();
-
+        
         return worksheetRepository.save(worksheet);
     }
 
-    @Transactional
-    public WorksheetQuestion addQuestion(String worksheetId, Map<String, Object> questionData) {
+    public WorksheetQuestion addQuestion(String worksheetId, WorksheetQuestion question) {
         PdfWorksheet worksheet = worksheetRepository.findById(worksheetId)
             .orElseThrow(() -> new RuntimeException("Worksheet not found"));
-
-        WorksheetQuestion question = WorksheetQuestion.builder()
-            .worksheet(worksheet)
-            .questionNumber((Integer) questionData.get("questionNumber"))
-            .questionType((String) questionData.get("questionType"))
-            .questionText((String) questionData.get("questionText"))
-            .correctAnswer((String) questionData.get("correctAnswer"))
-            .optionA((String) questionData.get("optionA"))
-            .optionB((String) questionData.get("optionB"))
-            .optionC((String) questionData.get("optionC"))
-            .optionD((String) questionData.get("optionD"))
-            .points((Integer) questionData.getOrDefault("points", 10))
-            .allowPartial((Boolean) questionData.getOrDefault("allowPartial", false))
-            .similarityThreshold(new BigDecimal(questionData.getOrDefault("similarityThreshold", "0.85").toString()))
-            .build();
-
+        
+        question.setWorksheet(worksheet);
+        question.setQuestionNumber(worksheet.getTotalQuestions() + 1);
+        
         WorksheetQuestion saved = questionRepository.save(question);
-
+        
         worksheet.setTotalQuestions(worksheet.getTotalQuestions() + 1);
         worksheetRepository.save(worksheet);
-
+        
         return saved;
-    }
-
-    @Transactional
-    public Map<String, Object> submitWorksheet(String studentId, String worksheetId, List<Map<String, String>> answers) {
-        Student student = studentRepository.findById(studentId)
-            .orElseThrow(() -> new RuntimeException("Student not found"));
-
-        PdfWorksheet worksheet = worksheetRepository.findById(worksheetId)
-            .orElseThrow(() -> new RuntimeException("Worksheet not found"));
-
-        Optional<StudentSubmission> existingSubmission = 
-            submissionRepository.findByStudentAndWorksheet(student, worksheet);
-        
-        if (existingSubmission.isPresent()) {
-            throw new RuntimeException("이미 제출한 문제지입니다");
-        }
-
-        StudentSubmission submission = StudentSubmission.builder()
-            .student(student)
-            .worksheet(worksheet)
-            .isGraded(false)
-            .build();
-
-        submission = submissionRepository.save(submission);
-
-        int totalScore = 0;
-        int maxScore = 0;
-        int correctCount = 0;
-        int wrongCount = 0;
-
-        List<SubmissionAnswer> submissionAnswers = new ArrayList<>();
-
-        for (Map<String, String> answerData : answers) {
-            String questionId = answerData.get("questionId");
-            String studentAnswer = answerData.get("answer");
-
-            WorksheetQuestion question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new RuntimeException("Question not found"));
-
-            maxScore += question.getPoints();
-
-            boolean isCorrect = false;
-            int pointsEarned = 0;
-            BigDecimal similarity = BigDecimal.ZERO;
-
-            if ("multiple_choice".equals(question.getQuestionType())) {
-                isCorrect = question.getCorrectAnswer().equalsIgnoreCase(studentAnswer.trim());
-                pointsEarned = isCorrect ? question.getPoints() : 0;
-                similarity = isCorrect ? BigDecimal.ONE : BigDecimal.ZERO;
-            } else if ("subjective".equals(question.getQuestionType())) {
-                similarity = similarityService.calculateLevenshteinSimilarity(
-                    studentAnswer, 
-                    question.getCorrectAnswer()
-                );
-                
-                isCorrect = similarityService.isAnswerCorrect(
-                    studentAnswer, 
-                    question.getCorrectAnswer(), 
-                    question.getSimilarityThreshold()
-                );
-
-                if (isCorrect) {
-                    pointsEarned = question.getPoints();
-                } else if (question.getAllowPartial() && similarity.compareTo(new BigDecimal("0.70")) >= 0) {
-                    pointsEarned = (int) (question.getPoints() * similarity.doubleValue());
-                }
-            }
-
-            if (isCorrect) {
-                correctCount++;
-            } else {
-                wrongCount++;
-            }
-
-            totalScore += pointsEarned;
-
-            SubmissionAnswer submissionAnswer = SubmissionAnswer.builder()
-                .submission(submission)
-                .question(question)
-                .studentAnswer(studentAnswer)
-                .isCorrect(isCorrect)
-                .pointsEarned(pointsEarned)
-                .similarityScore(similarity)
-                .build();
-
-            submissionAnswers.add(submissionAnswer);
-        }
-
-        answerRepository.saveAll(submissionAnswers);
-
-        submission.setTotalScore(totalScore);
-        submission.setMaxScore(maxScore);
-        submission.setPercentage(
-            maxScore > 0 
-                ? BigDecimal.valueOf(totalScore * 100.0 / maxScore).setScale(2, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO
-        );
-        submission.setIsGraded(true);
-        submission.setGradedAt(LocalDateTime.now());
-
-        submissionRepository.save(submission);
-
-        int expGained = correctCount * 10;
-        int pointsGained = correctCount * 5;
-        
-        student.setExp(student.getExp() + expGained);
-        student.setPoints(student.getPoints() + pointsGained);
-        student.setTotalCorrect(student.getTotalCorrect() + correctCount);
-        student.setTotalWrong(student.getTotalWrong() + wrongCount);
-
-        boolean leveledUp = false;
-        if (student.getExp() >= student.getLevel() * 100) {
-            student.setExp(student.getExp() - (student.getLevel() * 100));
-            student.setLevel(student.getLevel() + 1);
-            leveledUp = true;
-        }
-
-        studentRepository.save(student);
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("submissionId", submission.getId());
-        result.put("totalScore", totalScore);
-        result.put("maxScore", maxScore);
-        result.put("percentage", submission.getPercentage());
-        result.put("correctCount", correctCount);
-        result.put("wrongCount", wrongCount);
-        result.put("expGained", expGained);
-        result.put("pointsGained", pointsGained);
-        result.put("leveledUp", leveledUp);
-        result.put("newLevel", student.getLevel());
-        
-        if (wrongCount > 0) {
-            String rageMessage = aiService.generateRageMessage(Math.min(wrongCount, 5));
-            result.put("rageMessage", rageMessage);
-        } else {
-            result.put("encouragement", aiService.generatePraise(1));
-        }
-
-        return result;
-    }
-
-    public List<PdfWorksheet> getWorksheetsByCategory(String category) {
-        return worksheetRepository.findByCategoryAndIsActiveTrue(category, true);
-    }
-
-    public List<PdfWorksheet> getAllActiveWorksheets() {
-        return worksheetRepository.findByIsActiveTrue();
     }
 
     public Map<String, Object> getWorksheetWithQuestions(String worksheetId) {
         PdfWorksheet worksheet = worksheetRepository.findById(worksheetId)
             .orElseThrow(() -> new RuntimeException("Worksheet not found"));
-
-        List<WorksheetQuestion> questions = questionRepository.findByWorksheetIdOrderByQuestionNumber(worksheetId);
-
+        
+        List<WorksheetQuestion> questions = questionRepository.findByWorksheetOrderByQuestionNumberAsc(worksheet);
+        
         Map<String, Object> result = new HashMap<>();
         result.put("worksheet", worksheet);
         result.put("questions", questions);
-
+        
         return result;
     }
 
-    public List<Map<String, Object>> getStudentSubmissions(String studentId) {
+    public Map<String, Object> submitWorksheet(String studentId, String worksheetId, List<Map<String, String>> answers) {
         Student student = studentRepository.findById(studentId)
             .orElseThrow(() -> new RuntimeException("Student not found"));
+        
+        PdfWorksheet worksheet = worksheetRepository.findById(worksheetId)
+            .orElseThrow(() -> new RuntimeException("Worksheet not found"));
+        
+        StudentSubmission submission = StudentSubmission.builder()
+            .student(student)
+            .worksheet(worksheet)
+            .build();
+        submission = submissionRepository.save(submission);
+        
+        int correctCount = 0;
+        int wrongCount = 0;
+        int totalScore = 0;
+        int maxScore = 0;
+        
+        for (Map<String, String> answerData : answers) {
+            String questionId = answerData.get("questionId");
+            String studentAnswer = answerData.get("answer");
+            
+            WorksheetQuestion question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new RuntimeException("Question not found"));
+            
+            boolean isCorrect = checkAnswer(question, studentAnswer);
+            
+            SubmissionAnswer answer = SubmissionAnswer.builder()
+                .submission(submission)
+                .question(question)
+                .studentAnswer(studentAnswer)
+                .isCorrect(isCorrect)
+                .build();
+            answerRepository.save(answer);
+            
+            maxScore += question.getPoints();
+            if (isCorrect) {
+                correctCount++;
+                totalScore += question.getPoints();
+            } else {
+                wrongCount++;
+            }
+        }
+        
+        submission.setTotalScore(totalScore);
+        submission.setMaxScore(maxScore);
+        submission.setSubmittedAt(LocalDateTime.now());
+        submissionRepository.save(submission);
+        
+        int expGained = correctCount * 10;
+        int pointsGained = totalScore;
+        student.setExp(student.getExp() + expGained);
+        student.setPoints(student.getPoints() + pointsGained);
+        student.setTotalCorrect(student.getTotalCorrect() + correctCount);
+        student.setTotalWrong(student.getTotalWrong() + wrongCount);
+        
+        boolean leveledUp = false;
+        int newLevel = student.getLevel();
+        while (student.getExp() >= student.getLevel() * 100) {
+            student.setExp(student.getExp() - student.getLevel() * 100);
+            student.setLevel(student.getLevel() + 1);
+            leveledUp = true;
+            newLevel = student.getLevel();
+        }
+        
+        studentRepository.save(student);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("submissionId", submission.getId());
+        result.put("totalScore", totalScore);
+        result.put("maxScore", maxScore);
+        result.put("correctCount", correctCount);
+        result.put("wrongCount", wrongCount);
+        result.put("percentage", maxScore > 0 ? (totalScore * 100 / maxScore) : 0);
+        result.put("expGained", expGained);
+        result.put("pointsGained", pointsGained);
+        result.put("leveledUp", leveledUp);
+        result.put("newLevel", newLevel);
+        
+        if (wrongCount > 0) {
+            String[] rageMessages = {
+                "너는 복습을 했니? 했으면 이럴 리가 없지 ㅋㅋ",
+                "목졸라뿐다",
+                "니대가리로 이해가 가긴하겠니",
+                "이게 뭐야... 이게 답이야?",
+                "나 화났어"
+            };
+            result.put("rageMessage", rageMessages[new Random().nextInt(rageMessages.length)]);
+        }
+        
+        if (wrongCount == 0) {
+            String[] encouragements = {
+                "오 잘했네?",
+                "이 정도면 인정이야",
+                "완벽하잖아!",
+                "역시 내 제자야"
+            };
+            result.put("encouragement", encouragements[new Random().nextInt(encouragements.length)]);
+        }
+        
+        return result;
+    }
 
-        List<StudentSubmission> submissions = submissionRepository.findByStudentOrderBySubmissionDateDesc(student);
+    private boolean checkAnswer(WorksheetQuestion question, String studentAnswer) {
+        if (question.getQuestionType().equals("multiple_choice")) {
+            return question.getCorrectAnswer().trim().equalsIgnoreCase(studentAnswer.trim());
+        } else {
+            String correct = question.getCorrectAnswer().toLowerCase().trim();
+            String student = studentAnswer.toLowerCase().trim();
+            return correct.equals(student) || correct.contains(student) || student.contains(correct);
+        }
+    }
 
-        return submissions.stream().map(submission -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", submission.getId());
-            map.put("worksheetTitle", submission.getWorksheet().getTitle());
-            map.put("category", submission.getWorksheet().getCategory());
-            map.put("totalScore", submission.getTotalScore());
-            map.put("maxScore", submission.getMaxScore());
-            map.put("percentage", submission.getPercentage());
-            map.put("submissionDate", submission.getSubmissionDate());
-            return map;
-        }).collect(Collectors.toList());
+    public List<PdfWorksheet> getAllWorksheets() {
+        return worksheetRepository.findByIsActiveTrue();
+    }
+
+    public List<PdfWorksheet> getWorksheetsByCategory(String category) {
+        return worksheetRepository.findByCategoryAndIsActive(category, true);
+    }
+
+    public Map<String, List<PdfWorksheet>> getWorksheetsGroupedByCategory() {
+        List<PdfWorksheet> allWorksheets = worksheetRepository.findByIsActiveTrue();
+        return allWorksheets.stream()
+            .collect(Collectors.groupingBy(PdfWorksheet::getCategory));
     }
 }
