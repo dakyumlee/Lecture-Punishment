@@ -11,6 +11,6 @@ import java.util.Optional;
 public interface PdfWorksheetRepository extends JpaRepository<PdfWorksheet, String> {
     List<PdfWorksheet> findByIsActiveTrue();
     List<PdfWorksheet> findByCategoryOrderByCreatedAtDesc(String category);
-    Optional<PdfWorksheet> findByIdAndIsActiveTrue(String id, boolean isActive);
+    Optional<PdfWorksheet> findByIdAndIsActive(String id, boolean isActive);
     List<PdfWorksheet> findByCategoryAndIsActive(String category, boolean isActive);
 }
