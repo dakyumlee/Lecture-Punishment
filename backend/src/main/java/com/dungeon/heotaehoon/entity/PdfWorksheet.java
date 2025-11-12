@@ -25,7 +25,6 @@ public class PdfWorksheet {
     @Column(nullable = false)
     private String category;
 
-    @Lob
     @Column(name = "pdf_content", columnDefinition = "BYTEA")
     private byte[] pdfContent;
 
