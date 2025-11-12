@@ -165,7 +165,7 @@ class _WorksheetListScreenState extends State<WorksheetListScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF595048)),
+        side: const BorderSide(color: Color(0xFF595048)),
       ),
       child: InkWell(
         onTap: () {
@@ -174,6 +174,7 @@ class _WorksheetListScreenState extends State<WorksheetListScreen> {
             MaterialPageRoute(
               builder: (context) => WorksheetSolveScreen(
                 worksheetId: id,
+                worksheetTitle: title,
                 studentId: widget.studentId,
               ),
             ),
