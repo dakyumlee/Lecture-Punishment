@@ -2,3 +2,6 @@
 # API Keys
 src/main/resources/application-local.properties
 .env
+
+# Allow application.yml
+!src/main/resources/application.yml
