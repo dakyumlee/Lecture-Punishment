@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:html' as html;
 import '../services/api_service.dart';
+import '../config/env.dart';
 import 'question_add_screen.dart';
 
 class WorksheetManageScreen extends StatefulWidget {
@@ -37,13 +39,77 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
     }
   }
 
+  Future<void> _deleteWorksheet(String id, String title) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF595048),
+        title: const Text(
+          '삭제 확인',
+          style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+        ),
+        content: Text(
+          '$title 문제지를 삭제하시겠습니까?\n모든 문제가 함께 삭제됩니다.',
+          style: const TextStyle(color: Color(0xFFD9D4D2)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final success = await ApiService.deleteWorksheet(id);
+        if (success) {
+          _loadWorksheets();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('문제지가 삭제되었습니다')),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('삭제 실패')),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('삭제 실패: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  void _downloadPdf(String id, String title) {
+    final url = '${Env.apiUrl}/worksheets/$id/pdf';
+    html.AnchorElement(href: url)
+      ..setAttribute('download', '$title.pdf')
+      ..click();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('PDF 다운로드 시작')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
       appBar: AppBar(
         title: const Text(
-          '문제지 목록',
+          '문제지 관리',
           style: TextStyle(
             fontFamily: 'JoseonGulim',
             color: Color(0xFFD9D4D2),
@@ -61,6 +127,12 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      const Icon(
+                        Icons.description_outlined,
+                        size: 64,
+                        color: Color(0xFF595048),
+                      ),
+                      const SizedBox(height: 16),
                       const Text(
                         '문제지가 없습니다',
                         style: TextStyle(
@@ -69,9 +141,9 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                           fontSize: 18,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       const Text(
-                        '상단 메뉴에서 문제지를 생성하세요',
+                        '새로운 문제지를 생성하세요',
                         style: TextStyle(
                           color: Color(0xFF595048),
                           fontFamily: 'JoseonGulim',
@@ -83,6 +155,8 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _loadWorksheets,
+                  color: const Color(0xFFD9D4D2),
+                  backgroundColor: const Color(0xFF595048),
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _worksheets.length,
@@ -139,8 +213,10 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                 ),
               ),
               const SizedBox(width: 12),
+              const Icon(Icons.quiz, color: Color(0xFF736A63), size: 16),
+              const SizedBox(width: 4),
               Text(
-                '문제 $totalQuestions개',
+                '$totalQuestions개',
                 style: const TextStyle(
                   color: Color(0xFF736A63),
                   fontFamily: 'JoseonGulim',
@@ -158,12 +234,19 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (description.isNotEmpty) ...[
-                  Text(
-                    description,
-                    style: const TextStyle(
-                      color: Color(0xFF736A63),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 14,
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00010D),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      description,
+                      style: const TextStyle(
+                        color: Color(0xFF736A63),
+                        fontFamily: 'JoseonGulim',
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -183,31 +266,49 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                             ),
                           ).then((_) => _loadWorksheets());
                         },
-                        icon: const Icon(Icons.add),
+                        icon: const Icon(Icons.add, size: 20),
                         label: const Text('문제 추가'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF595048),
                           foregroundColor: const Color(0xFFD9D4D2),
                           padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          // TODO: 문제지 보기
-                        },
-                        icon: const Icon(Icons.visibility),
-                        label: const Text('보기'),
+                        onPressed: () => _downloadPdf(id, title),
+                        icon: const Icon(Icons.download, size: 20),
+                        label: const Text('PDF 보기'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF736A63),
                           foregroundColor: const Color(0xFFD9D4D2),
                           padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: () => _deleteWorksheet(id, title),
+                  icon: const Icon(Icons.delete, size: 20),
+                  label: const Text('문제지 삭제'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade900,
+                    foregroundColor: const Color(0xFFD9D4D2),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
               ],
             ),

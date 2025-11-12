@@ -196,3 +196,28 @@ public class WorksheetService {
         return submissionRepository.findByStudentOrderBySubmittedAtDesc(student);
     }
 }
+
+    public PdfWorksheet getWorksheetById(String worksheetId) {
+        return worksheetRepository.findById(worksheetId)
+            .orElseThrow(() -> new RuntimeException("Worksheet not found"));
+    }
+
+    public void deleteWorksheet(String worksheetId) {
+        PdfWorksheet worksheet = worksheetRepository.findById(worksheetId)
+            .orElseThrow(() -> new RuntimeException("Worksheet not found"));
+        
+        List<WorksheetQuestion> questions = questionRepository.findByWorksheetOrderByQuestionNumberAsc(worksheet);
+        for (WorksheetQuestion question : questions) {
+            List<SubmissionAnswer> answers = answerRepository.findByQuestion(question);
+            answerRepository.deleteAll(answers);
+        }
+        
+        questionRepository.deleteAll(questions);
+        
+        List<StudentSubmission> submissions = submissionRepository.findByWorksheet(worksheet);
+        submissionRepository.deleteAll(submissions);
+        
+        worksheet.setIsActive(false);
+        worksheetRepository.save(worksheet);
+    }
+}

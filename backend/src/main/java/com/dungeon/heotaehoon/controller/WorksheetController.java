@@ -75,3 +75,27 @@ public class WorksheetController {
         return ResponseEntity.ok(result);
     }
 }
+
+    @GetMapping("/{worksheetId}/pdf")
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable String worksheetId) {
+        try {
+            PdfWorksheet worksheet = worksheetService.getWorksheetById(worksheetId);
+            
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "attachment; filename=\"" + worksheet.getFileName() + "\"")
+                    .body(worksheet.getPdfContent());
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{worksheetId}")
+    public ResponseEntity<Void> deleteWorksheet(@PathVariable String worksheetId) {
+        try {
+            worksheetService.deleteWorksheet(worksheetId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
