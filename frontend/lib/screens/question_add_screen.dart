@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../services/api_service.dart';
 
 class QuestionAddScreen extends StatefulWidget {
   final String worksheetId;
@@ -50,19 +49,13 @@ class _QuestionAddScreenState extends State<QuestionAddScreen> {
         body['optionD'] = _optionDController.text;
       }
 
-      final response = await http.post(
-        Uri.parse('http://localhost:8080/api/worksheets/${widget.worksheetId}/questions'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
+      await ApiService.addQuestion(widget.worksheetId, body);
 
-      if (response.statusCode == 200) {
-        if (mounted) {
-          Navigator.pop(context, true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('문제가 추가되었습니다!')),
-          );
-        }
+      if (mounted) {
+        Navigator.pop(context, true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('문제가 추가되었습니다!')),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -81,6 +74,7 @@ class _QuestionAddScreenState extends State<QuestionAddScreen> {
         title: Text('문제 추가 - ${widget.worksheetTitle}', 
           style: const TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2))),
         backgroundColor: const Color(0xFF595048),
+        iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -95,11 +89,11 @@ class _QuestionAddScreenState extends State<QuestionAddScreen> {
                     child: TextFormField(
                       initialValue: _questionNumber.toString(),
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: '문제 번호',
-                        labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                        enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                        focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
+                        labelStyle: TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF595048))),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFD9D4D2))),
                       ),
                       onChanged: (v) => _questionNumber = int.tryParse(v) ?? 1,
                     ),
@@ -110,11 +104,11 @@ class _QuestionAddScreenState extends State<QuestionAddScreen> {
                       value: _questionType,
                       dropdownColor: const Color(0xFF595048),
                       style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: '문제 유형',
-                        labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                        enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                        focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
+                        labelStyle: TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF595048))),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFD9D4D2))),
                       ),
                       items: const [
                         DropdownMenuItem(value: 'subjective', child: Text('주관식')),
@@ -130,11 +124,11 @@ class _QuestionAddScreenState extends State<QuestionAddScreen> {
                 controller: _questionTextController,
                 style: const TextStyle(color: Color(0xFFD9D4D2)),
                 maxLines: 3,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: '문제 내용',
-                  labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                  enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                  focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
+                  labelStyle: TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
+                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF595048))),
+                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFD9D4D2))),
                 ),
                 validator: (v) => v?.isEmpty ?? true ? '문제를 입력하세요' : null,
               ),
@@ -143,11 +137,11 @@ class _QuestionAddScreenState extends State<QuestionAddScreen> {
                 TextFormField(
                   controller: _optionAController,
                   style: const TextStyle(color: Color(0xFFD9D4D2)),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: '① 선택지 A',
-                    labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                    enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                    focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
+                    labelStyle: TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
+                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF595048))),
+                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFD9D4D2))),
                   ),
                   validator: (v) => v?.isEmpty ?? true ? '선택지를 입력하세요' : null,
                 ),
@@ -155,11 +149,11 @@ class _QuestionAddScreenState extends State<QuestionAddScreen> {
                 TextFormField(
                   controller: _optionBController,
                   style: const TextStyle(color: Color(0xFFD9D4D2)),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: '② 선택지 B',
-                    labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                    enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                    focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
+                    labelStyle: TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
+                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF595048))),
+                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFD9D4D2))),
                   ),
                   validator: (v) => v?.isEmpty ?? true ? '선택지를 입력하세요' : null,
                 ),
@@ -167,11 +161,11 @@ class _QuestionAddScreenState extends State<QuestionAddScreen> {
                 TextFormField(
                   controller: _optionCController,
                   style: const TextStyle(color: Color(0xFFD9D4D2)),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: '③ 선택지 C',
-                    labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                    enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                    focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
+                    labelStyle: TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
+                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF595048))),
+                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFD9D4D2))),
                   ),
                   validator: (v) => v?.isEmpty ?? true ? '선택지를 입력하세요' : null,
                 ),
@@ -179,11 +173,11 @@ class _QuestionAddScreenState extends State<QuestionAddScreen> {
                 TextFormField(
                   controller: _optionDController,
                   style: const TextStyle(color: Color(0xFFD9D4D2)),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: '④ 선택지 D',
-                    labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                    enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                    focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
+                    labelStyle: TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
+                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF595048))),
+                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFD9D4D2))),
                   ),
                   validator: (v) => v?.isEmpty ?? true ? '선택지를 입력하세요' : null,
                 ),
@@ -195,8 +189,8 @@ class _QuestionAddScreenState extends State<QuestionAddScreen> {
                 decoration: InputDecoration(
                   labelText: _questionType == 'multiple_choice' ? '정답 (A, B, C, D 중 하나)' : '정답',
                   labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                  enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                  focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
+                  enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF595048))),
+                  focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFD9D4D2))),
                 ),
                 validator: (v) => v?.isEmpty ?? true ? '정답을 입력하세요' : null,
               ),
@@ -207,11 +201,11 @@ class _QuestionAddScreenState extends State<QuestionAddScreen> {
                     child: TextFormField(
                       initialValue: _points.toString(),
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: '배점',
-                        labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                        enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                        focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
+                        labelStyle: TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF595048))),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFD9D4D2))),
                       ),
                       onChanged: (v) => _points = int.tryParse(v) ?? 10,
                     ),
