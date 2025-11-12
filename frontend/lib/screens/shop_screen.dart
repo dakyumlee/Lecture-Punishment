@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import '../models/student.dart';
+import '../services/api_service.dart';
 
 class ShopScreen extends StatefulWidget {
   final Student student;
@@ -17,32 +16,28 @@ class _ShopScreenState extends State<ShopScreen> {
   Map<String, List<dynamic>> _groupedItems = {};
   bool _isLoading = true;
   String _selectedTab = 'outfit';
+  int _currentPoints = 0;
 
   @override
   void initState() {
     super.initState();
     _loadItems();
+    _loadInventory();
   }
 
   Future<void> _loadItems() async {
     setState(() => _isLoading = true);
     try {
-      final response = await http.get(
-        Uri.parse('http://localhost:8080/api/shop/items'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        setState(() {
-          _items = data['items'] ?? [];
-          _groupedItems = Map<String, List<dynamic>>.from(
-            (data['groupedItems'] as Map).map(
-              (key, value) => MapEntry(key.toString(), List<dynamic>.from(value)),
-            ),
-          );
-          _isLoading = false;
-        });
-      }
+      final data = await ApiService.getShopItems();
+      setState(() {
+        _items = data['items'] ?? [];
+        _groupedItems = Map<String, List<dynamic>>.from(
+          (data['groupedItems'] as Map).map(
+            (key, value) => MapEntry(key.toString(), List<dynamic>.from(value)),
+          ),
+        );
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -53,34 +48,39 @@ class _ShopScreenState extends State<ShopScreen> {
     }
   }
 
-  Future<void> _buyItem(String itemId, int price, String itemName) async {
-    if (widget.student.points < price) {
+  Future<void> _loadInventory() async {
+    try {
+      final data = await ApiService.getStudentInventory(widget.student.id);
+      setState(() {
+        _currentPoints = data['points'] ?? widget.student.points;
+      });
+    } catch (e) {
+      print('인벤토리 로드 실패: $e');
+    }
+  }
+
+  Future<void> _buyItem(String itemId, String itemName, int price) async {
+    if (_currentPoints < price) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('포인트가 부족합니다!')),
+        const SnackBar(content: Text('포인트가 부족합니다')),
       );
       return;
     }
 
     try {
-      final response = await http.post(
-        Uri.parse('http://localhost:8080/api/shop/buy'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'studentId': widget.student.id,
-          'itemId': itemId,
-        }),
+      final result = await ApiService.buyItem(
+        studentId: widget.student.id,
+        itemId: itemId,
       );
-
-      if (response.statusCode == 200) {
-        final result = jsonDecode(utf8.decode(response.bodyBytes));
-        if (result['success'] == true) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('$itemName 구매 완료!')),
-            );
-            Navigator.pop(context, true);
-          }
-        }
+      
+      setState(() {
+        _currentPoints = result['remainingPoints'];
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$itemName 구매 완료!')),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -96,50 +96,58 @@ class _ShopScreenState extends State<ShopScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
       appBar: AppBar(
-        title: const Text(
-          '상점',
-          style: TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2)),
-        ),
-        backgroundColor: const Color(0xFF595048),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Center(
-              child: Text(
-                '💰 ${widget.student.points}P',
-                style: const TextStyle(
-                  color: Color(0xFFD9D4D2),
-                  fontFamily: 'JoseonGulim',
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+        backgroundColor: const Color(0xFF00010D),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              '상점',
+              style: TextStyle(
+                fontFamily: 'JoseonGulim',
+                color: Color(0xFFD9D4D2),
               ),
             ),
-          ),
-        ],
+            Row(
+              children: [
+                const Text(
+                  '💰',
+                  style: TextStyle(fontSize: 20),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '$_currentPoints P',
+                  style: const TextStyle(
+                    fontFamily: 'JoseonGulim',
+                    color: Color(0xFFD9D4D2),
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
       ),
       body: Column(
         children: [
-          Container(
-            height: 60,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                _buildTabButton('outfit', '👕 옷'),
+                _buildTabButton('옷', 'outfit'),
                 const SizedBox(width: 8),
-                _buildTabButton('expression', '😊 표정'),
+                _buildTabButton('😊 표정', 'expression'),
                 const SizedBox(width: 8),
-                _buildTabButton('buff', '⚡ 버프'),
-                const SizedBox(width: 8),
-                _buildTabButton('consumable', '💊 소모품'),
+                _buildTabButton('🔨 소모품', 'consumable'),
               ],
             ),
           ),
           Expanded(
             child: _isLoading
                 ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFD9D4D2)),
+                    child: CircularProgressIndicator(
+                      color: Color(0xFFD9D4D2),
+                    ),
                   )
                 : _buildItemGrid(),
           ),
@@ -148,28 +156,40 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 
-  Widget _buildTabButton(String type, String label) {
-    final isSelected = _selectedTab == type;
-    return ChoiceChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          fontFamily: 'JoseonGulim',
-          color: isSelected ? const Color(0xFF00010D) : const Color(0xFFD9D4D2),
+  Widget _buildTabButton(String label, String value) {
+    final isSelected = _selectedTab == value;
+    return Expanded(
+      child: ElevatedButton(
+        onPressed: () => setState(() => _selectedTab = value),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isSelected
+              ? const Color(0xFF595048)
+              : const Color(0xFF0D0D0D),
+          foregroundColor: const Color(0xFFD9D4D2),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(
+              color: isSelected
+                  ? const Color(0xFF736A63)
+                  : const Color(0xFF595048),
+            ),
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'JoseonGulim',
+            fontSize: 14,
+          ),
         ),
       ),
-      selected: isSelected,
-      selectedColor: const Color(0xFFD9D4D2),
-      backgroundColor: const Color(0xFF595048),
-      onSelected: (selected) {
-        setState(() => _selectedTab = type);
-      },
     );
   }
 
   Widget _buildItemGrid() {
     final items = _groupedItems[_selectedTab] ?? [];
-
+    
     if (items.isEmpty) {
       return const Center(
         child: Text(
@@ -177,7 +197,6 @@ class _ShopScreenState extends State<ShopScreen> {
           style: TextStyle(
             color: Color(0xFF736A63),
             fontFamily: 'JoseonGulim',
-            fontSize: 16,
           ),
         ),
       );
@@ -188,8 +207,8 @@ class _ShopScreenState extends State<ShopScreen> {
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.8,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
@@ -199,136 +218,97 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 
-  Widget _buildItemCard(Map<String, dynamic> item) {
+  Widget _buildItemCard(dynamic item) {
+    final name = item['name'] ?? '';
     final price = item['price'] ?? 0;
-    final canAfford = widget.student.points >= price;
-    final rarity = item['rarity'] ?? 'common';
-    
-    Color rarityColor;
-    switch (rarity) {
-      case 'epic':
-        rarityColor = Colors.purple;
-        break;
-      case 'rare':
-        rarityColor = Colors.blue;
-        break;
-      default:
-        rarityColor = const Color(0xFF736A63);
-    }
+    final description = item['description'] ?? '';
+    final imageUrl = item['imageUrl'];
+    final id = item['id'] ?? '';
 
-    return Card(
-      color: const Color(0xFF595048),
-      child: InkWell(
-        onTap: canAfford
-            ? () => _showBuyDialog(item)
-            : () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('포인트가 부족합니다!')),
-                );
-              },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: rarityColor,
-                  borderRadius: BorderRadius.circular(4),
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D0D0D),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF595048)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF00010D),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
                 ),
-                child: Text(
-                  rarity.toUpperCase(),
+              ),
+              child: imageUrl != null
+                  ? Image.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Text(
+                            '🎨',
+                            style: TextStyle(fontSize: 48),
+                          ),
+                        );
+                      },
+                    )
+                  : const Center(
+                      child: Text(
+                        '🎨',
+                        style: TextStyle(fontSize: 48),
+                      ),
+                    ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Color(0xFFD9D4D2),
                     fontFamily: 'JoseonGulim',
-                    fontSize: 10,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const Spacer(),
-              Text(
-                item['name'] ?? '',
-                style: const TextStyle(
-                  color: Color(0xFFD9D4D2),
-                  fontFamily: 'JoseonGulim',
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: Color(0xFF736A63),
+                    fontSize: 12,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                item['description'] ?? '',
-                style: const TextStyle(
-                  color: Color(0xFF736A63),
-                  fontFamily: 'JoseonGulim',
-                  fontSize: 12,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () => _buyItem(id, name, price),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF595048),
+                    foregroundColor: const Color(0xFFD9D4D2),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  child: Text(
                     '$price P',
-                    style: TextStyle(
-                      color: canAfford ? const Color(0xFFD9D4D2) : Colors.red,
+                    style: const TextStyle(
                       fontFamily: 'JoseonGulim',
-                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Icon(
-                    canAfford ? Icons.shopping_cart : Icons.lock,
-                    color: canAfford ? const Color(0xFFD9D4D2) : Colors.red,
-                    size: 20,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showBuyDialog(Map<String, dynamic> item) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF595048),
-        title: Text(
-          item['name'],
-          style: const TextStyle(
-            color: Color(0xFFD9D4D2),
-            fontFamily: 'JoseonGulim',
-          ),
-        ),
-        content: Text(
-          '${item['price']}P로 구매하시겠습니까?',
-          style: const TextStyle(
-            color: Color(0xFFD9D4D2),
-            fontFamily: 'JoseonGulim',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              '취소',
-              style: TextStyle(color: Color(0xFF736A63)),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _buyItem(item['id'], item['price'], item['name']);
-            },
-            child: const Text(
-              '구매',
-              style: TextStyle(color: Color(0xFFD9D4D2)),
+                ),
+              ],
             ),
           ),
         ],

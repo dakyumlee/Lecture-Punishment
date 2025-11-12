@@ -215,3 +215,52 @@ class ApiService {
     }
   }
 }
+
+  static Future<Map<String, dynamic>> getShopItems({String? type}) async {
+    String url = '$baseUrl/shop/items';
+    if (type != null && type.isNotEmpty) {
+      url += '?type=$type';
+    }
+    
+    final response = await http.get(Uri.parse(url));
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return {'items': [], 'groupedItems': {}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> buyItem({
+    required String studentId,
+    required String itemId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/shop/buy'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'studentId': studentId,
+        'itemId': itemId,
+      }),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      final error = jsonDecode(utf8.decode(response.bodyBytes));
+      throw Exception(error['message'] ?? '구매 실패');
+    }
+  }
+
+  static Future<Map<String, dynamic>> getStudentInventory(String studentId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/shop/student/$studentId'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return {'points': 0, 'currentOutfit': null, 'currentExpression': null};
+    }
+  }
+}
