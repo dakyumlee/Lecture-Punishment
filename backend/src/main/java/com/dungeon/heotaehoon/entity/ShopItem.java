@@ -1,7 +1,5 @@
 package com.dungeon.heotaehoon.entity;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -39,9 +37,6 @@ public class ShopItem {
     @Column(name = "is_available")
     private Boolean isAvailable = true;
 
-    @Column(columnDefinition = "jsonb")
-    private String metadata;
-
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -49,19 +44,6 @@ public class ShopItem {
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
-        }
-    }
-
-    @Transient
-    public JsonNode getMetadataJson() {
-        if (metadata == null) {
-            return null;
-        }
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.readTree(metadata);
-        } catch (Exception e) {
-            return null;
         }
     }
 }
