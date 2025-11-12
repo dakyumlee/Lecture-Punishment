@@ -14,9 +14,8 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (shopItemRepository.count() == 0) {
-            createShopItems();
-        }
+        shopItemRepository.deleteAll();
+        createShopItems();
     }
 
     private void createShopItems() {
@@ -26,6 +25,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("outfit")
             .price(0)
             .rarity("common")
+            .imageUrl("👔")
             .isAvailable(true)
             .build());
 
@@ -35,6 +35,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("outfit")
             .price(500)
             .rarity("rare")
+            .imageUrl("🤵")
             .isAvailable(true)
             .build());
 
@@ -44,6 +45,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("outfit")
             .price(300)
             .rarity("common")
+            .imageUrl("🧥")
             .isAvailable(true)
             .build());
 
@@ -53,6 +55,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("outfit")
             .price(200)
             .rarity("common")
+            .imageUrl("👟")
             .isAvailable(true)
             .build());
 
@@ -62,6 +65,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("outfit")
             .price(400)
             .rarity("uncommon")
+            .imageUrl("🧤")
             .isAvailable(true)
             .build());
 
@@ -71,6 +75,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("outfit")
             .price(350)
             .rarity("uncommon")
+            .imageUrl("💻")
             .isAvailable(true)
             .build());
 
@@ -80,6 +85,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("outfit")
             .price(600)
             .rarity("rare")
+            .imageUrl("👨‍💼")
             .isAvailable(true)
             .build());
 
@@ -89,6 +95,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("outfit")
             .price(2000)
             .rarity("legendary")
+            .imageUrl("👨‍🏫")
             .isAvailable(true)
             .build());
 
@@ -98,6 +105,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("expression")
             .price(0)
             .rarity("common")
+            .imageUrl("😊")
             .isAvailable(true)
             .build());
 
@@ -107,6 +115,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("expression")
             .price(100)
             .rarity("common")
+            .imageUrl("😭")
             .isAvailable(true)
             .build());
 
@@ -116,6 +125,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("expression")
             .price(300)
             .rarity("uncommon")
+            .imageUrl("😡")
             .isAvailable(true)
             .build());
 
@@ -125,6 +135,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("expression")
             .price(400)
             .rarity("rare")
+            .imageUrl("😎")
             .isAvailable(true)
             .build());
 
@@ -134,6 +145,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("expression")
             .price(200)
             .rarity("common")
+            .imageUrl("🤯")
             .isAvailable(true)
             .build());
 
@@ -143,6 +155,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("expression")
             .price(250)
             .rarity("uncommon")
+            .imageUrl("😤")
             .isAvailable(true)
             .build());
 
@@ -152,6 +165,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("expression")
             .price(150)
             .rarity("common")
+            .imageUrl("🤔")
             .isAvailable(true)
             .build());
 
@@ -161,6 +175,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("expression")
             .price(180)
             .rarity("common")
+            .imageUrl("😴")
             .isAvailable(true)
             .build());
 
@@ -170,6 +185,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("expression")
             .price(500)
             .rarity("rare")
+            .imageUrl("🤩")
             .isAvailable(true)
             .build());
 
@@ -179,6 +195,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("expression")
             .price(350)
             .rarity("uncommon")
+            .imageUrl("😈")
             .isAvailable(true)
             .build());
 
@@ -188,6 +205,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("consumable")
             .price(1000)
             .rarity("rare")
+            .imageUrl("🛡️")
             .isAvailable(true)
             .build());
 
@@ -197,6 +215,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("consumable")
             .price(500)
             .rarity("uncommon")
+            .imageUrl("💡")
             .isAvailable(true)
             .build());
 
@@ -206,6 +225,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("consumable")
             .price(800)
             .rarity("rare")
+            .imageUrl("❤️‍🩹")
             .isAvailable(true)
             .build());
 
@@ -215,6 +235,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("consumable")
             .price(700)
             .rarity("uncommon")
+            .imageUrl("⚡")
             .isAvailable(true)
             .build());
 
@@ -224,6 +245,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("consumable")
             .price(600)
             .rarity("uncommon")
+            .imageUrl("💰")
             .isAvailable(true)
             .build());
 
@@ -233,6 +255,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("consumable")
             .price(400)
             .rarity("uncommon")
+            .imageUrl("⏰")
             .isAvailable(true)
             .build());
 
@@ -242,6 +265,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("consumable")
             .price(1500)
             .rarity("epic")
+            .imageUrl("📝")
             .isAvailable(true)
             .build());
 
@@ -251,6 +275,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("consumable")
             .price(900)
             .rarity("rare")
+            .imageUrl("🧘")
             .isAvailable(true)
             .build());
 
@@ -260,6 +285,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("consumable")
             .price(3000)
             .rarity("legendary")
+            .imageUrl("📚")
             .isAvailable(true)
             .build());
 
@@ -269,6 +295,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("consumable")
             .price(200)
             .rarity("common")
+            .imageUrl("📓")
             .isAvailable(true)
             .build());
 
@@ -278,6 +305,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("consumable")
             .price(1200)
             .rarity("epic")
+            .imageUrl("🍀")
             .isAvailable(true)
             .build());
 
@@ -287,6 +315,7 @@ public class DataInitializer implements CommandLineRunner {
             .itemType("consumable")
             .price(50)
             .rarity("common")
+            .imageUrl("☕")
             .isAvailable(true)
             .build());
     }
