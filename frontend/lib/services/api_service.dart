@@ -95,4 +95,123 @@ class ApiService {
       return false;
     }
   }
+
+  static Future<Map<String, dynamic>> createWorksheet({
+    required String title,
+    required String description,
+    required String category,
+    required dynamic file,
+  }) async {
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/worksheets'),
+    );
+    
+    request.fields['title'] = title;
+    request.fields['description'] = description;
+    request.fields['category'] = category;
+    
+    if (file != null) {
+      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+    }
+    
+    final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(responseBody);
+    } else {
+      throw Exception('Failed to create worksheet');
+    }
+  }
+
+  static Future<Map<String, dynamic>> addQuestion(
+    String worksheetId,
+    Map<String, dynamic> question,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/worksheets/$worksheetId/questions'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(question),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      throw Exception('Failed to add question');
+    }
+  }
+
+  static Future<List<dynamic>> getAllWorksheets() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/worksheets'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> getWorksheetsGrouped() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/worksheets/grouped'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return {};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getWorksheetWithQuestions(
+    String worksheetId,
+  ) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/worksheets/$worksheetId'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      throw Exception('Failed to load worksheet');
+    }
+  }
+
+  static Future<Map<String, dynamic>> submitWorksheet({
+    required String worksheetId,
+    required String studentId,
+    required List<Map<String, String>> answers,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/worksheets/$worksheetId/submit'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'studentId': studentId,
+        'answers': answers,
+      }),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      throw Exception('Failed to submit worksheet');
+    }
+  }
+
+  static Future<Map<String, dynamic>> getStudentSubmissions(
+    String studentId,
+  ) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/worksheets/student/$studentId/submissions'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return {'submissions': []};
+    }
+  }
 }
