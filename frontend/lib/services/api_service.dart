@@ -103,13 +103,6 @@ class ApiService {
     required dynamic file,
   }) async {
     var request = http.MultipartRequest(
-  static Future<Map<String, dynamic>> createWorksheet({
-    required String title,
-    required String description,
-    required String category,
-    required dynamic file,
-  }) async {
-    var request = http.MultipartRequest(
       'POST',
       Uri.parse('$baseUrl/worksheets'),
     );
@@ -118,14 +111,12 @@ class ApiService {
     request.fields['description'] = description;
     request.fields['category'] = category;
     
-    if (file != null) {
-      if (file.bytes != null) {
-        request.files.add(http.MultipartFile.fromBytes(
-          'file',
-          file.bytes!,
-          filename: file.name,
-        ));
-      }
+    if (file != null && file.bytes != null) {
+      request.files.add(http.MultipartFile.fromBytes(
+        'file',
+        file.bytes!,
+        filename: file.name,
+      ));
     }
     
     final response = await request.send();
@@ -137,6 +128,12 @@ class ApiService {
       throw Exception('Failed to create worksheet');
     }
   }
+
+  static Future<Map<String, dynamic>> addQuestion(
+    String worksheetId,
+    Map<String, dynamic> question,
+  ) async {
+    final response = await http.post(
       Uri.parse('$baseUrl/worksheets/$worksheetId/questions'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(question),
