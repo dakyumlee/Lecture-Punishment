@@ -5,7 +5,7 @@ import '../models/game_models.dart';
 import '../config/env.dart';
 
 class ApiService {
-  static String get baseUrl => '${Env.apiUrl}/api';
+  static String get baseUrl => Env.apiUrl;
 
   Future<Student?> getStudentByUsername(String username) async {
     try {
@@ -17,6 +17,7 @@ class ApiService {
       }
       return null;
     } catch (e) {
+      print('Error getting student: $e');
       return null;
     }
   }
@@ -90,6 +91,7 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
+      print('Login error: $e');
       return false;
     }
   }
