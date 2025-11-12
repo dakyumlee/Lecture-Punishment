@@ -91,6 +91,13 @@ class _ShopScreenState extends State<ShopScreen> {
     }
   }
 
+  bool _isEmoji(String? text) {
+    if (text == null || text.isEmpty) return false;
+    if (text.length > 10) return false;
+    final runes = text.runes.toList();
+    return runes.length <= 4;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -242,25 +249,17 @@ class _ShopScreenState extends State<ShopScreen> {
                   top: Radius.circular(12),
                 ),
               ),
-              child: imageUrl != null
-                  ? Image.network(
-                      imageUrl,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Text(
-                            '🎨',
-                            style: TextStyle(fontSize: 48),
-                          ),
-                        );
-                      },
-                    )
-                  : const Center(
-                      child: Text(
+              child: Center(
+                child: _isEmoji(imageUrl)
+                    ? Text(
+                        imageUrl ?? '🎨',
+                        style: const TextStyle(fontSize: 64),
+                      )
+                    : const Text(
                         '🎨',
                         style: TextStyle(fontSize: 48),
                       ),
-                    ),
+              ),
             ),
           ),
           Padding(
