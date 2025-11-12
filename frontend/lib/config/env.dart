@@ -1,6 +1,4 @@
 class Env {
-  static const String apiUrl = String.fromEnvironment(
-    'API_URL',
-    defaultValue: 'https://lecture-punishment-backend.onrender.com',
-  );
+  static const String baseUrl = 'https://lecture-punishment-production.up.railway.app';
+  static const String apiUrl = '$baseUrl/api';
 }
