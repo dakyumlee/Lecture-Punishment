@@ -79,12 +79,15 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final answers = _questions.map((q) {
-        final questionId = q['id'];
+      final answers = _questions.map<Map<String, String>>((q) {
+        final questionId = q['id'] as String;
         final answer = q['questionType'] == 'multiple_choice'
-            ? _selectedAnswers[questionId]
-            : _answerControllers[questionId]?.text;
-        return {'questionId': questionId, 'answer': answer ?? ''};
+            ? _selectedAnswers[questionId] ?? ''
+            : _answerControllers[questionId]?.text ?? '';
+        return {
+          'questionId': questionId,
+          'answer': answer,
+        };
       }).toList();
 
       final result = await ApiService.submitWorksheet(
