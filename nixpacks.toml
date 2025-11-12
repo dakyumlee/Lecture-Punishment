@@ -1,11 +1,10 @@
 [phases.setup]
-nixPkgs = ["jdk17"]
+nixPkgs = ["maven", "jdk17"]
 
 [phases.build]
 cmds = [
   "cd backend",
-  "chmod +x mvnw",
-  "./mvnw clean package -DskipTests"
+  "mvn clean package -DskipTests"
 ]
 
 [start]
