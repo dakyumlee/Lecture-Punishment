@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../services/api_service.dart';
 import 'worksheet_result_screen.dart';
 
 class WorksheetSolveScreen extends StatefulWidget {
@@ -35,21 +34,16 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
 
   Future<void> _loadWorksheet() async {
     try {
-      final response = await http.get(
-        Uri.parse('http://localhost:8080/api/worksheets/${widget.worksheetId}'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        setState(() {
-          _worksheet = data['worksheet'];
-          _questions = data['questions'];
-          for (var q in _questions) {
-            _answerControllers[q['id']] = TextEditingController();
-          }
-          _isLoading = false;
-        });
-      }
+      final data = await ApiService.getWorksheetWithQuestions(widget.worksheetId);
+      
+      setState(() {
+        _worksheet = data['worksheet'];
+        _questions = data['questions'];
+        for (var q in _questions) {
+          _answerControllers[q['id']] = TextEditingController();
+        }
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -90,31 +84,25 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
         final answer = q['questionType'] == 'multiple_choice'
             ? _selectedAnswers[questionId]
             : _answerControllers[questionId]?.text;
-        return {'questionId': questionId, 'answer': answer};
+        return {'questionId': questionId, 'answer': answer ?? ''};
       }).toList();
 
-      final response = await http.post(
-        Uri.parse('http://localhost:8080/api/worksheets/${widget.worksheetId}/submit'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'studentId': widget.studentId,
-          'answers': answers,
-        }),
+      final result = await ApiService.submitWorksheet(
+        worksheetId: widget.worksheetId,
+        studentId: widget.studentId,
+        answers: answers,
       );
 
-      if (response.statusCode == 200) {
-        final result = jsonDecode(utf8.decode(response.bodyBytes));
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => WorksheetResultScreen(
-                result: result,
-                worksheetTitle: widget.worksheetTitle,
-              ),
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WorksheetResultScreen(
+              result: result,
+              worksheetTitle: widget.worksheetTitle,
             ),
-          );
-        }
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -133,6 +121,7 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
         title: Text(widget.worksheetTitle, 
           style: const TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2))),
         backgroundColor: const Color(0xFF595048),
+        iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFFD9D4D2)))
@@ -245,14 +234,14 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
                                   controller: _answerControllers[questionId],
                                   style: const TextStyle(color: Color(0xFFD9D4D2)),
                                   maxLines: 3,
-                                  decoration: InputDecoration(
+                                  decoration: const InputDecoration(
                                     hintText: '답을 입력하세요',
-                                    hintStyle: const TextStyle(color: Color(0xFF736A63)),
+                                    hintStyle: TextStyle(color: Color(0xFF736A63)),
                                     enabledBorder: OutlineInputBorder(
-                                      borderSide: const BorderSide(color: Color(0xFF736A63)),
+                                      borderSide: BorderSide(color: Color(0xFF736A63)),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderSide: const BorderSide(color: Color(0xFFD9D4D2)),
+                                      borderSide: BorderSide(color: Color(0xFFD9D4D2)),
                                     ),
                                   ),
                                 ),
