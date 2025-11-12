@@ -18,7 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (_usernameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('아이디를 입력하세요')),
+        const SnackBar(content: Text('이름을 입력하세요')),
       );
       return;
     }
@@ -79,58 +79,76 @@ class _LoginScreenState extends State<LoginScreen> {
               const Text(
                 '안 외웠으면 뒤진다',
                 style: TextStyle(
-                  color: Color(0xFF595048),
+                  color: Color(0xFF736A63),
                   fontFamily: 'JoseonGulim',
                   fontSize: 16,
                 ),
               ),
               const SizedBox(height: 64),
-              ConstrainedBox(
+              Container(
                 constraints: const BoxConstraints(maxWidth: 400),
                 child: TextField(
                   controller: _usernameController,
-                  style: const TextStyle(color: Color(0xFFD9D4D2)),
+                  style: const TextStyle(
+                    color: Color(0xFFD9D4D2),
+                    fontFamily: 'JoseonGulim',
+                  ),
                   decoration: InputDecoration(
-                    labelText: '아이디',
+                    labelText: '이름',
                     labelStyle: const TextStyle(
                       color: Color(0xFF736A63),
                       fontFamily: 'JoseonGulim',
                     ),
+                    filled: true,
+                    fillColor: const Color(0xFF0D0D0D),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFF595048)),
+                    ),
                     enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: Color(0xFF595048)),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Color(0xFFD9D4D2)),
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFF736A63)),
                     ),
                   ),
                   onSubmitted: (_) => _login(),
                 ),
               ),
               const SizedBox(height: 24),
-              ConstrainedBox(
+              Container(
                 constraints: const BoxConstraints(maxWidth: 400),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF595048),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _login,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF595048),
+                    foregroundColor: const Color(0xFFD9D4D2),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Color(0xFFD9D4D2))
-                        : const Text(
-                            '입장하기',
-                            style: TextStyle(
-                              fontFamily: 'JoseonGulim',
-                              fontSize: 18,
-                              color: Color(0xFFD9D4D2),
-                            ),
-                          ),
                   ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFFD9D4D2),
+                          ),
+                        )
+                      : const Text(
+                          '입장하기',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontFamily: 'JoseonGulim',
+                          ),
+                        ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 32),
               TextButton(
                 onPressed: () {
                   Navigator.push(
