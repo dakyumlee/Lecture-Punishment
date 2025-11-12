@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
+import '../services/api_service.dart';
+import 'dart:io';
 
 class WorksheetCreateScreen extends StatefulWidget {
   const WorksheetCreateScreen({super.key});
@@ -13,46 +14,68 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _subjectController = TextEditingController();
+  final _categoryController = TextEditingController();
   
-  String _selectedCategory = '프로그래밍';
-  int _difficultyLevel = 3;
+  File? _selectedFile;
+  String? _fileName;
   bool _isLoading = false;
-  
-  final List<String> _categories = ['프로그래밍', '자료구조', '데이터베이스', '네트워크', '운영체제'];
+
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+
+      if (result != null) {
+        setState(() {
+          _selectedFile = File(result.files.single.path!);
+          _fileName = result.files.single.name;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('파일 선택 실패: $e')),
+      );
+    }
+  }
 
   Future<void> _createWorksheet() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    if (_selectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PDF 파일을 선택해주세요')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      final response = await http.post(
-        Uri.parse('http://localhost:8080/api/worksheets'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'title': _titleController.text,
-          'description': _descriptionController.text,
-          'subject': _subjectController.text,
-          'category': _selectedCategory,
-          'difficultyLevel': _difficultyLevel,
-        }),
+      await ApiService.createWorksheet(
+        title: _titleController.text,
+        description: _descriptionController.text,
+        category: _categoryController.text,
+        file: _selectedFile,
       );
 
-      if (response.statusCode == 200) {
-        final worksheet = jsonDecode(response.body);
-        if (mounted) {
-          Navigator.pop(context, worksheet);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('문제지가 생성되었습니다!')),
-          );
-        }
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('문제지가 생성되었습니다!')),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('생성 실패: $e')),
+        );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -61,8 +84,15 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
       appBar: AppBar(
-        title: const Text('문제지 생성', style: TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2))),
-        backgroundColor: const Color(0xFF595048),
+        backgroundColor: const Color(0xFF00010D),
+        title: const Text(
+          '문제지 생성',
+          style: TextStyle(
+            fontFamily: 'JoseonGulim',
+            color: Color(0xFFD9D4D2),
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -76,69 +106,123 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                 style: const TextStyle(color: Color(0xFFD9D4D2)),
                 decoration: InputDecoration(
                   labelText: '문제지 제목',
-                  labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                  enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                  focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
+                  labelStyle: const TextStyle(color: Color(0xFF736A63)),
+                  filled: true,
+                  fillColor: const Color(0xFF0D0D0D),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFF595048)),
+                  ),
                 ),
-                validator: (v) => v?.isEmpty ?? true ? '제목을 입력하세요' : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '제목을 입력하세요';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
+              
               TextFormField(
-                controller: _subjectController,
+                controller: _categoryController,
                 style: const TextStyle(color: Color(0xFFD9D4D2)),
                 decoration: InputDecoration(
-                  labelText: '과목명',
-                  labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                  enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                  focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
+                  labelText: '카테고리 (예: 프로그래밍, 자료구조, 네트워크)',
+                  labelStyle: const TextStyle(color: Color(0xFF736A63)),
+                  filled: true,
+                  fillColor: const Color(0xFF0D0D0D),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFF595048)),
+                  ),
                 ),
-                validator: (v) => v?.isEmpty ?? true ? '과목을 입력하세요' : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '카테고리를 입력하세요';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                dropdownColor: const Color(0xFF595048),
-                style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
-                decoration: InputDecoration(
-                  labelText: '카테고리',
-                  labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                  enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                  focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
-                ),
-                items: _categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
-                onChanged: (val) => setState(() => _selectedCategory = val!),
-              ),
-              const SizedBox(height: 16),
+              
               TextFormField(
                 controller: _descriptionController,
                 style: const TextStyle(color: Color(0xFFD9D4D2)),
                 maxLines: 3,
                 decoration: InputDecoration(
                   labelText: '설명',
-                  labelStyle: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                  enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF595048))),
-                  focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFFD9D4D2))),
+                  labelStyle: const TextStyle(color: Color(0xFF736A63)),
+                  filled: true,
+                  fillColor: const Color(0xFF0D0D0D),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFF595048)),
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Text('난이도: $_difficultyLevel', style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim', fontSize: 16)),
-              Slider(
-                value: _difficultyLevel.toDouble(),
-                min: 1, max: 5, divisions: 4,
-                activeColor: const Color(0xFFD9D4D2),
-                inactiveColor: const Color(0xFF595048),
-                onChanged: (val) => setState(() => _difficultyLevel = val.toInt()),
+              const SizedBox(height: 24),
+              
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D0D0D),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF595048)),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'PDF 문제지 파일',
+                      style: TextStyle(
+                        color: Color(0xFFD9D4D2),
+                        fontSize: 16,
+                        fontFamily: 'JoseonGulim',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: _pickFile,
+                      icon: const Icon(Icons.upload_file),
+                      label: const Text('PDF 선택'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF595048),
+                        foregroundColor: const Color(0xFFD9D4D2),
+                      ),
+                    ),
+                    if (_fileName != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        '선택된 파일: $_fileName',
+                        style: const TextStyle(
+                          color: Color(0xFF736A63),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 32),
+              
               ElevatedButton(
                 onPressed: _isLoading ? null : _createWorksheet,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF595048),
+                  foregroundColor: const Color(0xFFD9D4D2),
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Color(0xFFD9D4D2))
-                    : const Text('문제지 생성', style: TextStyle(fontFamily: 'JoseonGulim', fontSize: 18, color: Color(0xFFD9D4D2))),
+                    : const Text(
+                        '문제지 생성',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'JoseonGulim',
+                        ),
+                      ),
               ),
             ],
           ),
@@ -151,7 +235,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _subjectController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 }
