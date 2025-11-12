@@ -1,7 +1,6 @@
 package com.dungeon.heotaehoon.repository;
 
 import com.dungeon.heotaehoon.entity.PdfWorksheet;
-import com.dungeon.heotaehoon.entity.Instructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,9 +9,8 @@ import java.util.Optional;
 
 @Repository
 public interface PdfWorksheetRepository extends JpaRepository<PdfWorksheet, String> {
-    List<PdfWorksheet> findByInstructor(Instructor instructor);
-    List<PdfWorksheet> findByCategory(String category);
     List<PdfWorksheet> findByIsActiveTrue();
-    List<PdfWorksheet> findByCategoryAndIsActive(String category, Boolean isActive);
-    Optional<PdfWorksheet> findByIdAndIsActive(String id, Boolean isActive);
+    List<PdfWorksheet> findByCategoryOrderByCreatedAtDesc(String category);
+    Optional<PdfWorksheet> findByIdAndIsActiveTrue(String id, boolean isActive);
+    List<PdfWorksheet> findByCategoryAndIsActive(String category, boolean isActive);
 }
