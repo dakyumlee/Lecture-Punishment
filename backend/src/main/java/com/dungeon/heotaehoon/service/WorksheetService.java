@@ -28,7 +28,7 @@ public class WorksheetService {
             .title(title)
             .description(description)
             .category(category)
-            .pdfData(pdfFile.getBytes())
+            .pdfContent(pdfFile.getBytes())
             .fileName(pdfFile.getOriginalFilename())
             .build();
         
@@ -73,6 +73,7 @@ public class WorksheetService {
         StudentSubmission submission = StudentSubmission.builder()
             .student(student)
             .worksheet(worksheet)
+            .submittedAt(LocalDateTime.now())
             .build();
         submission = submissionRepository.save(submission);
         
@@ -109,7 +110,6 @@ public class WorksheetService {
         
         submission.setTotalScore(totalScore);
         submission.setMaxScore(maxScore);
-        submission.setSubmittedAt(LocalDateTime.now());
         submissionRepository.save(submission);
         
         int expGained = correctCount * 10;
@@ -176,7 +176,7 @@ public class WorksheetService {
         }
     }
 
-    public List<PdfWorksheet> getAllWorksheets() {
+    public List<PdfWorksheet> getAllActiveWorksheets() {
         return worksheetRepository.findByIsActiveTrue();
     }
 
@@ -188,5 +188,11 @@ public class WorksheetService {
         List<PdfWorksheet> allWorksheets = worksheetRepository.findByIsActiveTrue();
         return allWorksheets.stream()
             .collect(Collectors.groupingBy(PdfWorksheet::getCategory));
+    }
+
+    public List<StudentSubmission> getStudentSubmissions(String studentId) {
+        Student student = studentRepository.findById(studentId)
+            .orElseThrow(() -> new RuntimeException("Student not found"));
+        return submissionRepository.findByStudentOrderBySubmittedAtDesc(student);
     }
 }
