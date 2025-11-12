@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../services/api_service.dart';
 import 'worksheet_create_screen.dart';
 import 'worksheet_manage_screen.dart';
 
@@ -23,15 +22,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Future<void> _loadStats() async {
     try {
-      final response = await http.get(
-        Uri.parse('http://localhost:8080/api/admin/stats'),
-      );
-      if (response.statusCode == 200) {
-        setState(() {
-          _stats = jsonDecode(utf8.decode(response.bodyBytes));
-          _isLoading = false;
-        });
-      }
+      final stats = await ApiService.getAdminStats();
+      setState(() {
+        _stats = stats;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() => _isLoading = false);
     }
@@ -103,7 +98,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   const SizedBox(height: 12),
                   _buildActionButton(
                     '📋 수업 목록',
-                    '등록된 수업 확인',
+                    '등록된 수업 확인 및 삭제',
                     () async {
                       await _showLessons();
                     },
@@ -139,7 +134,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   const SizedBox(height: 12),
                   _buildActionButton(
                     '📑 문제지 관리',
-                    '문제지 확인 및 문제 추가',
+                    '문제지 확인, 문제 추가 및 삭제',
                     () {
                       Navigator.push(
                         context,
@@ -162,7 +157,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   const SizedBox(height: 12),
                   _buildActionButton(
                     '👥 학생 목록',
-                    '등록된 학생 확인',
+                    '등록된 학생 확인 및 삭제',
                     () async {
                       await _showStudents();
                     },
@@ -288,13 +283,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         TextButton(
           onPressed: () async {
             try {
-              await http.post(
-                Uri.parse('http://localhost:8080/api/admin/lessons'),
-                headers: {'Content-Type': 'application/json'},
-                body: jsonEncode({
-                  'title': titleController.text,
-                  'subject': subjectController.text,
-                }),
+              await ApiService.createLesson(
+                title: titleController.text,
+                subject: subjectController.text,
               );
               if (context.mounted) Navigator.pop(context, true);
             } catch (e) {
@@ -313,38 +304,73 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Future<void> _showLessons() async {
     try {
-      final response = await http.get(Uri.parse('http://localhost:8080/api/admin/lessons'));
-      if (response.statusCode == 200) {
-        final lessons = jsonDecode(utf8.decode(response.bodyBytes)) as List;
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              backgroundColor: const Color(0xFF595048),
-              title: const Text('수업 목록', style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim')),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: lessons.length,
-                  itemBuilder: (context, index) {
-                    final lesson = lessons[index];
-                    return ListTile(
-                      title: Text(lesson['title'], style: const TextStyle(color: Color(0xFFD9D4D2))),
-                      subtitle: Text(lesson['subject'], style: const TextStyle(color: Color(0xFF736A63))),
-                    );
-                  },
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('닫기', style: TextStyle(color: Color(0xFFD9D4D2))),
-                ),
-              ],
+      final lessons = await ApiService.getAdminLessons();
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF595048),
+            title: const Text('수업 목록', style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim')),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: lessons.isEmpty
+                  ? const Text('등록된 수업이 없습니다', style: TextStyle(color: Color(0xFF736A63)))
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: lessons.length,
+                      itemBuilder: (context, index) {
+                        final lesson = lessons[index];
+                        return ListTile(
+                          title: Text(lesson['title'], style: const TextStyle(color: Color(0xFFD9D4D2))),
+                          subtitle: Text(lesson['subject'], style: const TextStyle(color: Color(0xFF736A63))),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: const Color(0xFF595048),
+                                  title: const Text('삭제 확인', style: TextStyle(color: Color(0xFFD9D4D2))),
+                                  content: Text('${lesson['title']} 수업을 삭제하시겠습니까?',
+                                      style: const TextStyle(color: Color(0xFFD9D4D2))),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: const Text('삭제', style: TextStyle(color: Colors.red)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              
+                              if (confirm == true) {
+                                final success = await ApiService.deleteLesson(lesson['id']);
+                                if (success) {
+                                  Navigator.pop(context);
+                                  _showLessons();
+                                  _loadStats();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('수업이 삭제되었습니다')),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        );
+                      },
+                    ),
             ),
-          );
-        }
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('닫기', style: TextStyle(color: Color(0xFFD9D4D2))),
+              ),
+            ],
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -355,39 +381,74 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Future<void> _showStudents() async {
     try {
-      final response = await http.get(Uri.parse('http://localhost:8080/api/admin/students'));
-      if (response.statusCode == 200) {
-        final students = jsonDecode(utf8.decode(response.bodyBytes)) as List;
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              backgroundColor: const Color(0xFF595048),
-              title: const Text('학생 목록', style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim')),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: students.length,
-                  itemBuilder: (context, index) {
-                    final student = students[index];
-                    return ListTile(
-                      title: Text(student['displayName'], style: const TextStyle(color: Color(0xFFD9D4D2))),
-                      subtitle: Text('Lv.${student['level']} | ${student['username']}', 
-                        style: const TextStyle(color: Color(0xFF736A63))),
-                    );
-                  },
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('닫기', style: TextStyle(color: Color(0xFFD9D4D2))),
-                ),
-              ],
+      final students = await ApiService.getAdminStudents();
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF595048),
+            title: const Text('학생 목록', style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim')),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: students.isEmpty
+                  ? const Text('등록된 학생이 없습니다', style: TextStyle(color: Color(0xFF736A63)))
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: students.length,
+                      itemBuilder: (context, index) {
+                        final student = students[index];
+                        return ListTile(
+                          title: Text(student['displayName'], style: const TextStyle(color: Color(0xFFD9D4D2))),
+                          subtitle: Text('Lv.${student['level']} | ${student['username']}', 
+                            style: const TextStyle(color: Color(0xFF736A63))),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: const Color(0xFF595048),
+                                  title: const Text('삭제 확인', style: TextStyle(color: Color(0xFFD9D4D2))),
+                                  content: Text('${student['displayName']} 학생을 삭제하시겠습니까?',
+                                      style: const TextStyle(color: Color(0xFFD9D4D2))),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: const Text('삭제', style: TextStyle(color: Colors.red)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              
+                              if (confirm == true) {
+                                final success = await ApiService.deleteStudent(student['id']);
+                                if (success) {
+                                  Navigator.pop(context);
+                                  _showStudents();
+                                  _loadStats();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('학생이 삭제되었습니다')),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        );
+                      },
+                    ),
             ),
-          );
-        }
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('닫기', style: TextStyle(color: Color(0xFFD9D4D2))),
+              ),
+            ],
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

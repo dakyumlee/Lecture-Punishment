@@ -263,3 +263,93 @@ class ApiService {
     }
   }
 }
+
+  static Future<Map<String, dynamic>> getAdminStats() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/admin/stats'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return {};
+    }
+  }
+
+  static Future<List<dynamic>> getAdminStudents() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/admin/students'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return [];
+    }
+  }
+
+  static Future<bool> deleteStudent(String studentId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/admin/students/$studentId'),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<List<dynamic>> getAdminLessons() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/admin/lessons'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> createLesson({
+    required String title,
+    required String subject,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/admin/lessons'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'title': title,
+        'subject': subject,
+      }),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      throw Exception('Failed to create lesson');
+    }
+  }
+
+  static Future<bool> deleteLesson(String lessonId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/admin/lessons/$lessonId'),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> deleteWorksheet(String worksheetId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/worksheets/$worksheetId'),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+}
