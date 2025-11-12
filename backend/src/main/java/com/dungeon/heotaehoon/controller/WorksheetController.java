@@ -2,14 +2,14 @@ package com.dungeon.heotaehoon.controller;
 
 import com.dungeon.heotaehoon.entity.PdfWorksheet;
 import com.dungeon.heotaehoon.entity.WorksheetQuestion;
-import com.dungeon.heotaehoon.entity.WorksheetCategory;
-import com.dungeon.heotaehoon.repository.WorksheetCategoryRepository;
 import com.dungeon.heotaehoon.service.WorksheetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/worksheets")
@@ -18,68 +18,60 @@ import java.util.*;
 public class WorksheetController {
 
     private final WorksheetService worksheetService;
-    private final WorksheetCategoryRepository categoryRepository;
 
     @PostMapping
-    public ResponseEntity<PdfWorksheet> createWorksheet(@RequestBody Map<String, Object> worksheetData) {
-        PdfWorksheet worksheet = worksheetService.createWorksheet(worksheetData);
-        return ResponseEntity.ok(worksheet);
+    public ResponseEntity<PdfWorksheet> createWorksheet(
+            @RequestParam String title,
+            @RequestParam String description,
+            @RequestParam String category,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            PdfWorksheet worksheet = worksheetService.createWorksheet(title, description, category, file);
+            return ResponseEntity.ok(worksheet);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PostMapping("/{worksheetId}/questions")
     public ResponseEntity<WorksheetQuestion> addQuestion(
-        @PathVariable String worksheetId,
-        @RequestBody Map<String, Object> questionData
-    ) {
-        WorksheetQuestion question = worksheetService.addQuestion(worksheetId, questionData);
-        return ResponseEntity.ok(question);
+            @PathVariable String worksheetId,
+            @RequestBody WorksheetQuestion question) {
+        WorksheetQuestion saved = worksheetService.addQuestion(worksheetId, question);
+        return ResponseEntity.ok(saved);
     }
 
     @GetMapping
     public ResponseEntity<List<PdfWorksheet>> getAllWorksheets() {
-        List<PdfWorksheet> worksheets = worksheetService.getAllActiveWorksheets();
-        return ResponseEntity.ok(worksheets);
+        return ResponseEntity.ok(worksheetService.getAllActiveWorksheets());
     }
 
-    @GetMapping("/category/{category}")
-    public ResponseEntity<List<PdfWorksheet>> getWorksheetsByCategory(@PathVariable String category) {
-        List<PdfWorksheet> worksheets = worksheetService.getWorksheetsByCategory(category);
-        return ResponseEntity.ok(worksheets);
+    @GetMapping("/grouped")
+    public ResponseEntity<Map<String, List<PdfWorksheet>>> getWorksheetsGrouped() {
+        return ResponseEntity.ok(worksheetService.getWorksheetsGroupedByCategory());
     }
 
     @GetMapping("/{worksheetId}")
-    public ResponseEntity<Map<String, Object>> getWorksheet(@PathVariable String worksheetId) {
-        Map<String, Object> worksheet = worksheetService.getWorksheetWithQuestions(worksheetId);
-        return ResponseEntity.ok(worksheet);
+    public ResponseEntity<Map<String, Object>> getWorksheetWithQuestions(@PathVariable String worksheetId) {
+        return ResponseEntity.ok(worksheetService.getWorksheetWithQuestions(worksheetId));
     }
 
     @PostMapping("/{worksheetId}/submit")
     public ResponseEntity<Map<String, Object>> submitWorksheet(
-        @PathVariable String worksheetId,
-        @RequestBody Map<String, Object> submissionData
-    ) {
-        String studentId = (String) submissionData.get("studentId");
-        List<Map<String, String>> answers = (List<Map<String, String>>) submissionData.get("answers");
+            @PathVariable String worksheetId,
+            @RequestBody Map<String, Object> submission) {
+        String studentId = (String) submission.get("studentId");
+        List<Map<String, String>> answers = (List<Map<String, String>>) submission.get("answers");
         
         Map<String, Object> result = worksheetService.submitWorksheet(studentId, worksheetId, answers);
         return ResponseEntity.ok(result);
     }
 
     @GetMapping("/student/{studentId}/submissions")
-    public ResponseEntity<List<Map<String, Object>>> getStudentSubmissions(@PathVariable String studentId) {
-        List<Map<String, Object>> submissions = worksheetService.getStudentSubmissions(studentId);
-        return ResponseEntity.ok(submissions);
-    }
-
-    @GetMapping("/categories")
-    public ResponseEntity<List<WorksheetCategory>> getAllCategories() {
-        List<WorksheetCategory> categories = categoryRepository.findAll();
-        return ResponseEntity.ok(categories);
-    }
-
-    @PostMapping("/categories")
-    public ResponseEntity<WorksheetCategory> createCategory(@RequestBody WorksheetCategory category) {
-        WorksheetCategory saved = categoryRepository.save(category);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<Map<String, Object>> getStudentSubmissions(@PathVariable String studentId) {
+        Map<String, Object> result = Map.of(
+            "submissions", worksheetService.getStudentSubmissions(studentId)
+        );
+        return ResponseEntity.ok(result);
     }
 }
