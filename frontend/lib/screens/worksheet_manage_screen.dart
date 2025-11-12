@@ -92,6 +92,11 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
     }
   }
 
+  void _viewPdf(String id) {
+    final url = '${Env.apiUrl}/worksheets/$id/view';
+    html.window.open(url, '_blank');
+  }
+
   void _downloadPdf(String id, String title) {
     final url = '${Env.apiUrl}/worksheets/$id/pdf';
     html.AnchorElement(href: url)
@@ -281,9 +286,9 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _downloadPdf(id, title),
-                        icon: const Icon(Icons.download, size: 20),
-                        label: const Text('PDF 보기'),
+                        onPressed: () => _viewPdf(id),
+                        icon: const Icon(Icons.visibility, size: 20),
+                        label: const Text('보기'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF736A63),
                           foregroundColor: const Color(0xFFD9D4D2),
@@ -297,18 +302,40 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                ElevatedButton.icon(
-                  onPressed: () => _deleteWorksheet(id, title),
-                  icon: const Icon(Icons.delete, size: 20),
-                  label: const Text('문제지 삭제'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade900,
-                    foregroundColor: const Color(0xFFD9D4D2),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _downloadPdf(id, title),
+                        icon: const Icon(Icons.download, size: 20),
+                        label: const Text('다운로드'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF595048).withOpacity(0.7),
+                          foregroundColor: const Color(0xFFD9D4D2),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _deleteWorksheet(id, title),
+                        icon: const Icon(Icons.delete, size: 20),
+                        label: const Text('삭제'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade900,
+                          foregroundColor: const Color(0xFFD9D4D2),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
