@@ -262,7 +262,6 @@ class ApiService {
       return {'points': 0, 'currentOutfit': null, 'currentExpression': null};
     }
   }
-}
 
   static Future<Map<String, dynamic>> getAdminStats() async {
     final response = await http.get(
