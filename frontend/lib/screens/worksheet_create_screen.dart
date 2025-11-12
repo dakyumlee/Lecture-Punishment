@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/api_service.dart';
-import 'dart:io';
 
 class WorksheetCreateScreen extends StatefulWidget {
   const WorksheetCreateScreen({super.key});
@@ -16,7 +15,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
   final _descriptionController = TextEditingController();
   final _categoryController = TextEditingController();
   
-  File? _selectedFile;
+  PlatformFile? _selectedFile;
   String? _fileName;
   bool _isLoading = false;
 
@@ -29,8 +28,8 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
 
       if (result != null) {
         setState(() {
-          _selectedFile = File(result.files.single.path!);
-          _fileName = result.files.single.name;
+          _selectedFile = result.files.first;
+          _fileName = result.files.first.name;
         });
       }
     } catch (e) {
