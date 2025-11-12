@@ -214,7 +214,6 @@ class ApiService {
       return {'submissions': []};
     }
   }
-}
 
   static Future<Map<String, dynamic>> getShopItems({String? type}) async {
     String url = '$baseUrl/shop/items';
