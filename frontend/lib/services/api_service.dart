@@ -571,4 +571,32 @@ class ApiService {
       return false;
     }
   }
+
+  static Future<List<dynamic>> getWorksheets() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/worksheets'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return [];
+    }
+  }
+
+  static Future<bool> addQuestionToWorksheet(
+    String worksheetId,
+    Map<String, dynamic> questionData,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/worksheets/$worksheetId/questions'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(questionData),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
 }

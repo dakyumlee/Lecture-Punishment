@@ -556,6 +556,7 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                                     SnackBar(content: Text('제거 실패: $e')),
                                   );
                                 }
+                            },
                               }
                           ),
                         );
