@@ -33,7 +33,6 @@ public class OcrService {
             
             PDFRenderer pdfRenderer = new PDFRenderer(document);
             Tesseract tesseract = new Tesseract();
-            
             tesseract.setLanguage("kor+eng");
             
             StringBuilder fullText = new StringBuilder();
@@ -63,20 +62,20 @@ public class OcrService {
         List<QuestionData> questions = new ArrayList<>();
         
         Pattern questionPattern = Pattern.compile(
-            "(\\d+)\\s*\\.\\s*(.+?)(?=\\n\\s*①|\\n\\s*\\d+\\s*\\.|$)",
+            "(\\d+)\\s*[번.)]?\\s*(.+?)(?=\\n\\s*\\d+\\s*[번.)]|$)",
             Pattern.DOTALL
         );
         
         Matcher matcher = questionPattern.matcher(text);
         
         while (matcher.find()) {
-            int questionNumber = Integer.parseInt(matcher.group(1));
+            int questionNumber = Integer.parseInt(matcher.group(1).trim());
             String questionContent = matcher.group(2).trim();
             
             QuestionData question = new QuestionData();
             question.setQuestionNumber(questionNumber);
             
-            if (questionContent.contains("①")) {
+            if (isMultipleChoice(questionContent)) {
                 parseMultipleChoice(question, questionContent);
             } else {
                 question.setQuestionType("subjective");
@@ -89,31 +88,103 @@ public class OcrService {
         return questions;
     }
 
+    private boolean isMultipleChoice(String content) {
+        String[] circleNumbers = {"①", "②", "③", "④", "⑤"};
+        int circleCount = 0;
+        for (String circle : circleNumbers) {
+            if (content.contains(circle)) circleCount++;
+        }
+        if (circleCount >= 4) return true;
+        
+        Pattern bracketPattern = Pattern.compile("\\d+\\)\\s+[^\\d)]{2,}");
+        Matcher bracketMatcher = bracketPattern.matcher(content);
+        int bracketCount = 0;
+        while (bracketMatcher.find()) {
+            bracketCount++;
+        }
+        if (bracketCount >= 4) return true;
+        
+        Pattern parenthesisPattern = Pattern.compile("\\(\\d+\\)\\s+[^()]{2,}");
+        Matcher parenthesisMatcher = parenthesisPattern.matcher(content);
+        int parenthesisCount = 0;
+        while (parenthesisMatcher.find()) {
+            parenthesisCount++;
+        }
+        if (parenthesisCount >= 4) return true;
+        
+        return false;
+    }
+
     private void parseMultipleChoice(QuestionData question, String content) {
         question.setQuestionType("multiple_choice");
         
-        String[] parts = content.split("①");
-        if (parts.length > 0) {
-            question.setQuestionText(parts[0].trim());
+        String[] circleNumbers = {"①", "②", "③", "④"};
+        String firstMarker = null;
+        for (String circle : circleNumbers) {
+            if (content.contains(circle)) {
+                firstMarker = circle;
+                break;
+            }
         }
         
-        if (parts.length > 1) {
-            String optionsText = "①" + parts[1];
-            
-            Pattern optionPattern = Pattern.compile("([①②③④⑤])\\s*([^①②③④⑤]+)");
-            Matcher optionMatcher = optionPattern.matcher(optionsText);
-            
-            int optionIndex = 0;
-            while (optionMatcher.find() && optionIndex < 4) {
-                String optionText = optionMatcher.group(2).trim();
-                switch (optionIndex) {
-                    case 0: question.setOptionA(optionText); break;
-                    case 1: question.setOptionB(optionText); break;
-                    case 2: question.setOptionC(optionText); break;
-                    case 3: question.setOptionD(optionText); break;
-                }
-                optionIndex++;
+        if (firstMarker == null) {
+            Pattern bracketPattern = Pattern.compile("\\d+\\)");
+            Matcher bracketMatcher = bracketPattern.matcher(content);
+            if (bracketMatcher.find()) {
+                firstMarker = bracketMatcher.group();
             }
+        }
+        
+        if (firstMarker == null) {
+            Pattern parenthesisPattern = Pattern.compile("\\(\\d+\\)");
+            Matcher parenthesisMatcher = parenthesisPattern.matcher(content);
+            if (parenthesisMatcher.find()) {
+                firstMarker = parenthesisMatcher.group();
+            }
+        }
+        
+        if (firstMarker != null) {
+            String[] parts = content.split(Pattern.quote(firstMarker), 2);
+            if (parts.length > 0) {
+                question.setQuestionText(parts[0].trim());
+            }
+            
+            if (parts.length > 1) {
+                String optionsText = firstMarker + parts[1];
+                parseOptions(question, optionsText);
+            }
+        } else {
+            question.setQuestionText(content);
+        }
+    }
+
+    private void parseOptions(QuestionData question, String optionsText) {
+        Pattern circlePattern = Pattern.compile("([①②③④⑤])\\s*([^①②③④⑤]+?)(?=[①②③④⑤]|$)", Pattern.DOTALL);
+        Pattern bracketPattern = Pattern.compile("(\\d+)\\)\\s*([^\\d)]+?)(?=\\d+\\)|$)", Pattern.DOTALL);
+        Pattern parenthesisPattern = Pattern.compile("\\((\\d+)\\)\\s*([^()]+?)(?=\\(\\d+\\)|$)", Pattern.DOTALL);
+        
+        Matcher matcher = circlePattern.matcher(optionsText);
+        if (!matcher.find()) {
+            matcher = bracketPattern.matcher(optionsText);
+            if (!matcher.find()) {
+                matcher = parenthesisPattern.matcher(optionsText);
+            }
+        }
+        
+        matcher.reset();
+        int optionIndex = 0;
+        while (matcher.find() && optionIndex < 4) {
+            String optionText = matcher.group(2).trim()
+                .replaceAll("\\s+", " ")
+                .trim();
+            
+            switch (optionIndex) {
+                case 0: question.setOptionA(optionText); break;
+                case 1: question.setOptionB(optionText); break;
+                case 2: question.setOptionC(optionText); break;
+                case 3: question.setOptionD(optionText); break;
+            }
+            optionIndex++;
         }
     }
 
