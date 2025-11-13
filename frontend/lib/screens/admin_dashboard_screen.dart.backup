@@ -5,6 +5,7 @@ import 'worksheet_manage_screen.dart';
 import 'group_manage_screen.dart';
 import 'grading_screen.dart';
 
+
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
 
@@ -171,6 +172,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                   const SizedBox(height: 32),
                   const Text(
+                  const SizedBox(height: 32),
+                  const Text(
                     '채점 관리',
                     style: TextStyle(
                       color: Color(0xFFD9D4D2),
@@ -192,8 +195,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: 32),
-                  const Text(
                     '학생 관리',
                     style: TextStyle(
                       color: Color(0xFFD9D4D2),
