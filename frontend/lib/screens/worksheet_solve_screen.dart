@@ -256,7 +256,6 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
                               ),
                               const SizedBox(height: 16),
                               if (isMultipleChoice) ...[
-                              if (isMultipleChoice) ...[
                                 if (question['optionA'] != null && question['optionA'].toString().isNotEmpty)
                                   _buildMultipleChoiceOption(questionId, 'A', question['optionA']),
                                 if (question['optionB'] != null && question['optionB'].toString().isNotEmpty)
