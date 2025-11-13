@@ -30,9 +30,9 @@ public class ShopController {
         return ResponseEntity.ok(shopItemRepository.findByIsAvailableTrue());
     }
 
-    @GetMapping("/items/category/{category}")
-    public ResponseEntity<List<ShopItem>> getItemsByCategory(@PathVariable String category) {
-        return ResponseEntity.ok(shopItemRepository.findByCategory(category));
+    @GetMapping("/items/type/{type}")
+    public ResponseEntity<List<ShopItem>> getItemsByType(@PathVariable String type) {
+        return ResponseEntity.ok(shopItemRepository.findByItemType(type));
     }
 
     @PostMapping("/purchase")
@@ -57,10 +57,10 @@ public class ShopController {
 
             student.setPoints(student.getPoints() - item.getPrice());
 
-            if ("expression".equals(item.getCategory())) {
-                student.setCharacterExpression(item.getItemCode());
-            } else if ("outfit".equals(item.getCategory())) {
-                student.setCharacterOutfit(item.getItemCode());
+            if ("expression".equals(item.getItemType())) {
+                student.setCharacterExpression(item.getName());
+            } else if ("outfit".equals(item.getItemType())) {
+                student.setCharacterOutfit(item.getName());
             }
 
             studentRepository.save(student);
@@ -87,10 +87,10 @@ public class ShopController {
             ShopItem item = shopItemRepository.findById(itemId)
                     .orElseThrow(() -> new RuntimeException("아이템을 찾을 수 없습니다"));
 
-            if ("expression".equals(item.getCategory())) {
-                student.setCharacterExpression(item.getItemCode());
-            } else if ("outfit".equals(item.getCategory())) {
-                student.setCharacterOutfit(item.getItemCode());
+            if ("expression".equals(item.getItemType())) {
+                student.setCharacterExpression(item.getName());
+            } else if ("outfit".equals(item.getItemType())) {
+                student.setCharacterOutfit(item.getName());
             }
 
             studentRepository.save(student);

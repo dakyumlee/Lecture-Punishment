@@ -5,7 +5,9 @@ import com.dungeon.heotaehoon.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,6 +27,10 @@ public class WorksheetService {
         return worksheetRepository.findAll();
     }
 
+    public List<PdfWorksheet> getAllActiveWorksheets() {
+        return worksheetRepository.findAll();
+    }
+
     public PdfWorksheet getWorksheetById(String id) {
         return worksheetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("학습지를 찾을 수 없습니다"));
@@ -35,18 +41,45 @@ public class WorksheetService {
         return questionRepository.findByWorksheetOrderByQuestionNumberAsc(worksheet);
     }
 
+    public Map<String, List<PdfWorksheet>> getWorksheetsGroupedByCategory() {
+        List<PdfWorksheet> worksheets = worksheetRepository.findAll();
+        return worksheets.stream()
+                .collect(Collectors.groupingBy(w -> w.getCategory() != null ? w.getCategory() : "기타"));
+    }
+
+    public Map<String, Object> getWorksheetWithQuestions(String worksheetId) {
+        PdfWorksheet worksheet = getWorksheetById(worksheetId);
+        List<WorksheetQuestion> questions = getQuestionsByWorksheetId(worksheetId);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("worksheet", worksheet);
+        result.put("questions", questions);
+        return result;
+    }
+
     @Transactional
-    public PdfWorksheet createWorksheet(PdfWorksheet worksheet) {
-        worksheet.setCreatedAt(LocalDateTime.now());
+    public PdfWorksheet createWorksheet(String title, String description, String category, MultipartFile file) throws IOException {
+        PdfWorksheet worksheet = PdfWorksheet.builder()
+                .title(title)
+                .description(description)
+                .category(category)
+                .fileName(file.getOriginalFilename())
+                .pdfContent(file.getBytes())
+                .createdAt(LocalDateTime.now())
+                .build();
         return worksheetRepository.save(worksheet);
     }
 
     @Transactional
-    public StudentSubmission submitWorksheet(String worksheetId, String studentId, 
-                                            Map<String, String> answers) {
+    public Map<String, Object> submitWorksheet(String studentId, String worksheetId, List<Map<String, String>> answersList) {
         PdfWorksheet worksheet = getWorksheetById(worksheetId);
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("학생을 찾을 수 없습니다"));
+
+        Map<String, String> answersMap = new HashMap<>();
+        for (Map<String, String> answerEntry : answersList) {
+            answersMap.put(answerEntry.get("questionId"), answerEntry.get("answer"));
+        }
 
         List<WorksheetQuestion> questions = questionRepository.findByWorksheetOrderByQuestionNumberAsc(worksheet);
 
@@ -65,7 +98,7 @@ public class WorksheetService {
         List<SubmissionAnswer> submissionAnswers = new ArrayList<>();
 
         for (WorksheetQuestion question : questions) {
-            String studentAnswer = answers.getOrDefault(question.getId(), "");
+            String studentAnswer = answersMap.getOrDefault(question.getId(), "");
 
             boolean isCorrect = evaluateAnswer(question, studentAnswer);
             int pointsEarned = isCorrect ? question.getPoints() : 0;
@@ -86,7 +119,14 @@ public class WorksheetService {
         answerRepository.saveAll(submissionAnswers);
 
         submission.setTotalScore(totalScore);
-        return submissionRepository.save(submission);
+        submission = submissionRepository.save(submission);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("submission", submission);
+        result.put("totalScore", totalScore);
+        result.put("maxScore", submission.getMaxScore());
+        result.put("correctCount", submissionAnswers.stream().filter(SubmissionAnswer::getIsCorrect).count());
+        return result;
     }
 
     private boolean evaluateAnswer(WorksheetQuestion question, String studentAnswer) {

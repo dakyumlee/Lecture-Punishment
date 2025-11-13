@@ -29,15 +29,15 @@ public class GameService {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new RuntimeException("퀴즈를 찾을 수 없습니다"));
 
-        Student student = studentRepository.findById(request.getStudentId())
+        Student student = studentRepository.findById(request.getStudentId().toString())
                 .orElseThrow(() -> new RuntimeException("학생을 찾을 수 없습니다"));
 
-        boolean isCorrect = quiz.getCorrectAnswer().equalsIgnoreCase(request.getAnswer().trim());
+        boolean isCorrect = quiz.getCorrectAnswer().equalsIgnoreCase(request.getSelectedAnswer().trim());
 
         QuizAttempt attempt = QuizAttempt.builder()
                 .quiz(quiz)
                 .student(student)
-                .answer(request.getAnswer())
+                .answer(request.getSelectedAnswer())
                 .isCorrect(isCorrect)
                 .attemptedAt(LocalDateTime.now())
                 .build();
@@ -56,11 +56,11 @@ public class GameService {
         studentRepository.save(student);
 
         return QuizAnswerResponse.builder()
-                .correct(isCorrect)
+                .isCorrect(isCorrect)
                 .correctAnswer(quiz.getCorrectAnswer())
                 .expGained(isCorrect ? 10 : 0)
-                .newLevel(student.getLevel())
-                .newExp(student.getExp())
+                .studentLevel(student.getLevel())
+                .studentExp(student.getExp())
                 .build();
     }
 
@@ -77,7 +77,7 @@ public class GameService {
         if (count == 0) {
             Map<String, String> defaultRage = new HashMap<>();
             defaultRage.put("text", "복습 안 했구나?");
-            defaultRage.put("intensity", "medium");
+            defaultRage.put("intensity", "5");
             return defaultRage;
         }
 
@@ -86,7 +86,7 @@ public class GameService {
 
         Map<String, String> result = new HashMap<>();
         result.put("text", rage.getDialogueText());
-        result.put("intensity", rage.getIntensity());
+        result.put("intensity", String.valueOf(rage.getIntensityLevel()));
         return result;
     }
 }

@@ -8,6 +8,6 @@ import java.util.List;
 
 @Repository
 public interface ShopItemRepository extends JpaRepository<ShopItem, String> {
-    List<ShopItem> findByItemTypeAndIsAvailableTrue(String itemType);
     List<ShopItem> findByIsAvailableTrue();
+    List<ShopItem> findByItemType(String itemType);
 }

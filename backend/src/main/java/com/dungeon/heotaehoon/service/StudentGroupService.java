@@ -22,22 +22,36 @@ public class StudentGroupService {
         return groupRepository.findAll();
     }
 
+    public List<StudentGroup> getAllActiveGroups() {
+        return groupRepository.findAll();
+    }
+
     public StudentGroup getGroupById(String id) {
         return groupRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("그룹을 찾을 수 없습니다"));
     }
 
     @Transactional
-    public StudentGroup createGroup(StudentGroup group) {
-        group.setCreatedAt(LocalDateTime.now());
+    public StudentGroup createGroup(String groupName, Integer year, String course, String period, String description) {
+        StudentGroup group = StudentGroup.builder()
+                .groupName(groupName)
+                .year(year)
+                .course(course)
+                .period(period)
+                .description(description)
+                .createdAt(LocalDateTime.now())
+                .build();
         return groupRepository.save(group);
     }
 
     @Transactional
-    public StudentGroup updateGroup(String id, StudentGroup groupDetails) {
+    public StudentGroup updateGroup(String id, String groupName, Integer year, String course, String period, String description) {
         StudentGroup group = getGroupById(id);
-        group.setGroupName(groupDetails.getGroupName());
-        group.setDescription(groupDetails.getDescription());
+        group.setGroupName(groupName);
+        group.setYear(year);
+        group.setCourse(course);
+        group.setPeriod(period);
+        group.setDescription(description);
         return groupRepository.save(group);
     }
 
@@ -51,23 +65,20 @@ public class StudentGroupService {
     }
 
     @Transactional
-    public void addStudentToGroup(String groupId, String studentId) {
+    public Student assignStudentToGroup(String studentId, String groupId) {
         StudentGroup group = getGroupById(groupId);
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("학생을 찾을 수 없습니다"));
         student.setGroup(group);
-        studentRepository.save(student);
+        return studentRepository.save(student);
     }
 
     @Transactional
-    public void removeStudentFromGroup(String groupId, String studentId) {
+    public void removeStudentFromGroup(String studentId) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("학생을 찾을 수 없습니다"));
-        
-        if (student.getGroup() != null && student.getGroup().getId().equals(groupId)) {
-            student.setGroup(null);
-            studentRepository.save(student);
-        }
+        student.setGroup(null);
+        studentRepository.save(student);
     }
 
     public List<Student> getStudentsByGroup(String groupId) {
