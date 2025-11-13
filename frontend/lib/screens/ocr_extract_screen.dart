@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import '../services/api_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../config/env.dart';
 
 class OcrExtractScreen extends StatefulWidget {
   const OcrExtractScreen({super.key});
@@ -18,30 +20,46 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
+      withData: true,
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result != null && result.files.single.bytes != null) {
       setState(() {
         _isProcessing = true;
         _fileName = result.files.single.name;
       });
 
       try {
-        final response = await ApiService.extractQuestionsFromPdf(
-          result.files.single.path!,
+        var request = http.MultipartRequest(
+          'POST',
+          Uri.parse('${Env.apiUrl}/ocr/extract'),
         );
+        
+        request.files.add(http.MultipartFile.fromBytes(
+          'file',
+          result.files.single.bytes!,
+          filename: result.files.single.name,
+        ));
+        
+        var streamedResponse = await request.send();
+        var response = await http.Response.fromStream(streamedResponse);
+        
+        if (response.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          setState(() {
+            _extractedQuestions = data['questions'] ?? [];
+            _isProcessing = false;
+          });
 
-        setState(() {
-          _extractedQuestions = response['questions'] ?? [];
-          _isProcessing = false;
-        });
-
-        if (_extractedQuestions.isEmpty) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('문제를 찾을 수 없습니다')),
-            );
+          if (_extractedQuestions.isEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('문제를 찾을 수 없습니다')),
+              );
+            }
           }
+        } else {
+          throw Exception('OCR 실패: ${response.statusCode}');
         }
       } catch (e) {
         setState(() => _isProcessing = false);
@@ -76,9 +94,9 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                 children: [
                   const CircularProgressIndicator(color: Color(0xFFD9D4D2)),
                   const SizedBox(height: 16),
-                  Text(
+                  const Text(
                     'PDF에서 문제 추출 중...',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Color(0xFF736A63),
                       fontFamily: 'JoseonGulim',
                       fontSize: 16,
