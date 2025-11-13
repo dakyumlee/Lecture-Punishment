@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:developer';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -240,12 +242,18 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
 
   Future<void> _addToWorksheet() async {
     try {
+      setState(() => _isProcessing = true);
+      
       final worksheets = await ApiService.getWorksheets();
       
+      setState(() => _isProcessing = false);
+      
       if (worksheets.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('문제지가 없습니다. 먼저 문제지를 생성하세요.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('문제지가 없습니다. 먼저 문제지를 생성하세요.')),
+          );
+        }
         return;
       }
 
@@ -293,48 +301,68 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
         setState(() => _isProcessing = true);
         
         int addedCount = 0;
+        int failedCount = 0;
+        
         for (int i = 0; i < _extractedQuestions.length; i++) {
           if (_selectedQuestions[i]) {
-            final question = _extractedQuestions[i];
-            
-            final questionData = {
-              'questionNumber': question['questionNumber'],
-              'questionType': question['questionType'],
-              'questionText': question['questionText'],
-              'optionA': question['optionA'],
-              'optionB': question['optionB'],
-              'optionC': question['optionC'],
-              'optionD': question['optionD'],
-              'correctAnswer': '',
-              'points': 10,
-            };
-            
-            final success = await ApiService.addQuestionToWorksheet(
-              selectedWorksheet,
-              questionData,
-            );
-            
-            if (success) addedCount++;
+            try {
+              final question = _extractedQuestions[i];
+              
+              final questionData = {
+                'questionNumber': question['questionNumber'],
+                'questionType': question['questionType'],
+                'questionText': question['questionText'] ?? '',
+                'optionA': question['optionA'],
+                'optionB': question['optionB'],
+                'optionC': question['optionC'],
+                'optionD': question['optionD'],
+                'correctAnswer': '',
+                'points': 10,
+              };
+              
+              final success = await ApiService.addQuestionToWorksheet(
+                selectedWorksheet,
+                questionData,
+              );
+              
+              if (success) {
+                addedCount++;
+              } else {
+                failedCount++;
+              }
+            } catch (e) {
+              failedCount++;
+              log('Error adding question $i: $e');
+            }
           }
         }
         
         setState(() => _isProcessing = false);
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$addedCount개 문제를 추가했습니다!')),
-          );
-          Navigator.pop(context, true);
+          if (addedCount > 0) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('$addedCount개 문제를 추가했습니다!${failedCount > 0 ? ' ($failedCount개 실패)' : ''}')),
+            );
+            Navigator.pop(context, true);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('문제 추가에 실패했습니다')),
+            );
+          }
         }
+      } else {
+        setState(() => _isProcessing = false);
       }
     } catch (e) {
       setState(() => _isProcessing = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('추가 실패: $e')),
+          SnackBar(content: Text('오류: $e')),
         );
       }
     }
+  }
   }
 
   @override

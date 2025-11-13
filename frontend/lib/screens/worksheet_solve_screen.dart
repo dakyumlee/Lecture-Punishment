@@ -256,10 +256,15 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
                               ),
                               const SizedBox(height: 16),
                               if (isMultipleChoice) ...[
-                                _buildMultipleChoiceOption(questionId, 'A', question['optionA']),
-                                _buildMultipleChoiceOption(questionId, 'B', question['optionB']),
-                                _buildMultipleChoiceOption(questionId, 'C', question['optionC']),
-                                _buildMultipleChoiceOption(questionId, 'D', question['optionD']),
+                              if (isMultipleChoice) ...[
+                                if (question['optionA'] != null && question['optionA'].toString().isNotEmpty)
+                                  _buildMultipleChoiceOption(questionId, 'A', question['optionA']),
+                                if (question['optionB'] != null && question['optionB'].toString().isNotEmpty)
+                                  _buildMultipleChoiceOption(questionId, 'B', question['optionB']),
+                                if (question['optionC'] != null && question['optionC'].toString().isNotEmpty)
+                                  _buildMultipleChoiceOption(questionId, 'C', question['optionC']),
+                                if (question['optionD'] != null && question['optionD'].toString().isNotEmpty)
+                                  _buildMultipleChoiceOption(questionId, 'D', question['optionD']),
                               ] else ...[
                                 TextField(
                                   controller: _answerControllers[questionId],
