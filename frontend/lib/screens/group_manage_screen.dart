@@ -510,11 +510,53 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                           trailing: IconButton(
                             icon: const Icon(Icons.remove_circle, color: Colors.red),
                             onPressed: () {
-                              // TODO: 그룹에서 학생 제거
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('학생 제거 기능은 준비중입니다')),
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: const Color(0xFF595048),
+                                  title: const Text(
+                                    '학생 제거',
+                                    style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+                                  ),
+                                  content: Text(
+                                    '${student['displayName']} 학생을 그룹에서 제거하시겠습니까?',
+                                    style: const TextStyle(color: Color(0xFFD9D4D2)),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: const Text('제거', style: TextStyle(color: Colors.red)),
+                                    ),
+                                  ],
+                                ),
                               );
-                            },
+
+                              if (confirm == true) {
+                                try {
+                                  final success = await ApiService.removeStudentFromGroup(
+                                    studentId: student['id'],
+                                    groupId: groupId,
+                                  );
+                                  
+                                  if (success) {
+                                    Navigator.pop(context);
+                                    _showGroupStudents(groupId);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('${student['displayName']} 학생을 제거했습니다'),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('제거 실패: $e')),
+                                  );
+                                }
+                              }
                           ),
                         );
                       },

@@ -72,4 +72,12 @@ public class StudentGroupController {
     public ResponseEntity<List<Student>> getGroupStudents(@PathVariable String groupId) {
         return ResponseEntity.ok(groupService.getStudentsByGroup(groupId));
     }
+
+    @DeleteMapping("/{groupId}/students/{studentId}")
+    public ResponseEntity<Void> removeStudent(
+            @PathVariable String groupId,
+            @PathVariable String studentId) {
+        groupService.removeStudentFromGroup(studentId);
+        return ResponseEntity.ok().build();
+    }
 }

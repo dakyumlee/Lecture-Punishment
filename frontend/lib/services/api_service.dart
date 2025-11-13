@@ -557,4 +557,18 @@ class ApiService {
     }
   }
 
+
+  static Future<bool> removeStudentFromGroup({
+    required String studentId,
+    required String groupId,
+  }) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/groups/$groupId/students/$studentId'),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
 }

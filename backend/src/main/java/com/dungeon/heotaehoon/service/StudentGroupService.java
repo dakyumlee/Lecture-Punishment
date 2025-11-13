@@ -72,4 +72,11 @@ public class StudentGroupService {
         
         return groupRepository.save(group);
     }
+
+    public void removeStudentFromGroup(String studentId) {
+        Student student = studentRepository.findById(studentId)
+            .orElseThrow(() -> new RuntimeException("Student not found"));
+        student.setGroup(null);
+        studentRepository.save(student);
+    }
 }
