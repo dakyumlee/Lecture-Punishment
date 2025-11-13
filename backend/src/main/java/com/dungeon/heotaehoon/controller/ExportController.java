@@ -1,8 +1,8 @@
 package com.dungeon.heotaehoon.controller;
 
 import com.dungeon.heotaehoon.entity.StudentGroup;
+import com.dungeon.heotaehoon.repository.StudentGroupRepository;
 import com.dungeon.heotaehoon.service.ExcelExportService;
-import com.dungeon.heotaehoon.service.StudentGroupService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -10,10 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequestMapping("/api/export")
@@ -22,41 +18,53 @@ import java.time.format.DateTimeFormatter;
 public class ExportController {
 
     private final ExcelExportService excelExportService;
-    private final StudentGroupService groupService;
+    private final StudentGroupRepository groupRepository;
 
     @GetMapping("/group/{groupId}/excel")
-    public ResponseEntity<byte[]> exportGroupExcel(@PathVariable String groupId) throws IOException {
-        StudentGroup group = groupService.getGroupById(groupId);
-        byte[] excelData = excelExportService.generateGroupScoreExcel(groupId, group);
+    public ResponseEntity<byte[]> exportGroupScores(@PathVariable Long groupId) {
+        try {
+            StudentGroup group = groupRepository.findById(groupId)
+                    .orElseThrow(() -> new RuntimeException("그룹을 찾을 수 없습니다"));
 
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String filename = String.format("%s_성적표_%s.xlsx", 
-            group.getGroupName(), timestamp);
-        String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
+            String fileName = group.getName() + "_성적표.xlsx";
+            byte[] excelData = excelExportService.generateGroupScoreExcel(fileName, group);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", encodedFilename);
-
-        return ResponseEntity.ok()
-            .headers(headers)
-            .body(excelData);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(excelData);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/all/excel")
-    public ResponseEntity<byte[]> exportAllStudentsExcel() throws IOException {
-        byte[] excelData = excelExportService.generateAllStudentsScoreExcel();
+    public ResponseEntity<byte[]> exportAllScores() {
+        try {
+            String fileName = "전체_성적표.xlsx";
+            byte[] excelData = excelExportService.generateAllStudentsScoreExcel();
 
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String filename = String.format("전체학생_성적표_%s.xlsx", timestamp);
-        String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(excelData);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", encodedFilename);
+    @GetMapping("/worksheet/{worksheetId}/excel")
+    public ResponseEntity<byte[]> exportWorksheetResult(@PathVariable Long worksheetId) {
+        try {
+            String fileName = "학습지_" + worksheetId + "_결과.xlsx";
+            byte[] excelData = excelExportService.generateWorksheetResultExcel(worksheetId);
 
-        return ResponseEntity.ok()
-            .headers(headers)
-            .body(excelData);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(excelData);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

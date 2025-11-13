@@ -1,11 +1,13 @@
 package com.dungeon.heotaehoon.repository;
 
 import com.dungeon.heotaehoon.entity.SubmissionAnswer;
-import com.dungeon.heotaehoon.entity.WorksheetQuestion;
+import com.dungeon.heotaehoon.entity.StudentSubmission;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
 
-public interface SubmissionAnswerRepository extends JpaRepository<SubmissionAnswer, String> {
-    List<SubmissionAnswer> findBySubmissionId(String submissionId);
-    List<SubmissionAnswer> findByQuestion(WorksheetQuestion question);
+@Repository
+public interface SubmissionAnswerRepository extends JpaRepository<SubmissionAnswer, Long> {
+    List<SubmissionAnswer> findBySubmission(StudentSubmission submission);
 }
