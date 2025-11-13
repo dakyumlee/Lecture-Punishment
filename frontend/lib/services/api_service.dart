@@ -357,3 +357,107 @@ class ApiService {
     }
   }
 }
+
+  static Future<List<dynamic>> getAllGroups() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/groups'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> createGroup({
+    required String groupName,
+    required int year,
+    required String course,
+    required String period,
+    String? description,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/groups'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'groupName': groupName,
+        'year': year,
+        'course': course,
+        'period': period,
+        'description': description ?? '',
+      }),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      throw Exception('Failed to create group');
+    }
+  }
+
+  static Future<bool> deleteGroup(String groupId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/groups/$groupId'),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateGroup({
+    required String groupId,
+    required String groupName,
+    required int year,
+    required String course,
+    required String period,
+    String? description,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/groups/$groupId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'groupName': groupName,
+        'year': year,
+        'course': course,
+        'period': period,
+        'description': description ?? '',
+      }),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      throw Exception('Failed to update group');
+    }
+  }
+
+  static Future<bool> assignStudentToGroup({
+    required String studentId,
+    required String groupId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/groups/$groupId/students/$studentId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<List<dynamic>> getGroupStudents(String groupId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/groups/$groupId/students'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return [];
+    }
+  }
+}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'worksheet_create_screen.dart';
 import 'worksheet_manage_screen.dart';
+import 'group_manage_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -140,6 +141,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => const WorksheetManageScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    '그룹 관리',
+                    style: TextStyle(
+                      color: Color(0xFFD9D4D2),
+                      fontFamily: 'JoseonGulim',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionButton(
+                    '👥 그룹 관리',
+                    '년도/과정/기간별 그룹 생성 및 관리',
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GroupManageScreen(),
                         ),
                       );
                     },
