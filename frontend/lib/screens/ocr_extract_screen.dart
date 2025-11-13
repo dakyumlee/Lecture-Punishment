@@ -14,7 +14,7 @@ class OcrExtractScreen extends StatefulWidget {
 
 class _OcrExtractScreenState extends State<OcrExtractScreen> {
   bool _isProcessing = false;
-  List<dynamic> _extractedQuestions = [];
+  List<Map<String, dynamic>> _extractedQuestions = [];
   String? _fileName;
   List<bool> _selectedQuestions = [];
 
@@ -48,9 +48,13 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
         
         if (response.statusCode == 200) {
           final data = jsonDecode(utf8.decode(response.bodyBytes));
+          final questions = (data['questions'] as List).map((q) {
+            return Map<String, dynamic>.from(q);
+          }).toList();
+          
           setState(() {
-            _extractedQuestions = data['questions'] ?? [];
-            _selectedQuestions = List.filled(_extractedQuestions.length, true);
+            _extractedQuestions = questions;
+            _selectedQuestions = List.filled(questions.length, true);
             _isProcessing = false;
           });
 
@@ -73,6 +77,165 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
         }
       }
     }
+  }
+
+  Future<void> _editQuestion(int index) async {
+    final question = _extractedQuestions[index];
+    final isMultipleChoice = question['questionType'] == 'multiple_choice';
+    
+    final questionTextController = TextEditingController(text: question['questionText']);
+    final optionAController = TextEditingController(text: question['optionA'] ?? '');
+    final optionBController = TextEditingController(text: question['optionB'] ?? '');
+    final optionCController = TextEditingController(text: question['optionC'] ?? '');
+    final optionDController = TextEditingController(text: question['optionD'] ?? '');
+    
+    bool isObjective = isMultipleChoice;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF595048),
+          title: Text(
+            '${question['questionNumber']}번 문제 수정',
+            style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const Text('문제 유형:', style: TextStyle(color: Color(0xFFD9D4D2))),
+                    const SizedBox(width: 16),
+                    ChoiceChip(
+                      label: const Text('주관식'),
+                      selected: !isObjective,
+                      onSelected: (selected) {
+                        setDialogState(() {
+                          isObjective = false;
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: const Text('객관식'),
+                      selected: isObjective,
+                      onSelected: (selected) {
+                        setDialogState(() {
+                          isObjective = true;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: questionTextController,
+                  maxLines: 3,
+                  style: const TextStyle(color: Color(0xFFD9D4D2)),
+                  decoration: const InputDecoration(
+                    labelText: '문제',
+                    labelStyle: TextStyle(color: Color(0xFF736A63)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF736A63)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                    ),
+                  ),
+                ),
+                if (isObjective) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: optionAController,
+                    style: const TextStyle(color: Color(0xFFD9D4D2)),
+                    decoration: const InputDecoration(
+                      labelText: '① 보기',
+                      labelStyle: TextStyle(color: Color(0xFF736A63)),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFF736A63)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: optionBController,
+                    style: const TextStyle(color: Color(0xFFD9D4D2)),
+                    decoration: const InputDecoration(
+                      labelText: '② 보기',
+                      labelStyle: TextStyle(color: Color(0xFF736A63)),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFF736A63)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: optionCController,
+                    style: const TextStyle(color: Color(0xFFD9D4D2)),
+                    decoration: const InputDecoration(
+                      labelText: '③ 보기',
+                      labelStyle: TextStyle(color: Color(0xFF736A63)),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFF736A63)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: optionDController,
+                    style: const TextStyle(color: Color(0xFFD9D4D2)),
+                    decoration: const InputDecoration(
+                      labelText: '④ 보기',
+                      labelStyle: TextStyle(color: Color(0xFF736A63)),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFF736A63)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _extractedQuestions[index] = {
+                    'questionNumber': question['questionNumber'],
+                    'questionType': isObjective ? 'multiple_choice' : 'subjective',
+                    'questionText': questionTextController.text,
+                    'optionA': isObjective ? optionAController.text : null,
+                    'optionB': isObjective ? optionBController.text : null,
+                    'optionC': isObjective ? optionCController.text : null,
+                    'optionD': isObjective ? optionDController.text : null,
+                  };
+                });
+                Navigator.pop(context, true);
+              },
+              child: const Text('저장', style: TextStyle(color: Color(0xFFD9D4D2))),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _addToWorksheet() async {
@@ -247,6 +410,15 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                           fontSize: 18,
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '※ 추출 후 수정할 수 있습니다',
+                        style: TextStyle(
+                          color: Color(0xFF595048),
+                          fontFamily: 'JoseonGulim',
+                          fontSize: 14,
+                        ),
+                      ),
                       const SizedBox(height: 32),
                       ElevatedButton.icon(
                         onPressed: _pickAndExtract,
@@ -329,7 +501,7 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
     );
   }
 
-  Widget _buildQuestionCard(dynamic question, int index) {
+  Widget _buildQuestionCard(Map<String, dynamic> question, int index) {
     final questionNumber = question['questionNumber'] ?? (index + 1);
     final questionType = question['questionType'] ?? 'subjective';
     final questionText = question['questionText'] ?? '';
@@ -387,6 +559,12 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                     ),
                   ),
                 ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Color(0xFFD9D4D2), size: 20),
+                  onPressed: () => _editQuestion(index),
+                  tooltip: '문제 수정',
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -400,13 +578,13 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
             ),
             if (isMultipleChoice) ...[
               const SizedBox(height: 12),
-              if (question['optionA'] != null)
+              if (question['optionA'] != null && question['optionA'].isNotEmpty)
                 _buildOption('①', question['optionA']),
-              if (question['optionB'] != null)
+              if (question['optionB'] != null && question['optionB'].isNotEmpty)
                 _buildOption('②', question['optionB']),
-              if (question['optionC'] != null)
+              if (question['optionC'] != null && question['optionC'].isNotEmpty)
                 _buildOption('③', question['optionC']),
-              if (question['optionD'] != null)
+              if (question['optionD'] != null && question['optionD'].isNotEmpty)
                 _buildOption('④', question['optionD']),
             ],
           ],
