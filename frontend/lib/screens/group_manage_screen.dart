@@ -557,7 +557,6 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                                   );
                                 }
                             },
-                              }
                           ),
                         );
                       },
