@@ -2,76 +2,74 @@ package com.dungeon.heotaehoon.service;
 
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-
 @Service
 public class SimilarityService {
 
-    public BigDecimal calculateLevenshteinSimilarity(String s1, String s2) {
+    public double calculateSimilarity(String s1, String s2) {
         if (s1 == null || s2 == null) {
-            return BigDecimal.ZERO;
+            return 0.0;
         }
-        
-        String str1 = normalizeString(s1);
-        String str2 = normalizeString(s2);
-        
-        if (str1.equals(str2)) {
-            return BigDecimal.ONE;
+
+        s1 = s1.toLowerCase().trim();
+        s2 = s2.toLowerCase().trim();
+
+        if (s1.equals(s2)) {
+            return 1.0;
         }
-        
-        int distance = levenshteinDistance(str1, str2);
-        int maxLength = Math.max(str1.length(), str2.length());
-        
-        if (maxLength == 0) {
-            return BigDecimal.ONE;
+
+        int longer = Math.max(s1.length(), s2.length());
+        if (longer == 0) {
+            return 1.0;
         }
-        
-        double similarity = 1.0 - ((double) distance / maxLength);
-        return BigDecimal.valueOf(similarity).setScale(2, RoundingMode.HALF_UP);
+
+        int distance = computeLevenshteinDistance(s1, s2);
+        return (longer - distance) / (double) longer;
     }
 
-    private String normalizeString(String str) {
-        return str.toLowerCase()
-                  .replaceAll("\\s+", "")
-                  .replaceAll("[^a-z0-9가-힣]", "")
-                  .trim();
-    }
+    private int computeLevenshteinDistance(String s1, String s2) {
+        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
 
-    private int levenshteinDistance(String s1, String s2) {
-        int len1 = s1.length();
-        int len2 = s2.length();
-        
-        int[][] dp = new int[len1 + 1][len2 + 1];
-        
-        for (int i = 0; i <= len1; i++) {
+        for (int i = 0; i <= s1.length(); i++) {
             dp[i][0] = i;
         }
-        
-        for (int j = 0; j <= len2; j++) {
+        for (int j = 0; j <= s2.length(); j++) {
             dp[0][j] = j;
         }
-        
-        for (int i = 1; i <= len1; i++) {
-            for (int j = 1; j <= len2; j++) {
-                int cost = (s1.charAt(i - 1) == s2.charAt(j - 1)) ? 0 : 1;
-                
+
+        for (int i = 1; i <= s1.length(); i++) {
+            for (int j = 1; j <= s2.length(); j++) {
+                int cost = s1.charAt(i - 1) == s2.charAt(j - 1) ? 0 : 1;
                 dp[i][j] = Math.min(
-                    Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),
-                    dp[i - 1][j - 1] + cost
+                        Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),
+                        dp[i - 1][j - 1] + cost
                 );
             }
         }
-        
-        return dp[len1][len2];
+
+        return dp[s1.length()][s2.length()];
     }
 
-    public boolean isAnswerCorrect(String studentAnswer, String correctAnswer, BigDecimal threshold) {
-        if (correctAnswer.equalsIgnoreCase(studentAnswer.trim())) {
-            return true;
+    public double calculateJaccardSimilarity(String s1, String s2) {
+        if (s1 == null || s2 == null) {
+            return 0.0;
         }
-        
-        BigDecimal similarity = calculateLevenshteinSimilarity(studentAnswer, correctAnswer);
-        return similarity.compareTo(threshold) >= 0;
+
+        String[] words1 = s1.toLowerCase().split("\\s+");
+        String[] words2 = s2.toLowerCase().split("\\s+");
+
+        java.util.Set<String> set1 = new java.util.HashSet<>(java.util.Arrays.asList(words1));
+        java.util.Set<String> set2 = new java.util.HashSet<>(java.util.Arrays.asList(words2));
+
+        java.util.Set<String> intersection = new java.util.HashSet<>(set1);
+        intersection.retainAll(set2);
+
+        java.util.Set<String> union = new java.util.HashSet<>(set1);
+        union.addAll(set2);
+
+        if (union.isEmpty()) {
+            return 0.0;
+        }
+
+        return (double) intersection.size() / union.size();
     }
 }

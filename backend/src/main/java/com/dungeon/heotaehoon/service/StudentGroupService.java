@@ -8,75 +8,70 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class StudentGroupService {
 
     private final StudentGroupRepository groupRepository;
     private final StudentRepository studentRepository;
 
-    public StudentGroup createGroup(String groupName, Integer year, String course, String period, String description) {
-        StudentGroup group = StudentGroup.builder()
-            .groupName(groupName)
-            .year(year)
-            .course(course)
-            .period(period)
-            .description(description)
-            .build();
-        
+    public List<StudentGroup> getAllGroups() {
+        return groupRepository.findAll();
+    }
+
+    public StudentGroup getGroupById(String id) {
+        return groupRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("그룹을 찾을 수 없습니다"));
+    }
+
+    @Transactional
+    public StudentGroup createGroup(StudentGroup group) {
+        group.setCreatedAt(LocalDateTime.now());
         return groupRepository.save(group);
     }
 
-    public List<StudentGroup> getAllActiveGroups() {
-        return groupRepository.findByIsActiveTrue();
+    @Transactional
+    public StudentGroup updateGroup(String id, StudentGroup groupDetails) {
+        StudentGroup group = getGroupById(id);
+        group.setGroupName(groupDetails.getGroupName());
+        group.setDescription(groupDetails.getDescription());
+        return groupRepository.save(group);
     }
 
-    public StudentGroup getGroupById(String groupId) {
-        return groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException("Group not found"));
+    @Transactional
+    public void deleteGroup(String id) {
+        StudentGroup group = getGroupById(id);
+        List<Student> students = studentRepository.findByGroup(group);
+        students.forEach(student -> student.setGroup(null));
+        studentRepository.saveAll(students);
+        groupRepository.delete(group);
     }
 
-    public void deleteGroup(String groupId) {
+    @Transactional
+    public void addStudentToGroup(String groupId, String studentId) {
         StudentGroup group = getGroupById(groupId);
-        group.setIsActive(false);
-        groupRepository.save(group);
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("학생을 찾을 수 없습니다"));
+        student.setGroup(group);
+        studentRepository.save(student);
     }
 
-    public Student assignStudentToGroup(String studentId, String groupId) {
+    @Transactional
+    public void removeStudentFromGroup(String groupId, String studentId) {
         Student student = studentRepository.findById(studentId)
-            .orElseThrow(() -> new RuntimeException("Student not found"));
+                .orElseThrow(() -> new RuntimeException("학생을 찾을 수 없습니다"));
         
-        StudentGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException("Group not found"));
-        
-        student.setGroup(group);
-        return studentRepository.save(student);
+        if (student.getGroup() != null && student.getGroup().getId().equals(groupId)) {
+            student.setGroup(null);
+            studentRepository.save(student);
+        }
     }
 
     public List<Student> getStudentsByGroup(String groupId) {
         StudentGroup group = getGroupById(groupId);
         return studentRepository.findByGroup(group);
-    }
-
-    public StudentGroup updateGroup(String groupId, String groupName, Integer year, String course, String period, String description) {
-        StudentGroup group = getGroupById(groupId);
-        
-        if (groupName != null) group.setGroupName(groupName);
-        if (year != null) group.setYear(year);
-        if (course != null) group.setCourse(course);
-        if (period != null) group.setPeriod(period);
-        if (description != null) group.setDescription(description);
-        
-        return groupRepository.save(group);
-    }
-
-    public void removeStudentFromGroup(String studentId) {
-        Student student = studentRepository.findById(studentId)
-            .orElseThrow(() -> new RuntimeException("Student not found"));
-        student.setGroup(null);
-        studentRepository.save(student);
     }
 }

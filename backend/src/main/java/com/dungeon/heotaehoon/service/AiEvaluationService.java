@@ -1,110 +1,57 @@
 package com.dungeon.heotaehoon.service;
 
-import com.theokanning.openai.completion.chat.ChatCompletionRequest;
-import com.theokanning.openai.completion.chat.ChatMessage;
-import com.theokanning.openai.service.OpenAiService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
-
-@Slf4j
 @Service
+@RequiredArgsConstructor
 public class AiEvaluationService {
 
-    @Value("${openai.api.key:}")
-    private String apiKey;
+    private final AIService aiService;
 
-    public String generateEvaluation(
-        String studentName,
-        int totalScore,
-        int maxScore,
-        List<Map<String, Object>> wrongQuestions
-    ) {
-        if (apiKey == null || apiKey.isEmpty()) {
-            return generateFallbackEvaluation(totalScore, maxScore, wrongQuestions);
+    public boolean evaluateAnswer(String question, String correctAnswer, String studentAnswer) {
+        if (studentAnswer == null || studentAnswer.trim().isEmpty()) {
+            return false;
         }
 
-        try {
-            OpenAiService service = new OpenAiService(apiKey);
-            
-            double percentage = (double) totalScore / maxScore * 100;
-            
-            StringBuilder prompt = new StringBuilder();
-            prompt.append("학생 이름: ").append(studentName).append("\n");
-            prompt.append("점수: ").append(totalScore).append("/").append(maxScore);
-            prompt.append(" (").append(String.format("%.1f", percentage)).append("%)\n");
-            prompt.append("틀린 문제:\n");
-            
-            for (Map<String, Object> q : wrongQuestions) {
-                prompt.append("- 문제 ").append(q.get("questionNumber")).append(": ");
-                prompt.append(q.get("questionText")).append("\n");
-            }
-            
-            prompt.append("\n위 정보를 바탕으로 2-3문장으로 평가의견을 작성해주세요. ");
-            prompt.append("존댓말을 사용하고, 구체적인 보완점과 격려를 포함하세요.");
+        String normalizedCorrect = correctAnswer.toLowerCase().trim();
+        String normalizedStudent = studentAnswer.toLowerCase().trim();
 
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
-                .model("gpt-4o-mini")
-                .messages(List.of(
-                    new ChatMessage("system", "당신은 친절하고 전문적인 교육 평가자입니다."),
-                    new ChatMessage("user", prompt.toString())
-                ))
-                .maxTokens(200)
-                .temperature(0.7)
-                .build();
-
-            String evaluation = service.createChatCompletion(request)
-                .getChoices().get(0).getMessage().getContent();
-            
-            service.shutdownExecutor();
-            return evaluation;
-            
-        } catch (Exception e) {
-            log.error("AI evaluation failed", e);
-            return generateFallbackEvaluation(totalScore, maxScore, wrongQuestions);
+        if (normalizedCorrect.equals(normalizedStudent)) {
+            return true;
         }
+
+        return calculateSimilarity(normalizedCorrect, normalizedStudent) > 0.85;
     }
 
-    private String generateFallbackEvaluation(
-        int totalScore,
-        int maxScore,
-        List<Map<String, Object>> wrongQuestions
-    ) {
-        double percentage = (double) totalScore / maxScore * 100;
-        
-        StringBuilder evaluation = new StringBuilder();
-        
-        if (percentage >= 90) {
-            evaluation.append("우수한 이해도를 보였습니다. ");
-        } else if (percentage >= 70) {
-            evaluation.append("양호한 수준입니다. ");
-        } else if (percentage >= 50) {
-            evaluation.append("기본 개념은 이해하고 있으나 보충이 필요합니다. ");
-        } else {
-            evaluation.append("기본 개념 학습이 시급합니다. ");
+    private double calculateSimilarity(String s1, String s2) {
+        int longer = Math.max(s1.length(), s2.length());
+        if (longer == 0) {
+            return 1.0;
         }
-        
-        if (!wrongQuestions.isEmpty()) {
-            evaluation.append("특히 ");
-            if (wrongQuestions.size() <= 3) {
-                for (int i = 0; i < wrongQuestions.size(); i++) {
-                    evaluation.append(wrongQuestions.get(i).get("questionNumber")).append("번");
-                    if (i < wrongQuestions.size() - 1) evaluation.append(", ");
-                }
-            } else {
-                evaluation.append(wrongQuestions.get(0).get("questionNumber"))
-                    .append("번, ")
-                    .append(wrongQuestions.get(1).get("questionNumber"))
-                    .append("번 등 ")
-                    .append(wrongQuestions.size())
-                    .append("개");
+        return (longer - computeLevenshteinDistance(s1, s2)) / (double) longer;
+    }
+
+    private int computeLevenshteinDistance(String s1, String s2) {
+        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
+
+        for (int i = 0; i <= s1.length(); i++) {
+            dp[i][0] = i;
+        }
+        for (int j = 0; j <= s2.length(); j++) {
+            dp[0][j] = j;
+        }
+
+        for (int i = 1; i <= s1.length(); i++) {
+            for (int j = 1; j <= s2.length(); j++) {
+                int cost = s1.charAt(i - 1) == s2.charAt(j - 1) ? 0 : 1;
+                dp[i][j] = Math.min(
+                        Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),
+                        dp[i - 1][j - 1] + cost
+                );
             }
-            evaluation.append(" 문제에 대한 복습이 필요합니다.");
         }
-        
-        return evaluation.toString();
+
+        return dp[s1.length()][s2.length()];
     }
 }

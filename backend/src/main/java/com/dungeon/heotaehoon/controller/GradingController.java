@@ -27,7 +27,7 @@ public class GradingController {
     private final AiEvaluationService aiEvaluationService;
 
     @GetMapping("/submission/{submissionId}")
-    public ResponseEntity<?> getSubmissionForGrading(@PathVariable Long submissionId) {
+    public ResponseEntity<?> getSubmissionForGrading(@PathVariable String submissionId) {
         try {
             StudentSubmission submission = submissionRepository.findById(submissionId)
                     .orElseThrow(() -> new RuntimeException("제출을 찾을 수 없습니다"));
@@ -46,20 +46,17 @@ public class GradingController {
 
     @PostMapping("/manual/{answerId}")
     public ResponseEntity<?> manualGrade(
-            @PathVariable Long answerId,
+            @PathVariable String answerId,
             @RequestBody Map<String, Object> gradeData) {
         try {
             SubmissionAnswer answer = answerRepository.findById(answerId)
                     .orElseThrow(() -> new RuntimeException("답안을 찾을 수 없습니다"));
 
             Boolean isCorrect = (Boolean) gradeData.get("isCorrect");
-            Integer score = (Integer) gradeData.get("score");
-            String feedback = (String) gradeData.get("feedback");
+            Integer points = (Integer) gradeData.get("points");
 
             answer.setIsCorrect(isCorrect);
-            answer.setScore(score);
-            answer.setFeedback(feedback);
-            answer.setGradedManually(true);
+            answer.setPointsEarned(points);
 
             answerRepository.save(answer);
 
@@ -72,7 +69,7 @@ public class GradingController {
     }
 
     @PostMapping("/ai/{answerId}")
-    public ResponseEntity<?> aiGrade(@PathVariable Long answerId) {
+    public ResponseEntity<?> aiGrade(@PathVariable String answerId) {
         try {
             SubmissionAnswer answer = answerRepository.findById(answerId)
                     .orElseThrow(() -> new RuntimeException("답안을 찾을 수 없습니다"));
@@ -80,16 +77,14 @@ public class GradingController {
             WorksheetQuestion question = answer.getQuestion();
             String studentAnswer = answer.getStudentAnswer();
 
-            Map<String, Object> evaluation = aiEvaluationService.evaluateAnswer(
+            boolean isCorrect = aiEvaluationService.evaluateAnswer(
                     question.getQuestionText(),
                     question.getCorrectAnswer(),
                     studentAnswer
             );
 
-            answer.setIsCorrect((Boolean) evaluation.get("isCorrect"));
-            answer.setScore((Integer) evaluation.get("score"));
-            answer.setFeedback((String) evaluation.get("feedback"));
-            answer.setGradedManually(false);
+            answer.setIsCorrect(isCorrect);
+            answer.setPointsEarned(isCorrect ? question.getPoints() : 0);
 
             answerRepository.save(answer);
 
@@ -102,7 +97,7 @@ public class GradingController {
     }
 
     @PostMapping("/batch/{submissionId}")
-    public ResponseEntity<?> batchGrade(@PathVariable Long submissionId) {
+    public ResponseEntity<?> batchGrade(@PathVariable String submissionId) {
         try {
             StudentSubmission submission = submissionRepository.findById(submissionId)
                     .orElseThrow(() -> new RuntimeException("제출을 찾을 수 없습니다"));
@@ -110,18 +105,15 @@ public class GradingController {
             List<SubmissionAnswer> answers = answerRepository.findBySubmission_Id(submissionId);
 
             for (SubmissionAnswer answer : answers) {
-                if (!answer.getGradedManually()) {
-                    WorksheetQuestion question = answer.getQuestion();
-                    Map<String, Object> evaluation = aiEvaluationService.evaluateAnswer(
-                            question.getQuestionText(),
-                            question.getCorrectAnswer(),
-                            answer.getStudentAnswer()
-                    );
+                WorksheetQuestion question = answer.getQuestion();
+                boolean isCorrect = aiEvaluationService.evaluateAnswer(
+                        question.getQuestionText(),
+                        question.getCorrectAnswer(),
+                        answer.getStudentAnswer()
+                );
 
-                    answer.setIsCorrect((Boolean) evaluation.get("isCorrect"));
-                    answer.setScore((Integer) evaluation.get("score"));
-                    answer.setFeedback((String) evaluation.get("feedback"));
-                }
+                answer.setIsCorrect(isCorrect);
+                answer.setPointsEarned(isCorrect ? question.getPoints() : 0);
             }
 
             answerRepository.saveAll(answers);
@@ -133,10 +125,10 @@ public class GradingController {
         }
     }
 
-    private void updateSubmissionScore(Long submissionId) {
+    private void updateSubmissionScore(String submissionId) {
         List<SubmissionAnswer> answers = answerRepository.findBySubmission_Id(submissionId);
         int totalScore = answers.stream()
-                .mapToInt(a -> a.getScore() != null ? a.getScore() : 0)
+                .mapToInt(a -> a.getPointsEarned() != null ? a.getPointsEarned() : 0)
                 .sum();
 
         StudentSubmission submission = submissionRepository.findById(submissionId)

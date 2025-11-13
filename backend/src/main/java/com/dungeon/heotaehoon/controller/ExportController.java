@@ -21,7 +21,7 @@ public class ExportController {
     private final StudentGroupRepository groupRepository;
 
     @GetMapping("/group/{groupId}/excel")
-    public ResponseEntity<byte[]> exportGroupScores(@PathVariable Long groupId) {
+    public ResponseEntity<byte[]> exportGroupScores(@PathVariable String groupId) {
         try {
             StudentGroup group = groupRepository.findById(groupId)
                     .orElseThrow(() -> new RuntimeException("그룹을 찾을 수 없습니다"));
@@ -54,7 +54,7 @@ public class ExportController {
     }
 
     @GetMapping("/worksheet/{worksheetId}/excel")
-    public ResponseEntity<byte[]> exportWorksheetResult(@PathVariable Long worksheetId) {
+    public ResponseEntity<byte[]> exportWorksheetResult(@PathVariable String worksheetId) {
         try {
             String fileName = "학습지_" + worksheetId + "_결과.xlsx";
             byte[] excelData = excelExportService.generateWorksheetResultExcel(worksheetId);

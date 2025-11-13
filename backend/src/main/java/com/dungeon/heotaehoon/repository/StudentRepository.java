@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface StudentRepository extends JpaRepository<Student, Long> {
-    Optional<Student> findByStudentNumber(String studentNumber);
+public interface StudentRepository extends JpaRepository<Student, String> {
+    Optional<Student> findByUsername(String username);
     List<Student> findByGroup(StudentGroup group);
 }

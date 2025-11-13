@@ -23,7 +23,7 @@ public class ExcelExportService {
     private final StudentRepository studentRepository;
     private final WorksheetQuestionRepository questionRepository;
 
-    public byte[] generateGroupScoreExcel(Long groupId, StudentGroup group) throws IOException {
+    public byte[] generateGroupScoreExcel(String groupId, StudentGroup group) throws IOException {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("성적표");
 
@@ -34,7 +34,7 @@ public class ExcelExportService {
 
         int rowNum = 0;
         Row headerRow = sheet.createRow(rowNum++);
-        String[] headers = {"학생명", "학번", "제출일시", "총점", "정답수", "오답수", "정답률"};
+        String[] headers = {"학생명", "아이디", "제출일시", "총점", "정답수", "오답수", "정답률"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -51,8 +51,8 @@ public class ExcelExportService {
                 long totalCount = answers.size();
                 double accuracy = totalCount > 0 ? (correctCount * 100.0 / totalCount) : 0.0;
 
-                row.createCell(0).setCellValue(student.getStudentName());
-                row.createCell(1).setCellValue(student.getStudentNumber());
+                row.createCell(0).setCellValue(student.getDisplayName());
+                row.createCell(1).setCellValue(student.getUsername());
                 row.createCell(2).setCellValue(submission.getSubmittedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
                 row.createCell(3).setCellValue(submission.getTotalScore() != null ? submission.getTotalScore() : 0);
                 row.createCell(4).setCellValue(correctCount);
@@ -87,7 +87,7 @@ public class ExcelExportService {
 
         int rowNum = 0;
         Row headerRow = sheet.createRow(rowNum++);
-        String[] headers = {"그룹", "학생명", "학번", "제출일시", "총점", "정답수", "오답수", "정답률"};
+        String[] headers = {"그룹", "학생명", "아이디", "제출일시", "총점", "정답수", "오답수", "정답률"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -105,8 +105,8 @@ public class ExcelExportService {
                 double accuracy = totalCount > 0 ? (correctCount * 100.0 / totalCount) : 0.0;
 
                 row.createCell(0).setCellValue(student.getGroup() != null ? student.getGroup().getGroupName() : "미배정");
-                row.createCell(1).setCellValue(student.getStudentName());
-                row.createCell(2).setCellValue(student.getStudentNumber());
+                row.createCell(1).setCellValue(student.getDisplayName());
+                row.createCell(2).setCellValue(student.getUsername());
                 row.createCell(3).setCellValue(submission.getSubmittedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
                 row.createCell(4).setCellValue(submission.getTotalScore() != null ? submission.getTotalScore() : 0);
                 row.createCell(5).setCellValue(correctCount);
@@ -130,7 +130,7 @@ public class ExcelExportService {
         return outputStream.toByteArray();
     }
 
-    public byte[] generateWorksheetResultExcel(Long worksheetId) throws IOException {
+    public byte[] generateWorksheetResultExcel(String worksheetId) throws IOException {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("학습지 결과");
 
@@ -138,13 +138,13 @@ public class ExcelExportService {
         CellStyle dataStyle = createDataStyle(workbook);
 
         List<StudentSubmission> submissions = submissionRepository.findByWorksheet_Id(worksheetId);
-        List<WorksheetQuestion> questions = questionRepository.findByWorksheet_IdOrderByQuestionOrder(worksheetId);
+        List<WorksheetQuestion> questions = questionRepository.findByWorksheet_IdOrderByQuestionNumber(worksheetId);
 
         int rowNum = 0;
         Row headerRow = sheet.createRow(rowNum++);
         
         headerRow.createCell(0).setCellValue("학생명");
-        headerRow.createCell(1).setCellValue("학번");
+        headerRow.createCell(1).setCellValue("아이디");
         headerRow.createCell(2).setCellValue("제출일시");
         headerRow.createCell(3).setCellValue("총점");
         
@@ -162,14 +162,14 @@ public class ExcelExportService {
             Row row = sheet.createRow(rowNum++);
             
             List<SubmissionAnswer> answers = submissionAnswerRepository.findBySubmission(submission);
-            Map<Long, SubmissionAnswer> answerMap = answers.stream()
+            Map<String, SubmissionAnswer> answerMap = answers.stream()
                 .collect(Collectors.toMap(a -> a.getQuestion().getId(), a -> a));
             
             long correctCount = answers.stream().filter(SubmissionAnswer::getIsCorrect).count();
             double accuracy = questions.size() > 0 ? (correctCount * 100.0 / questions.size()) : 0.0;
 
-            row.createCell(0).setCellValue(submission.getStudent().getStudentName());
-            row.createCell(1).setCellValue(submission.getStudent().getStudentNumber());
+            row.createCell(0).setCellValue(submission.getStudent().getDisplayName());
+            row.createCell(1).setCellValue(submission.getStudent().getUsername());
             row.createCell(2).setCellValue(submission.getSubmittedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             row.createCell(3).setCellValue(submission.getTotalScore() != null ? submission.getTotalScore() : 0);
             
