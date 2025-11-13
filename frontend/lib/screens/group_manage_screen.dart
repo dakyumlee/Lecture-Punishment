@@ -556,13 +556,13 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                                     SnackBar(content: Text('제거 실패: $e')),
                                   );
                                 }
+                              }
                             },
                           ),
                         );
                       },
                     ),
             ),
-            actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('닫기', style: TextStyle(color: Color(0xFFD9D4D2))),
