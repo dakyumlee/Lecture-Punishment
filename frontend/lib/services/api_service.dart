@@ -500,4 +500,60 @@ class ApiService {
       throw Exception('Excel 다운로드 실패: $e');
     }
   }
+
+  static Future<List<dynamic>> getAllSubmissions() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/grading/submissions'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> getSubmissionDetail(String submissionId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/grading/submissions/$submissionId'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      throw Exception('Failed to load submission detail');
+    }
+  }
+
+  static Future<bool> gradeAnswer({
+    required String answerId,
+    required int pointsEarned,
+    required bool isCorrect,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/grading/answers/$answerId/grade'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'pointsEarned': pointsEarned,
+          'isCorrect': isCorrect,
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<List<dynamic>> getWorksheetSubmissions(String worksheetId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/grading/worksheet/$worksheetId/submissions'),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      return [];
+    }
+  }
 }
