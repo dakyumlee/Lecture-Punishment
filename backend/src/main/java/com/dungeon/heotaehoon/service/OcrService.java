@@ -42,7 +42,7 @@ public class OcrService {
             
             for (int page = 0; page < document.getNumberOfPages(); page++) {
                 log.info("Processing page {}", page + 1);
-                BufferedImage image = pdfRenderer.renderImageWithDPI(page, 300);
+                BufferedImage image = pdfRenderer.renderImageWithDPI(page, 600);
                 String pageText = tesseract.doOCR(image);
                 fullText.append(pageText).append("\n");
             }
