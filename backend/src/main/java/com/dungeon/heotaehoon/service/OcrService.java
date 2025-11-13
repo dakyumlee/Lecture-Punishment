@@ -26,24 +26,34 @@ public class OcrService {
     public List<QuestionData> extractQuestionsFromPdf(MultipartFile file) throws IOException, TesseractException {
         List<QuestionData> questions = new ArrayList<>();
         
+        log.info("Starting OCR extraction for file: {}", file.getOriginalFilename());
+        
         try (InputStream inputStream = file.getInputStream();
              PDDocument document = PDDocument.load(inputStream)) {
             
             PDFRenderer pdfRenderer = new PDFRenderer(document);
             Tesseract tesseract = new Tesseract();
-            // Alpine Linux에서는 자동으로 경로를 찾음
-            // tesseract.setDatapath("/usr/share/tessdata");
+            
             tesseract.setLanguage("kor+eng");
             
             StringBuilder fullText = new StringBuilder();
             
+            log.info("PDF has {} pages", document.getNumberOfPages());
+            
             for (int page = 0; page < document.getNumberOfPages(); page++) {
+                log.info("Processing page {}", page + 1);
                 BufferedImage image = pdfRenderer.renderImageWithDPI(page, 300);
                 String pageText = tesseract.doOCR(image);
                 fullText.append(pageText).append("\n");
             }
             
+            log.info("Extracted text length: {}", fullText.length());
             questions = parseQuestions(fullText.toString());
+            log.info("Parsed {} questions", questions.size());
+            
+        } catch (Exception e) {
+            log.error("OCR extraction failed", e);
+            throw e;
         }
         
         return questions;
