@@ -459,4 +459,44 @@ class ApiService {
       return [];
     }
   }
+
+  static Future<void> downloadGroupExcel(String groupId, String groupName) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/export/group/$groupId/excel'),
+      );
+      
+      if (response.statusCode == 200) {
+        final bytes = response.bodyBytes;
+        final blob = html.Blob([bytes]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.AnchorElement(href: url)
+          ..setAttribute('download', '${groupName}_성적표.xlsx')
+          ..click();
+        html.Url.revokeObjectUrl(url);
+      }
+    } catch (e) {
+      throw Exception('Excel 다운로드 실패: $e');
+    }
+  }
+
+  static Future<void> downloadAllStudentsExcel() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/export/all/excel'),
+      );
+      
+      if (response.statusCode == 200) {
+        final bytes = response.bodyBytes;
+        final blob = html.Blob([bytes]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.AnchorElement(href: url)
+          ..setAttribute('download', '전체학생_성적표.xlsx')
+          ..click();
+        html.Url.revokeObjectUrl(url);
+      }
+    } catch (e) {
+      throw Exception('Excel 다운로드 실패: $e');
+    }
+  }
 }

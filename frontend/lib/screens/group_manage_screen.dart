@@ -210,6 +210,26 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
         actions: [
           IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () async {
+              try {
+                await ApiService.downloadAllStudentsExcel();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('전체 학생 Excel 다운로드 완료!')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('다운로드 실패: $e')),
+                  );
+                }
+              }
+            },
+            tooltip: '전체 학생 Excel 다운로드',
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             onPressed: _showCreateDialog,
           ),
@@ -370,8 +390,8 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                         onPressed: () {
                           // TODO: 학생 목록 보기
                         },
-                        icon: const Icon(Icons.people, size: 20),
-                        label: const Text('학생 목록'),
+                        icon: const Icon(Icons.people, size: 18),
+                        label: const Text('학생', style: TextStyle(fontSize: 13)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF595048),
                           foregroundColor: const Color(0xFFD9D4D2),
@@ -385,9 +405,40 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: ElevatedButton.icon(
+                        onPressed: () async {
+                          try {
+                            await ApiService.downloadGroupExcel(groupId, groupName);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Excel 다운로드 완료!')),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('다운로드 실패: $e')),
+                              );
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.download, size: 18),
+                        label: const Text('Excel', style: TextStyle(fontSize: 13)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF736A63),
+                          foregroundColor: const Color(0xFFD9D4D2),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
                         onPressed: () => _deleteGroup(groupId, groupName),
-                        icon: const Icon(Icons.delete, size: 20),
-                        label: const Text('삭제'),
+                        icon: const Icon(Icons.delete, size: 18),
+                        label: const Text('삭제', style: TextStyle(fontSize: 13)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red.shade900,
                           foregroundColor: const Color(0xFFD9D4D2),
