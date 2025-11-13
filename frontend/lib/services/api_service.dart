@@ -556,4 +556,26 @@ class ApiService {
       return [];
     }
   }
+
+  static Future<Map<String, dynamic>> extractQuestionsFromPdf(String filePath) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/ocr/extract'),
+      );
+      
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+      
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(utf8.decode(response.bodyBytes));
+      } else {
+        throw Exception('OCR 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('OCR 오류: $e');
+    }
+  }
 }

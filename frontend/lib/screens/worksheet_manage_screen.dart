@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:html' as html;
 import '../services/api_service.dart';
+import 'ocr_extract_screen.dart';
+
 import '../config/env.dart';
 import 'question_add_screen.dart';
 
@@ -120,6 +122,21 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
             color: Color(0xFFD9D4D2),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.document_scanner),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const OcrExtractScreen(),
+                ),
+              );
+            },
+            tooltip: 'OCR 문제 추출',
+          ),
+        ],
+
         backgroundColor: const Color(0xFF00010D),
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
       ),
