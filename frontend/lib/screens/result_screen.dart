@@ -61,7 +61,7 @@ class ResultScreen extends StatelessWidget {
                       Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => HomeScreen(student: student),
+                          builder: (context) => HomeScreen(initialStudent: student),
                         ),
                         (route) => false,
                       );
