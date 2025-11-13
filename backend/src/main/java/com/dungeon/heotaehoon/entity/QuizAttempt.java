@@ -38,9 +38,11 @@ public class QuizAttempt {
     @Column(updatable = false)
     private LocalDateTime attemptTime;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean rageTriggered = false;
 
+    @Builder.Default
     @Column(nullable = false)
     private Integer comboCount = 0;
 }
