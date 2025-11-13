@@ -28,9 +28,8 @@ public class Worksheet {
     @JoinColumn(name = "category_id")
     private WorksheetCategory category;
 
-    @ManyToOne
-    @JoinColumn(name = "group_id")
-    private Group group;
+    @Column(name = "group_name")
+    private String groupName;
 
     @OneToMany(mappedBy = "worksheet", cascade = CascadeType.ALL)
     @Builder.Default
@@ -47,5 +46,9 @@ public class Worksheet {
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+    
+    public String getGroup() {
+        return this.groupName;
     }
 }

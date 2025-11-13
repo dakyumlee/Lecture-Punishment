@@ -65,8 +65,8 @@ public class ExcelExportService {
         courseLabel.setCellStyle(headerStyle);
         
         Cell courseValue = row2.createCell(1);
-        courseValue.setCellValue(worksheet.getGroup() != null ? 
-            worksheet.getGroup().getGroupName() : "전체");
+        courseValue.setCellValue(worksheet.getGroupName() != null ? 
+            worksheet.getGroupName() : "전체");
         courseValue.setCellStyle(infoStyle);
         sheet.addMergedRegion(new CellRangeAddress(2, 2, 1, 3));
         
