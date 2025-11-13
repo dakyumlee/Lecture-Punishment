@@ -12,6 +12,8 @@ RUN apk add --no-cache \
     fontconfig \
     ttf-dejavu
 
+ENV TESSDATA_PREFIX=/usr/share/tessdata
+
 WORKDIR /app
 COPY --from=build /workspace/target/*.jar application.jar
 EXPOSE 8080
