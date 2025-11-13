@@ -22,6 +22,10 @@ public class Student {
     @Column(name = "display_name", nullable = false, length = 100)
     private String displayName;
 
+    @ManyToOne
+    @JoinColumn(name = "group_id")
+    private StudentGroup group;
+
     @Column(nullable = false)
     private Integer level = 1;
 
