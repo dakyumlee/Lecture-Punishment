@@ -388,7 +388,7 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          // TODO: 학생 목록 보기
+                          _showGroupStudents(groupId);
                         },
                         icon: const Icon(Icons.people, size: 18),
                         label: const Text('학생', style: TextStyle(fontSize: 13)),
@@ -453,6 +453,165 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showGroupStudents(String groupId) async {
+    try {
+      final students = await ApiService.getGroupStudents(groupId);
+      final allStudents = await ApiService.getAdminStudents();
+      
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF595048),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '그룹 학생 관리',
+                  style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add, color: Color(0xFFD9D4D2)),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showAddStudentDialog(groupId, students, allStudents);
+                  },
+                  tooltip: '학생 추가',
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: students.isEmpty
+                  ? const Text(
+                      '이 그룹에 학생이 없습니다',
+                      style: TextStyle(color: Color(0xFF736A63)),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: students.length,
+                      itemBuilder: (context, index) {
+                        final student = students[index];
+                        return ListTile(
+                          title: Text(
+                            student['displayName'],
+                            style: const TextStyle(color: Color(0xFFD9D4D2)),
+                          ),
+                          subtitle: Text(
+                            'Lv.${student['level']} | ${student['username']}',
+                            style: const TextStyle(color: Color(0xFF736A63)),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.remove_circle, color: Colors.red),
+                            onPressed: () {
+                              // TODO: 그룹에서 학생 제거
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('학생 제거 기능은 준비중입니다')),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('닫기', style: TextStyle(color: Color(0xFFD9D4D2))),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('오류: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showAddStudentDialog(
+    String groupId,
+    List<dynamic> groupStudents,
+    List<dynamic> allStudents,
+  ) async {
+    final groupStudentIds = groupStudents.map((s) => s['id']).toSet();
+    final availableStudents = allStudents
+        .where((s) => !groupStudentIds.contains(s['id']))
+        .toList();
+
+    if (availableStudents.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('추가할 수 있는 학생이 없습니다')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF595048),
+        title: const Text(
+          '학생 추가',
+          style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: availableStudents.length,
+            itemBuilder: (context, index) {
+              final student = availableStudents[index];
+              return ListTile(
+                title: Text(
+                  student['displayName'],
+                  style: const TextStyle(color: Color(0xFFD9D4D2)),
+                ),
+                subtitle: Text(
+                  'Lv.${student['level']} | ${student['username']}',
+                  style: const TextStyle(color: Color(0xFF736A63)),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.add_circle, color: Colors.green),
+                  onPressed: () async {
+                    try {
+                      final success = await ApiService.assignStudentToGroup(
+                        studentId: student['id'],
+                        groupId: groupId,
+                      );
+                      
+                      if (success) {
+                        Navigator.pop(context);
+                        _showGroupStudents(groupId);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${student['displayName']} 학생을 추가했습니다'),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('추가 실패: $e')),
+                      );
+                    }
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('닫기', style: TextStyle(color: Color(0xFFD9D4D2))),
           ),
         ],
       ),
