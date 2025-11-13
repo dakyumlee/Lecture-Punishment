@@ -340,6 +340,7 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
     final optionCController = TextEditingController(text: question['optionC'] ?? '');
     final optionDController = TextEditingController(text: question['optionD'] ?? '');
     
+    String correctAnswer = question['correctAnswer'] ?? '';
     bool isObjective = isMultipleChoice;
 
     await showDialog(
@@ -458,6 +459,75 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                     ),
                   ),
                 ],
+                  const SizedBox(height: 16),
+                  const Divider(color: Color(0xFF736A63)),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '정답 선택',
+                    style: TextStyle(color: Color(0xFFD9D4D2), fontWeight: FontWeight.bold),
+                  ),
+                  if (isObjective) ...[
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('①'),
+                          selected: correctAnswer == 'A',
+                          onSelected: (selected) {
+                            setDialogState(() {
+                              correctAnswer = 'A';
+                            });
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('②'),
+                          selected: correctAnswer == 'B',
+                          onSelected: (selected) {
+                            setDialogState(() {
+                              correctAnswer = 'B';
+                            });
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('③'),
+                          selected: correctAnswer == 'C',
+                          onSelected: (selected) {
+                            setDialogState(() {
+                              correctAnswer = 'C';
+                            });
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('④'),
+                          selected: correctAnswer == 'D',
+                          onSelected: (selected) {
+                            setDialogState(() {
+                              correctAnswer = 'D';
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ] else ...[
+                    TextField(
+                      controller: TextEditingController(text: correctAnswer),
+                      onChanged: (value) {
+                        correctAnswer = value;
+                      },
+                      style: const TextStyle(color: Color(0xFFD9D4D2)),
+                      decoration: const InputDecoration(
+                        labelText: '정답 입력',
+                        labelStyle: TextStyle(color: Color(0xFF736A63)),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF736A63)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
               ],
             ),
           ),
@@ -477,6 +547,7 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                     'optionB': isObjective ? optionBController.text : null,
                     'optionC': isObjective ? optionCController.text : null,
                     'optionD': isObjective ? optionDController.text : null,
+                    'correctAnswer': correctAnswer,
                   };
                 });
                 Navigator.pop(context);
