@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeScreen(student: provider.currentStudent!),
+            builder: (context) => HomeScreen(initialStudent: provider.currentStudent!),
           ),
         );
       }
