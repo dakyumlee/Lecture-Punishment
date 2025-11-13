@@ -26,8 +26,8 @@ public class ExportController {
             StudentGroup group = groupRepository.findById(groupId)
                     .orElseThrow(() -> new RuntimeException("그룹을 찾을 수 없습니다"));
 
-            String fileName = group.getName() + "_성적표.xlsx";
-            byte[] excelData = excelExportService.generateGroupScoreExcel(fileName, group);
+            String fileName = group.getGroupName() + "_성적표.xlsx";
+            byte[] excelData = excelExportService.generateGroupScoreExcel(groupId, group);
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")

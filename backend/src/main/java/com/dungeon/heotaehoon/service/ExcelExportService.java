@@ -23,7 +23,7 @@ public class ExcelExportService {
     private final StudentRepository studentRepository;
     private final WorksheetQuestionRepository questionRepository;
 
-    public byte[] generateGroupScoreExcel(String fileName, StudentGroup group) throws IOException {
+    public byte[] generateGroupScoreExcel(Long groupId, StudentGroup group) throws IOException {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("성적표");
 
@@ -51,10 +51,10 @@ public class ExcelExportService {
                 long totalCount = answers.size();
                 double accuracy = totalCount > 0 ? (correctCount * 100.0 / totalCount) : 0.0;
 
-                row.createCell(0).setCellValue(student.getName());
-                row.createCell(1).setCellValue(student.getStudentId());
+                row.createCell(0).setCellValue(student.getStudentName());
+                row.createCell(1).setCellValue(student.getStudentNumber());
                 row.createCell(2).setCellValue(submission.getSubmittedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-                row.createCell(3).setCellValue(submission.getScore());
+                row.createCell(3).setCellValue(submission.getTotalScore() != null ? submission.getTotalScore() : 0);
                 row.createCell(4).setCellValue(correctCount);
                 row.createCell(5).setCellValue(totalCount - correctCount);
                 row.createCell(6).setCellValue(String.format("%.1f%%", accuracy));
@@ -104,11 +104,11 @@ public class ExcelExportService {
                 long totalCount = answers.size();
                 double accuracy = totalCount > 0 ? (correctCount * 100.0 / totalCount) : 0.0;
 
-                row.createCell(0).setCellValue(student.getGroup() != null ? student.getGroup().getName() : "미배정");
-                row.createCell(1).setCellValue(student.getName());
-                row.createCell(2).setCellValue(student.getStudentId());
+                row.createCell(0).setCellValue(student.getGroup() != null ? student.getGroup().getGroupName() : "미배정");
+                row.createCell(1).setCellValue(student.getStudentName());
+                row.createCell(2).setCellValue(student.getStudentNumber());
                 row.createCell(3).setCellValue(submission.getSubmittedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-                row.createCell(4).setCellValue(submission.getScore());
+                row.createCell(4).setCellValue(submission.getTotalScore() != null ? submission.getTotalScore() : 0);
                 row.createCell(5).setCellValue(correctCount);
                 row.createCell(6).setCellValue(totalCount - correctCount);
                 row.createCell(7).setCellValue(String.format("%.1f%%", accuracy));
@@ -168,10 +168,10 @@ public class ExcelExportService {
             long correctCount = answers.stream().filter(SubmissionAnswer::getIsCorrect).count();
             double accuracy = questions.size() > 0 ? (correctCount * 100.0 / questions.size()) : 0.0;
 
-            row.createCell(0).setCellValue(submission.getStudent().getName());
-            row.createCell(1).setCellValue(submission.getStudent().getStudentId());
+            row.createCell(0).setCellValue(submission.getStudent().getStudentName());
+            row.createCell(1).setCellValue(submission.getStudent().getStudentNumber());
             row.createCell(2).setCellValue(submission.getSubmittedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            row.createCell(3).setCellValue(submission.getScore());
+            row.createCell(3).setCellValue(submission.getTotalScore() != null ? submission.getTotalScore() : 0);
             
             for (int i = 0; i < questions.size(); i++) {
                 WorksheetQuestion question = questions.get(i);

@@ -1,15 +1,19 @@
 package com.dungeon.heotaehoon.controller;
 
-import com.dungeon.heotaehoon.entity.StudentSubmission;
 import com.dungeon.heotaehoon.entity.SubmissionAnswer;
-import com.dungeon.heotaehoon.repository.StudentSubmissionRepository;
+import com.dungeon.heotaehoon.entity.StudentSubmission;
+import com.dungeon.heotaehoon.entity.WorksheetQuestion;
 import com.dungeon.heotaehoon.repository.SubmissionAnswerRepository;
+import com.dungeon.heotaehoon.repository.StudentSubmissionRepository;
+import com.dungeon.heotaehoon.repository.WorksheetQuestionRepository;
+import com.dungeon.heotaehoon.service.AiEvaluationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/grading")
@@ -19,115 +23,124 @@ public class GradingController {
 
     private final StudentSubmissionRepository submissionRepository;
     private final SubmissionAnswerRepository answerRepository;
+    private final WorksheetQuestionRepository questionRepository;
+    private final AiEvaluationService aiEvaluationService;
 
-    @GetMapping("/submissions")
-    public ResponseEntity<List<Map<String, Object>>> getAllSubmissions() {
-        List<StudentSubmission> submissions = submissionRepository.findAll();
-        
-        List<Map<String, Object>> result = submissions.stream().map(sub -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", sub.getId());
-            map.put("studentName", sub.getStudent().getDisplayName());
-            map.put("studentId", sub.getStudent().getId());
-            map.put("worksheetTitle", sub.getWorksheet().getTitle());
-            map.put("worksheetId", sub.getWorksheet().getId());
-            map.put("totalScore", sub.getTotalScore());
-            map.put("maxScore", sub.getMaxScore());
-            map.put("submittedAt", sub.getSubmittedAt().toString());
-            return map;
-        }).collect(Collectors.toList());
-        
-        return ResponseEntity.ok(result);
+    @GetMapping("/submission/{submissionId}")
+    public ResponseEntity<?> getSubmissionForGrading(@PathVariable Long submissionId) {
+        try {
+            StudentSubmission submission = submissionRepository.findById(submissionId)
+                    .orElseThrow(() -> new RuntimeException("제출을 찾을 수 없습니다"));
+
+            List<SubmissionAnswer> answers = answerRepository.findBySubmission_Id(submissionId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("submission", submission);
+            result.put("answers", answers);
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    @GetMapping("/submissions/{submissionId}")
-    public ResponseEntity<Map<String, Object>> getSubmissionDetail(@PathVariable String submissionId) {
-        StudentSubmission submission = submissionRepository.findById(submissionId)
-            .orElseThrow(() -> new RuntimeException("Submission not found"));
-        
-        List<SubmissionAnswer> answers = answerRepository.findBySubmissionId(submissionId);
-        
-        Map<String, Object> result = new HashMap<>();
-        result.put("id", submission.getId());
-        result.put("studentName", submission.getStudent().getDisplayName());
-        result.put("studentId", submission.getStudent().getId());
-        result.put("worksheetTitle", submission.getWorksheet().getTitle());
-        result.put("totalScore", submission.getTotalScore());
-        result.put("maxScore", submission.getMaxScore());
-        result.put("submittedAt", submission.getSubmittedAt().toString());
-        
-        List<Map<String, Object>> answerList = answers.stream().map(ans -> {
-            Map<String, Object> ansMap = new HashMap<>();
-            ansMap.put("id", ans.getId());
-            ansMap.put("questionNumber", ans.getQuestion().getQuestionNumber());
-            ansMap.put("questionText", ans.getQuestion().getQuestionText());
-            ansMap.put("correctAnswer", ans.getQuestion().getCorrectAnswer());
-            ansMap.put("studentAnswer", ans.getStudentAnswer());
-            ansMap.put("isCorrect", ans.getIsCorrect());
-            ansMap.put("pointsEarned", ans.getPointsEarned());
-            ansMap.put("maxPoints", ans.getQuestion().getPoints());
-            ansMap.put("questionType", ans.getQuestion().getQuestionType());
-            return ansMap;
-        }).collect(Collectors.toList());
-        
-        result.put("answers", answerList);
-        
-        return ResponseEntity.ok(result);
+    @PostMapping("/manual/{answerId}")
+    public ResponseEntity<?> manualGrade(
+            @PathVariable Long answerId,
+            @RequestBody Map<String, Object> gradeData) {
+        try {
+            SubmissionAnswer answer = answerRepository.findById(answerId)
+                    .orElseThrow(() -> new RuntimeException("답안을 찾을 수 없습니다"));
+
+            Boolean isCorrect = (Boolean) gradeData.get("isCorrect");
+            Integer score = (Integer) gradeData.get("score");
+            String feedback = (String) gradeData.get("feedback");
+
+            answer.setIsCorrect(isCorrect);
+            answer.setScore(score);
+            answer.setFeedback(feedback);
+            answer.setGradedManually(true);
+
+            answerRepository.save(answer);
+
+            updateSubmissionScore(answer.getSubmission().getId());
+
+            return ResponseEntity.ok(answer);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    @PutMapping("/answers/{answerId}/grade")
-    public ResponseEntity<Map<String, Object>> gradeAnswer(
-            @PathVariable String answerId,
-            @RequestBody Map<String, Object> request) {
-        
-        SubmissionAnswer answer = answerRepository.findById(answerId)
-            .orElseThrow(() -> new RuntimeException("Answer not found"));
-        
-        Integer pointsEarned = (Integer) request.get("pointsEarned");
-        Boolean isCorrect = (Boolean) request.get("isCorrect");
-        
-        answer.setPointsEarned(pointsEarned);
-        answer.setIsCorrect(isCorrect);
-        answerRepository.save(answer);
-        
-        recalculateSubmissionScore(answer.getSubmission().getId());
-        
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("answerId", answerId);
-        result.put("pointsEarned", pointsEarned);
-        
-        return ResponseEntity.ok(result);
+    @PostMapping("/ai/{answerId}")
+    public ResponseEntity<?> aiGrade(@PathVariable Long answerId) {
+        try {
+            SubmissionAnswer answer = answerRepository.findById(answerId)
+                    .orElseThrow(() -> new RuntimeException("답안을 찾을 수 없습니다"));
+
+            WorksheetQuestion question = answer.getQuestion();
+            String studentAnswer = answer.getStudentAnswer();
+
+            Map<String, Object> evaluation = aiEvaluationService.evaluateAnswer(
+                    question.getQuestionText(),
+                    question.getCorrectAnswer(),
+                    studentAnswer
+            );
+
+            answer.setIsCorrect((Boolean) evaluation.get("isCorrect"));
+            answer.setScore((Integer) evaluation.get("score"));
+            answer.setFeedback((String) evaluation.get("feedback"));
+            answer.setGradedManually(false);
+
+            answerRepository.save(answer);
+
+            updateSubmissionScore(answer.getSubmission().getId());
+
+            return ResponseEntity.ok(answer);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    @GetMapping("/worksheet/{worksheetId}/submissions")
-    public ResponseEntity<List<Map<String, Object>>> getWorksheetSubmissions(@PathVariable String worksheetId) {
-        List<StudentSubmission> submissions = submissionRepository.findByWorksheetId(worksheetId);
-        
-        List<Map<String, Object>> result = submissions.stream().map(sub -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", sub.getId());
-            map.put("studentName", sub.getStudent().getDisplayName());
-            map.put("studentId", sub.getStudent().getId());
-            map.put("totalScore", sub.getTotalScore());
-            map.put("maxScore", sub.getMaxScore());
-            map.put("submittedAt", sub.getSubmittedAt().toString());
-            return map;
-        }).collect(Collectors.toList());
-        
-        return ResponseEntity.ok(result);
+    @PostMapping("/batch/{submissionId}")
+    public ResponseEntity<?> batchGrade(@PathVariable Long submissionId) {
+        try {
+            StudentSubmission submission = submissionRepository.findById(submissionId)
+                    .orElseThrow(() -> new RuntimeException("제출을 찾을 수 없습니다"));
+
+            List<SubmissionAnswer> answers = answerRepository.findBySubmission_Id(submissionId);
+
+            for (SubmissionAnswer answer : answers) {
+                if (!answer.getGradedManually()) {
+                    WorksheetQuestion question = answer.getQuestion();
+                    Map<String, Object> evaluation = aiEvaluationService.evaluateAnswer(
+                            question.getQuestionText(),
+                            question.getCorrectAnswer(),
+                            answer.getStudentAnswer()
+                    );
+
+                    answer.setIsCorrect((Boolean) evaluation.get("isCorrect"));
+                    answer.setScore((Integer) evaluation.get("score"));
+                    answer.setFeedback((String) evaluation.get("feedback"));
+                }
+            }
+
+            answerRepository.saveAll(answers);
+            updateSubmissionScore(submissionId);
+
+            return ResponseEntity.ok(Map.of("message", "일괄 채점 완료"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    private void recalculateSubmissionScore(String submissionId) {
-        StudentSubmission submission = submissionRepository.findById(submissionId)
-            .orElseThrow(() -> new RuntimeException("Submission not found"));
-        
-        List<SubmissionAnswer> answers = answerRepository.findBySubmissionId(submissionId);
-        
+    private void updateSubmissionScore(Long submissionId) {
+        List<SubmissionAnswer> answers = answerRepository.findBySubmission_Id(submissionId);
         int totalScore = answers.stream()
-            .mapToInt(ans -> ans.getPointsEarned() != null ? ans.getPointsEarned() : 0)
-            .sum();
-        
+                .mapToInt(a -> a.getScore() != null ? a.getScore() : 0)
+                .sum();
+
+        StudentSubmission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new RuntimeException("제출을 찾을 수 없습니다"));
         submission.setTotalScore(totalScore);
         submissionRepository.save(submission);
     }
