@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:html' as html;
 import '../services/api_service.dart';
 import 'worksheet_result_screen.dart';
 
@@ -50,6 +51,11 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: $e')));
       }
     }
+  }
+
+  void _openPdf() {
+    final pdfUrl = '${ApiService.baseUrl}/worksheets/${widget.worksheetId}/pdf';
+    html.window.open(pdfUrl, '_blank');
   }
 
   Future<void> _submitAnswers() async {
@@ -125,6 +131,13 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
           style: const TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2))),
         backgroundColor: const Color(0xFF595048),
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: _openPdf,
+            tooltip: 'PDF 보기',
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFFD9D4D2)))
@@ -146,13 +159,28 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        '총 ${_questions.length}문제',
-                        style: const TextStyle(
-                          color: Color(0xFF736A63),
-                          fontFamily: 'JoseonGulim',
-                          fontSize: 12,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            '총 ${_questions.length}문제',
+                            style: const TextStyle(
+                              color: Color(0xFF736A63),
+                              fontFamily: 'JoseonGulim',
+                              fontSize: 12,
+                            ),
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.picture_as_pdf, color: Color(0xFF736A63), size: 16),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'PDF 보기 →',
+                            style: TextStyle(
+                              color: Color(0xFF736A63),
+                              fontFamily: 'JoseonGulim',
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
