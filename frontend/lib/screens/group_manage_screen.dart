@@ -563,6 +563,7 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                       },
                     ),
             ),
+            actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('닫기', style: TextStyle(color: Color(0xFFD9D4D2))),
