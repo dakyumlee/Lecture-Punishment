@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/env.dart';
+import '../services/api_service.dart';
 
 class OcrExtractScreen extends StatefulWidget {
   const OcrExtractScreen({super.key});
@@ -15,6 +16,7 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
   bool _isProcessing = false;
   List<dynamic> _extractedQuestions = [];
   String? _fileName;
+  List<bool> _selectedQuestions = [];
 
   Future<void> _pickAndExtract() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -48,6 +50,7 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
           final data = jsonDecode(utf8.decode(response.bodyBytes));
           setState(() {
             _extractedQuestions = data['questions'] ?? [];
+            _selectedQuestions = List.filled(_extractedQuestions.length, true);
             _isProcessing = false;
           });
 
@@ -72,6 +75,105 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
     }
   }
 
+  Future<void> _addToWorksheet() async {
+    try {
+      final worksheets = await ApiService.getWorksheets();
+      
+      if (worksheets.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('문제지가 없습니다. 먼저 문제지를 생성하세요.')),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      
+      final selectedWorksheet = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF595048),
+          title: const Text(
+            '문제지 선택',
+            style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: worksheets.length,
+              itemBuilder: (context, index) {
+                final worksheet = worksheets[index];
+                return ListTile(
+                  title: Text(
+                    worksheet['title'],
+                    style: const TextStyle(color: Color(0xFFD9D4D2)),
+                  ),
+                  subtitle: Text(
+                    '${worksheet['description'] ?? ''}',
+                    style: const TextStyle(color: Color(0xFF736A63)),
+                  ),
+                  onTap: () => Navigator.pop(context, worksheet['id']),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+            ),
+          ],
+        ),
+      );
+
+      if (selectedWorksheet != null && mounted) {
+        setState(() => _isProcessing = true);
+        
+        int addedCount = 0;
+        for (int i = 0; i < _extractedQuestions.length; i++) {
+          if (_selectedQuestions[i]) {
+            final question = _extractedQuestions[i];
+            
+            final questionData = {
+              'questionNumber': question['questionNumber'],
+              'questionType': question['questionType'],
+              'questionText': question['questionText'],
+              'optionA': question['optionA'],
+              'optionB': question['optionB'],
+              'optionC': question['optionC'],
+              'optionD': question['optionD'],
+              'correctAnswer': '',
+              'points': 10,
+            };
+            
+            final success = await ApiService.addQuestionToWorksheet(
+              selectedWorksheet,
+              questionData,
+            );
+            
+            if (success) addedCount++;
+          }
+        }
+        
+        setState(() => _isProcessing = false);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$addedCount개 문제를 추가했습니다!')),
+          );
+          Navigator.pop(context, true);
+        }
+      }
+    } catch (e) {
+      setState(() => _isProcessing = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('추가 실패: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,6 +188,15 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
         ),
         backgroundColor: const Color(0xFF00010D),
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
+        actions: _extractedQuestions.isNotEmpty
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.add_circle),
+                  onPressed: _addToWorksheet,
+                  tooltip: '문제지에 추가',
+                ),
+              ]
+            : null,
       ),
       body: _isProcessing
           ? Center(
@@ -94,9 +205,9 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                 children: [
                   const CircularProgressIndicator(color: Color(0xFFD9D4D2)),
                   const SizedBox(height: 16),
-                  const Text(
-                    'PDF에서 문제 추출 중...',
-                    style: TextStyle(
+                  Text(
+                    _extractedQuestions.isEmpty ? 'PDF에서 문제 추출 중...' : '문제 추가 중...',
+                    style: const TextStyle(
                       color: Color(0xFF736A63),
                       fontFamily: 'JoseonGulim',
                       fontSize: 16,
@@ -177,14 +288,28 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          ElevatedButton.icon(
-                            onPressed: _pickAndExtract,
-                            icon: const Icon(Icons.refresh, size: 18),
-                            label: const Text('다시 추출'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF736A63),
-                              foregroundColor: const Color(0xFFD9D4D2),
-                            ),
+                          Row(
+                            children: [
+                              ElevatedButton.icon(
+                                onPressed: _addToWorksheet,
+                                icon: const Icon(Icons.add_circle, size: 18),
+                                label: const Text('문제지에 추가'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFD9D4D2),
+                                  foregroundColor: const Color(0xFF00010D),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton.icon(
+                                onPressed: _pickAndExtract,
+                                icon: const Icon(Icons.refresh, size: 18),
+                                label: const Text('다시 추출'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF736A63),
+                                  foregroundColor: const Color(0xFFD9D4D2),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -220,6 +345,17 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
           children: [
             Row(
               children: [
+                Checkbox(
+                  value: _selectedQuestions[index],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedQuestions[index] = value ?? false;
+                    });
+                  },
+                  fillColor: WidgetStateProperty.all(const Color(0xFFD9D4D2)),
+                  checkColor: const Color(0xFF00010D),
+                ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(

@@ -509,7 +509,7 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                           ),
                           trailing: IconButton(
                             icon: const Icon(Icons.remove_circle, color: Colors.red),
-                            onPressed: () {
+                            onPressed: () async {
                               final confirm = await showDialog<bool>(
                                 context: context,
                                 builder: (context) => AlertDialog(
