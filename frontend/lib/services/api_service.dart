@@ -356,7 +356,6 @@ class ApiService {
       return false;
     }
   }
-}
 
   static Future<List<dynamic>> getAllGroups() async {
     final response = await http.get(
