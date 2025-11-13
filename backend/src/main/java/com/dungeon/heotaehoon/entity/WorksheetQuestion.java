@@ -13,13 +13,18 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class WorksheetQuestion {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "worksheet_id", nullable = false)
-    private PdfWorksheet worksheet;
+    private Worksheet worksheet;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pdf_worksheet_id")
+    private PdfWorksheet pdfWorksheet;
 
     @Column(name = "question_number", nullable = false)
     private Integer questionNumber;
