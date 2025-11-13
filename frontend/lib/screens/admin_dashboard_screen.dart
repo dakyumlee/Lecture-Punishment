@@ -172,6 +172,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                   const SizedBox(height: 32),
                   const Text(
+                  const SizedBox(height: 32),
+                  const Text(
+                    '채점 관리',
+                    style: TextStyle(
+                      color: Color(0xFFD9D4D2),
+                      fontFamily: 'JoseonGulim',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionButton(
+                    '✏️ 제출 답안 채점',
+                    '학생들이 제출한 답안 확인 및 채점',
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GradingScreen(),
+                        ),
+                      );
+                    },
+                  ),
                     '학생 관리',
                     style: TextStyle(
                       color: Color(0xFFD9D4D2),
