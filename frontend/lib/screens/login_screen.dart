@@ -13,30 +13,37 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _usernameController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _birthDateController = TextEditingController();
+  final _phoneController = TextEditingController();
   bool _isLoading = false;
+  bool _showExtraFields = false;
+  String? _errorMessage;
 
   Future<void> _login() async {
-    if (_usernameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('이름을 입력하세요')),
-      );
+    if (_nameController.text.isEmpty) {
+      setState(() => _errorMessage = '이름을 입력해주세요');
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     try {
       final provider = Provider.of<GameProvider>(context, listen: false);
-      await provider.loginStudent(_usernameController.text);
+      await provider.studentLogin(
+        _nameController.text,
+        birthDate: _birthDateController.text.isNotEmpty ? _birthDateController.text : null,
+        phoneNumber: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+      );
 
       if (mounted && provider.currentStudent != null) {
-        if (!provider.currentStudent!.isProfileComplete) {
+        if (provider.currentStudent!.isProfileComplete == false) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const ProfileCompleteScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const ProfileCompleteScreen()),
           );
         } else {
           Navigator.pushReplacement(
@@ -48,10 +55,14 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('로그인 실패: $e')),
-        );
+      String errorMsg = e.toString();
+      if (errorMsg.contains('동명이인')) {
+        setState(() {
+          _showExtraFields = true;
+          _errorMessage = '동명이인이 있습니다. 생년월일 또는 휴대폰 번호를 입력해주세요.';
+        });
+      } else {
+        setState(() => _errorMessage = '로그인 실패: $errorMsg');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -69,107 +80,162 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                '허태훈의',
+                '허태훈의 분노 던전',
                 style: TextStyle(
                   color: Color(0xFFD9D4D2),
                   fontFamily: 'JoseonGulim',
                   fontSize: 32,
-                ),
-              ),
-              const Text(
-                '분노 던전',
-                style: TextStyle(
-                  color: Color(0xFFD9D4D2),
-                  fontFamily: 'JoseonGulim',
-                  fontSize: 48,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                '안 외웠으면 뒤진다',
-                style: TextStyle(
-                  color: Color(0xFF736A63),
-                  fontFamily: 'JoseonGulim',
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 64),
-              Container(
+              const SizedBox(height: 48),
+              ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 400),
-                child: TextField(
-                  controller: _usernameController,
-                  style: const TextStyle(
-                    color: Color(0xFFD9D4D2),
-                    fontFamily: 'JoseonGulim',
-                  ),
-                  decoration: InputDecoration(
-                    labelText: '이름',
-                    labelStyle: const TextStyle(
-                      color: Color(0xFF736A63),
-                      fontFamily: 'JoseonGulim',
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _nameController,
+                      style: const TextStyle(
+                        color: Color(0xFFD9D4D2),
+                        fontFamily: 'JoseonGulim',
+                      ),
+                      decoration: InputDecoration(
+                        labelText: '이름',
+                        labelStyle: const TextStyle(
+                          color: Color(0xFF736A63),
+                          fontFamily: 'JoseonGulim',
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF0D0D0D),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF595048)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF595048)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF736A63)),
+                        ),
+                      ),
+                      onSubmitted: (_) => _showExtraFields ? null : _login(),
                     ),
-                    filled: true,
-                    fillColor: const Color(0xFF0D0D0D),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFF595048)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFF595048)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFF736A63)),
-                    ),
-                  ),
-                  onSubmitted: (_) => _login(),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                constraints: const BoxConstraints(maxWidth: 400),
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF595048),
-                    foregroundColor: const Color(0xFFD9D4D2),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFFD9D4D2),
-                          ),
-                        )
-                      : const Text(
-                          '입장하기',
-                          style: TextStyle(
-                            fontSize: 18,
+                    if (_showExtraFields) ...[
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _birthDateController,
+                        style: const TextStyle(
+                          color: Color(0xFFD9D4D2),
+                          fontFamily: 'JoseonGulim',
+                        ),
+                        decoration: InputDecoration(
+                          labelText: '생년월일 (예: 20000101)',
+                          labelStyle: const TextStyle(
+                            color: Color(0xFF736A63),
                             fontFamily: 'JoseonGulim',
                           ),
+                          filled: true,
+                          fillColor: const Color(0xFF0D0D0D),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF595048)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF595048)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF736A63)),
+                          ),
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _phoneController,
+                        style: const TextStyle(
+                          color: Color(0xFFD9D4D2),
+                          fontFamily: 'JoseonGulim',
+                        ),
+                        decoration: InputDecoration(
+                          labelText: '휴대폰 번호 (예: 010-1234-5678)',
+                          labelStyle: const TextStyle(
+                            color: Color(0xFF736A63),
+                            fontFamily: 'JoseonGulim',
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF0D0D0D),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF595048)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF595048)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF736A63)),
+                          ),
+                        ),
+                        onSubmitted: (_) => _login(),
+                      ),
+                    ],
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        _errorMessage!,
+                        style: TextStyle(
+                          color: _showExtraFields ? const Color(0xFFD9D4D2) : Colors.red,
+                          fontFamily: 'JoseonGulim',
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _login,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF595048),
+                          foregroundColor: const Color(0xFFD9D4D2),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFFD9D4D2),
+                                ),
+                              )
+                            : const Text(
+                                '로그인',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontFamily: 'JoseonGulim',
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
               TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AdminLoginScreen(),
-                    ),
-                  );
-                },
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+                ),
                 child: const Text(
-                  '관리자 로그인',
+                  '관리자 로그인 →',
                   style: TextStyle(
                     color: Color(0xFF736A63),
                     fontFamily: 'JoseonGulim',
@@ -185,7 +251,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _nameController.dispose();
+    _birthDateController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 }

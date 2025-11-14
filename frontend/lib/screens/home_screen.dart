@@ -5,6 +5,7 @@ import 'dungeon_entrance_screen.dart';
 import 'worksheet_list_screen.dart';
 import 'ranking_screen.dart';
 import 'shop_screen.dart';
+import 'my_page_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Student initialStudent;
@@ -50,6 +51,16 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         backgroundColor: const Color(0xFF595048),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person, color: Color(0xFFD9D4D2)),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MyPageScreen()),
+              );
+              _refreshStudent();
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xFFD9D4D2)),
             onPressed: _refreshStudent,
