@@ -1,9 +1,12 @@
 package com.dungeon.heotaehoon.config;
 
+import com.dungeon.heotaehoon.entity.Instructor;
 import com.dungeon.heotaehoon.entity.ShopItem;
+import com.dungeon.heotaehoon.repository.InstructorRepository;
 import com.dungeon.heotaehoon.repository.ShopItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -11,11 +14,32 @@ import org.springframework.stereotype.Component;
 public class DataInitializer implements CommandLineRunner {
 
     private final ShopItemRepository shopItemRepository;
+    private final InstructorRepository instructorRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
+        initializeInstructor();
         shopItemRepository.deleteAll();
         createShopItems();
+    }
+
+    private void initializeInstructor() {
+        if (instructorRepository.findByUsername("hth422").isEmpty()) {
+            Instructor instructor = Instructor.builder()
+                    .name("허태훈")
+                    .username("hth422")
+                    .password(passwordEncoder.encode("password1234!"))
+                    .level(1)
+                    .exp(0)
+                    .rageGauge(50)
+                    .build();
+            
+            instructorRepository.save(instructor);
+            System.out.println("✅ 허태훈 강사 계정 초기화 완료!");
+            System.out.println("   아이디: hth422");
+            System.out.println("   비밀번호: password1234!");
+        }
     }
 
     private void createShopItems() {
