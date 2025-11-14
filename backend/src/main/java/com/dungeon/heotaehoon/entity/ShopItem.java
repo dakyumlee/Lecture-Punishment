@@ -29,11 +29,16 @@ public class ShopItem {
     private Integer price;
 
     @Column(length = 20)
+    private String effectValue;
+
+    @Builder.Default
+    @Column(length = 20)
     private String rarity = "common";
 
     @Column(name = "image_url", length = 255)
     private String imageUrl;
 
+    @Builder.Default
     @Column(name = "is_available")
     private Boolean isAvailable = true;
 
