@@ -21,7 +21,7 @@ public class AuthController {
     private final StudentRepository studentRepository;
     private final InstructorRepository instructorRepository;
 
-    @PostMapping("/student/login")
+    @PostMapping("/login")
     public ResponseEntity<?> studentLogin(@RequestBody Map<String, String> request) {
         String username = request.get("username");
         
@@ -44,8 +44,8 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/instructor/login")
-    public ResponseEntity<?> instructorLogin(@RequestBody Map<String, String> request) {
+    @PostMapping("/admin/login")
+    public ResponseEntity<?> adminLogin(@RequestBody Map<String, String> request) {
         String username = request.get("username");
         String password = request.get("password");
 
@@ -74,8 +74,8 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/instructor/register")
-    public ResponseEntity<?> instructorRegister(@RequestBody Map<String, String> request) {
+    @PostMapping("/admin/register")
+    public ResponseEntity<?> adminRegister(@RequestBody Map<String, String> request) {
         String username = request.get("username");
         String password = request.get("password");
         String name = request.get("name");
