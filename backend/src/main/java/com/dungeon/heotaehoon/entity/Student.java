@@ -17,7 +17,7 @@ public class Student {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, length = 50)
     private String username;
 
     @Column(name = "display_name", nullable = false, length = 100)
@@ -49,28 +49,11 @@ public class Student {
     private Integer exp = 0;
 
     @Builder.Default
-    @Column(name = "mental_gauge", nullable = false)
-    private Integer mentalGauge = 100;
-
-    @Builder.Default
-    @Column(name = "total_correct", nullable = false)
-    private Integer totalCorrect = 0;
-
-    @Builder.Default
-    @Column(name = "total_wrong", nullable = false)
-    private Integer totalWrong = 0;
-
-    @Builder.Default
-    @Column(name = "character_expression", length = 50)
-    private String characterExpression = "normal";
-
-    @Builder.Default
-    @Column(name = "character_outfit", length = 50)
-    private String characterOutfit = "default";
-
-    @Builder.Default
     @Column(nullable = false)
     private Integer points = 0;
+
+    @Column(name = "character_expression", length = 10)
+    private String characterExpression = "😊";
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

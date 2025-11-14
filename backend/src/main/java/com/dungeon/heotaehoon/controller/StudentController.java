@@ -11,7 +11,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/students")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class StudentController {
 
     private final StudentService studentService;
@@ -58,8 +57,28 @@ public class StudentController {
         return ResponseEntity.ok(student);
     }
 
+    @PostMapping("/{studentId}/expression")
+    public ResponseEntity<?> changeExpression(
+            @PathVariable String studentId,
+            @RequestBody Map<String, String> request) {
+        Student student = studentService.changeExpression(
+                studentId,
+                request.get("expression")
+        );
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "student", student,
+            "message", "표정이 변경되었습니다"
+        ));
+    }
+
     @GetMapping("/{studentId}/stats")
     public ResponseEntity<Map<String, Object>> getStudentStats(@PathVariable String studentId) {
         return ResponseEntity.ok(studentService.getStudentStats(studentId));
+    }
+
+    @GetMapping("/top")
+    public ResponseEntity<?> getTopStudents() {
+        return ResponseEntity.ok(studentService.getTopStudents());
     }
 }

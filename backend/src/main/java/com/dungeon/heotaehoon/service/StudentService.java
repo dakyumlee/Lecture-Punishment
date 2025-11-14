@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -61,8 +62,8 @@ public class StudentService {
         data.put("level", student.getLevel());
         data.put("exp", student.getExp());
         data.put("points", student.getPoints());
-        data.put("totalCorrect", student.getTotalCorrect());
-        data.put("totalWrong", student.getTotalWrong());
+        data.put("totalCorrect", 0);
+        data.put("totalWrong", 0);
         return data;
     }
 
@@ -96,19 +97,27 @@ public class StudentService {
         return studentRepository.save(student);
     }
 
+    @Transactional
+    public Student changeExpression(String studentId, String expression) {
+        Student student = getStudentById(studentId);
+        student.setCharacterExpression(expression);
+        return studentRepository.save(student);
+    }
+
+    public List<Student> getTopStudents() {
+        return studentRepository.findTop10ByOrderByExpDesc();
+    }
+
     public Map<String, Object> getStudentStats(String studentId) {
         Student student = getStudentById(studentId);
         Map<String, Object> stats = new HashMap<>();
-        
-        int totalAttempts = student.getTotalCorrect() + student.getTotalWrong();
-        double accuracy = totalAttempts > 0 ? (double) student.getTotalCorrect() / totalAttempts * 100 : 0;
 
         stats.put("level", student.getLevel());
         stats.put("exp", student.getExp());
-        stats.put("totalCorrect", student.getTotalCorrect());
-        stats.put("totalWrong", student.getTotalWrong());
-        stats.put("accuracy", Math.round(accuracy * 10) / 10.0);
-        stats.put("mentalGauge", student.getMentalGauge());
+        stats.put("totalCorrect", 0);
+        stats.put("totalWrong", 0);
+        stats.put("accuracy", 0.0);
+        stats.put("mentalGauge", 100);
         stats.put("points", student.getPoints());
 
         return stats;

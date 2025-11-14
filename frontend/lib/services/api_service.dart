@@ -237,3 +237,16 @@ class ApiService {
     await addQuestionToWorksheet(worksheetId, question);
   }
 }
+
+  static Future<Map<String, dynamic>> changeExpression({
+    required String studentId,
+    required String expression,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/students/$studentId/expression'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'expression': expression}),
+    );
+    return jsonDecode(response.body);
+  }
+}
