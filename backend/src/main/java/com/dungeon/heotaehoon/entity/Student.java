@@ -33,7 +33,7 @@ public class Student {
     private String studentIdNumber;
 
     @Builder.Default
-    @Column(name = "is_profile_complete", nullable = false, columnDefinition = "boolean default false")
+    @Column(name = "is_profile_complete", nullable = false)
     private Boolean isProfileComplete = false;
 
     @ManyToOne
@@ -52,8 +52,24 @@ public class Student {
     @Column(nullable = false)
     private Integer points = 0;
 
+    @Builder.Default
+    @Column(name = "total_correct", nullable = false)
+    private Integer totalCorrect = 0;
+
+    @Builder.Default
+    @Column(name = "total_wrong", nullable = false)
+    private Integer totalWrong = 0;
+
+    @Builder.Default
+    @Column(name = "mental_gauge", nullable = false)
+    private Integer mentalGauge = 100;
+
+    @Builder.Default
     @Column(name = "character_expression", length = 10)
     private String characterExpression = "😊";
+
+    @Column(name = "character_outfit", length = 255)
+    private String characterOutfit;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
