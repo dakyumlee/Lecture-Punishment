@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/game_provider.dart';
 import 'home_screen.dart';
+import 'profile_complete_screen.dart';
 import 'admin_login_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -30,12 +31,21 @@ class _LoginScreenState extends State<LoginScreen> {
       await provider.loginStudent(_usernameController.text);
 
       if (mounted && provider.currentStudent != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(initialStudent: provider.currentStudent!),
-          ),
-        );
+        if (!provider.currentStudent!.isProfileComplete) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ProfileCompleteScreen(),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomeScreen(initialStudent: provider.currentStudent!),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

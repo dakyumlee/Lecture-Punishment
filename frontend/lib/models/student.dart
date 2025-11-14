@@ -2,6 +2,10 @@ class Student {
   final String id;
   final String username;
   final String displayName;
+  final String? birthDate;
+  final String? phoneNumber;
+  final String? studentIdNumber;
+  final bool isProfileComplete;
   final int level;
   final int exp;
   final int points;
@@ -15,6 +19,10 @@ class Student {
     required this.id,
     required this.username,
     required this.displayName,
+    this.birthDate,
+    this.phoneNumber,
+    this.studentIdNumber,
+    this.isProfileComplete = false,
     required this.level,
     required this.exp,
     this.points = 0,
@@ -30,6 +38,10 @@ class Student {
       id: json['id'] ?? '',
       username: json['username'] ?? '',
       displayName: json['displayName'] ?? json['display_name'] ?? '',
+      birthDate: json['birthDate'] ?? json['birth_date'],
+      phoneNumber: json['phoneNumber'] ?? json['phone_number'],
+      studentIdNumber: json['studentIdNumber'] ?? json['student_id_number'],
+      isProfileComplete: json['isProfileComplete'] ?? json['is_profile_complete'] ?? false,
       level: json['level'] ?? 1,
       exp: json['exp'] ?? 0,
       points: json['points'] ?? 0,
@@ -46,6 +58,10 @@ class Student {
       'id': id,
       'username': username,
       'displayName': displayName,
+      'birthDate': birthDate,
+      'phoneNumber': phoneNumber,
+      'studentIdNumber': studentIdNumber,
+      'isProfileComplete': isProfileComplete,
       'level': level,
       'exp': exp,
       'points': points,

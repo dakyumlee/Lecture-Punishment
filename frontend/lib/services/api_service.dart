@@ -8,6 +8,54 @@ import '../config/env.dart';
 class ApiService {
   static String get baseUrl => Env.apiUrl;
 
+  Future<Map<String, dynamic>> studentLogin(String username) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/student/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': username}),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(utf8.decode(response.bodyBytes));
+      }
+      throw Exception('로그인 실패');
+    } catch (e) {
+      print('Error login: $e');
+      rethrow;
+    }
+  }
+
+  Future<Student> completeProfile({
+    required String studentId,
+    String? birthDate,
+    String? phoneNumber,
+    String? studentIdNumber,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/students/$studentId/profile'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        if (birthDate != null) 'birthDate': birthDate,
+        if (phoneNumber != null) 'phoneNumber': phoneNumber,
+        if (studentIdNumber != null) 'studentIdNumber': studentIdNumber,
+      }),
+    );
+    if (response.statusCode == 200) {
+      return Student.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    }
+    throw Exception('프로필 완성 실패');
+  }
+
+  Future<Map<String, dynamic>> getMyPage(String studentId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/students/$studentId/mypage'),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    }
+    throw Exception('마이페이지 로드 실패');
+  }
+
   Future<Student?> getStudentByUsername(String username) async {
     try {
       final response = await http.get(
@@ -80,20 +128,23 @@ class ApiService {
     return data.map((json) => Student.fromJson(json)).toList();
   }
 
-  static Future<bool> adminLogin(String username, String password) async {
+  static Future<Map<String, dynamic>> adminLogin(String username, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/admin/login'),
+        Uri.parse('$baseUrl/auth/instructor/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': username,
           'password': password,
         }),
       );
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        return jsonDecode(utf8.decode(response.bodyBytes));
+      }
+      throw Exception('로그인 실패');
     } catch (e) {
       print('Login error: $e');
-      return false;
+      rethrow;
     }
   }
 
@@ -117,7 +168,6 @@ class ApiService {
         'file',
         file.bytes!,
         filename: file.name,
-        contentType: http.MediaType('application', 'pdf'),
       ));
     }
     
@@ -224,15 +274,18 @@ class ApiService {
   static Future<Map<String, dynamic>> getShopItems({String? type}) async {
     String url = '$baseUrl/shop/items';
     if (type != null && type.isNotEmpty) {
-      url += '?type=$type';
+      url += '/type/$type';
+    } else {
+      url += '/available';
     }
     
     final response = await http.get(Uri.parse(url));
     
     if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
+      final List<dynamic> items = jsonDecode(utf8.decode(response.bodyBytes));
+      return {'items': items};
     } else {
-      return {'items': [], 'groupedItems': {}};
+      return {'items': []};
     }
   }
 
@@ -241,7 +294,7 @@ class ApiService {
     required String itemId,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/shop/buy'),
+      Uri.parse('$baseUrl/shop/purchase'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'studentId': studentId,
@@ -253,17 +306,22 @@ class ApiService {
       return jsonDecode(utf8.decode(response.bodyBytes));
     } else {
       final error = jsonDecode(utf8.decode(response.bodyBytes));
-      throw Exception(error['message'] ?? '구매 실패');
+      throw Exception(error['error'] ?? '구매 실패');
     }
   }
 
   static Future<Map<String, dynamic>> getStudentInventory(String studentId) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/shop/student/$studentId'),
+      Uri.parse('$baseUrl/students/$studentId'),
     );
     
     if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
+      final student = jsonDecode(utf8.decode(response.bodyBytes));
+      return {
+        'points': student['points'] ?? 0,
+        'currentOutfit': student['characterOutfit'],
+        'currentExpression': student['characterExpression']
+      };
     } else {
       return {'points': 0, 'currentOutfit': null, 'currentExpression': null};
     }
@@ -283,7 +341,7 @@ class ApiService {
 
   static Future<List<dynamic>> getAdminStudents() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/admin/students'),
+      Uri.parse('$baseUrl/students'),
     );
     
     if (response.statusCode == 200) {
@@ -296,7 +354,7 @@ class ApiService {
   static Future<bool> deleteStudent(String studentId) async {
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/admin/students/$studentId'),
+        Uri.parse('$baseUrl/students/$studentId'),
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -306,7 +364,7 @@ class ApiService {
 
   static Future<List<dynamic>> getAdminLessons() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/admin/lessons'),
+      Uri.parse('$baseUrl/lessons'),
     );
     
     if (response.statusCode == 200) {
@@ -321,7 +379,7 @@ class ApiService {
     required String subject,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/admin/lessons'),
+      Uri.parse('$baseUrl/lessons'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'title': title,
@@ -339,7 +397,7 @@ class ApiService {
   static Future<bool> deleteLesson(String lessonId) async {
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/admin/lessons/$lessonId'),
+        Uri.parse('$baseUrl/lessons/$lessonId'),
       );
       return response.statusCode == 200;
     } catch (e) {
