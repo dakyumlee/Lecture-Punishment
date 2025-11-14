@@ -25,21 +25,28 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeInstructor() {
-        if (instructorRepository.findByUsername("hth422").isEmpty()) {
-            Instructor instructor = Instructor.builder()
-                    .name("허태훈")
-                    .username("hth422")
-                    .password(passwordEncoder.encode("password1234!"))
-                    .level(1)
-                    .exp(0)
-                    .rageGauge(50)
-                    .build();
-            
-            instructorRepository.save(instructor);
-            System.out.println("✅ 허태훈 강사 계정 초기화 완료!");
-            System.out.println("   아이디: hth422");
-            System.out.println("   비밀번호: password1234!");
-        }
+        instructorRepository.findByUsername("hth422").ifPresentOrElse(
+            instructor -> {
+                instructor.setPassword(passwordEncoder.encode("password1234!"));
+                instructorRepository.save(instructor);
+                System.out.println("✅ 허태훈 강사 비밀번호 업데이트 완료!");
+            },
+            () -> {
+                Instructor instructor = Instructor.builder()
+                        .name("허태훈")
+                        .username("hth422")
+                        .password(passwordEncoder.encode("password1234!"))
+                        .level(1)
+                        .exp(0)
+                        .rageGauge(50)
+                        .build();
+                
+                instructorRepository.save(instructor);
+                System.out.println("✅ 허태훈 강사 계정 초기화 완료!");
+            }
+        );
+        System.out.println("   아이디: hth422");
+        System.out.println("   비밀번호: password1234!");
     }
 
     private void createShopItems() {
