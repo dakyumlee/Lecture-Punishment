@@ -22,25 +22,21 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     });
 
     try {
-      final success = await ApiService.adminLogin(
+      final result = await ApiService.adminLogin(
         _usernameController.text,
         _passwordController.text,
       );
 
-      if (success) {
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AdminDashboardScreen(),
-            ),
-          );
-        }
-      } else {
-        setState(() => _errorMessage = '로그인 실패');
+      if (result['success'] == true && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AdminDashboardScreen(),
+          ),
+        );
       }
     } catch (e) {
-      setState(() => _errorMessage = '오류: $e');
+      setState(() => _errorMessage = '로그인 실패: 아이디 또는 비밀번호를 확인하세요');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -78,25 +74,39 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   children: [
                     TextField(
                       controller: _usernameController,
-                      style: const TextStyle(color: Color(0xFFD9D4D2)),
+                      style: const TextStyle(
+                        color: Color(0xFFD9D4D2),
+                        fontFamily: 'JoseonGulim',
+                      ),
                       decoration: InputDecoration(
                         labelText: '아이디',
                         labelStyle: const TextStyle(
                           color: Color(0xFF736A63),
                           fontFamily: 'JoseonGulim',
                         ),
+                        filled: true,
+                        fillColor: const Color(0xFF0D0D0D),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF595048)),
+                        ),
                         enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(color: Color(0xFF595048)),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Color(0xFFD9D4D2)),
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF736A63)),
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: _passwordController,
-                      style: const TextStyle(color: Color(0xFFD9D4D2)),
+                      style: const TextStyle(
+                        color: Color(0xFFD9D4D2),
+                        fontFamily: 'JoseonGulim',
+                      ),
                       obscureText: true,
                       decoration: InputDecoration(
                         labelText: '비밀번호',
@@ -104,11 +114,19 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           color: Color(0xFF736A63),
                           fontFamily: 'JoseonGulim',
                         ),
+                        filled: true,
+                        fillColor: const Color(0xFF0D0D0D),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF595048)),
+                        ),
                         enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(color: Color(0xFF595048)),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Color(0xFFD9D4D2)),
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF736A63)),
                         ),
                       ),
                       onSubmitted: (_) => _login(),
@@ -130,16 +148,26 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF595048),
+                          foregroundColor: const Color(0xFFD9D4D2),
                           padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Color(0xFFD9D4D2))
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFFD9D4D2),
+                                ),
+                              )
                             : const Text(
                                 '로그인',
                                 style: TextStyle(
                                   fontFamily: 'JoseonGulim',
                                   fontSize: 18,
-                                  color: Color(0xFFD9D4D2),
                                 ),
                               ),
                       ),
