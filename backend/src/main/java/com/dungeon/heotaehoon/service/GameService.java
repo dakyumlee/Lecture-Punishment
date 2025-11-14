@@ -2,19 +2,13 @@ package com.dungeon.heotaehoon.service;
 
 import com.dungeon.heotaehoon.dto.QuizAnswerRequest;
 import com.dungeon.heotaehoon.dto.QuizAnswerResponse;
-import com.dungeon.heotaehoon.entity.Quiz;
-import com.dungeon.heotaehoon.entity.QuizAttempt;
-import com.dungeon.heotaehoon.entity.RageDialogue;
-import com.dungeon.heotaehoon.entity.Student;
-import com.dungeon.heotaehoon.repository.ExpLogRepository;
-import com.dungeon.heotaehoon.repository.QuizAttemptRepository;
-import com.dungeon.heotaehoon.repository.QuizRepository;
-import com.dungeon.heotaehoon.repository.RageDialogueRepository;
-import com.dungeon.heotaehoon.repository.StudentRepository;
+import com.dungeon.heotaehoon.entity.*;
+import com.dungeon.heotaehoon.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -45,6 +39,7 @@ public class GameService {
                 .student(student)
                 .selectedAnswer(request.getSelectedAnswer())
                 .isCorrect(isCorrect)
+                .attemptTime(LocalDateTime.now())
                 .build();
 
         attemptRepository.save(attempt);
