@@ -1,38 +1,58 @@
-import 'dart:html' as html;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/student.dart';
-import '../models/game_models.dart';
-import '../config/env.dart';
+import '../models/instructor.dart';
+import '../models/quiz.dart';
+import '../models/boss.dart';
+import '../models/worksheet.dart';
+import '../models/shop_item.dart';
 
 class ApiService {
-  static String get baseUrl => Env.apiUrl;
+  static const String baseUrl = 'https://lecture-punishment-production.up.railway.app';
 
-  Future<Map<String, dynamic>> studentLogin(String username) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/student/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username}),
-      );
-      if (response.statusCode == 200) {
-        return jsonDecode(utf8.decode(response.bodyBytes));
-      }
-      throw Exception('로그인 실패');
-    } catch (e) {
-      print('Error login: $e');
-      rethrow;
+  Future<Map<String, dynamic>> studentLogin(String name, {String? birthDate, String? phoneNumber}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/auth/student/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': name,
+        if (birthDate != null) 'birthDate': birthDate,
+        if (phoneNumber != null) 'phoneNumber': phoneNumber,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return {
+        'student': Student.fromJson(data['student']),
+        'isProfileComplete': data['isProfileComplete'] ?? true,
+      };
+    } else {
+      final error = jsonDecode(utf8.decode(response.bodyBytes));
+      throw Exception(error['message'] ?? '로그인 실패');
     }
   }
 
-  Future<Student> completeProfile({
-    required String studentId,
-    String? birthDate,
-    String? phoneNumber,
-    String? studentIdNumber,
-  }) async {
+  Future<Map<String, dynamic>> adminLogin(String username, String password) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/students/$studentId/profile'),
+      Uri.parse('$baseUrl/api/auth/instructor/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'username': username, 'password': password}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return {
+        'success': data['success'],
+        'instructor': data['instructor'] != null ? Instructor.fromJson(data['instructor']) : null,
+      };
+    }
+    throw Exception('관리자 로그인 실패');
+  }
+
+  Future<Student> completeProfile(String studentId, {String? birthDate, String? phoneNumber, String? studentIdNumber}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/students/$studentId/complete-profile'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         if (birthDate != null) 'birthDate': birthDate,
@@ -40,621 +60,100 @@ class ApiService {
         if (studentIdNumber != null) 'studentIdNumber': studentIdNumber,
       }),
     );
+
     if (response.statusCode == 200) {
       return Student.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     }
     throw Exception('프로필 완성 실패');
   }
 
-  Future<Map<String, dynamic>> getMyPage(String studentId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/students/$studentId/mypage'),
-    );
+  Future<Student> getStudent(String studentId) async {
+    final response = await http.get(Uri.parse('$baseUrl/api/students/$studentId'));
+    if (response.statusCode == 200) {
+      return Student.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    }
+    throw Exception('학생 정보 조회 실패');
+  }
+
+  Future<Map<String, dynamic>> getMyPageData(String studentId) async {
+    final response = await http.get(Uri.parse('$baseUrl/api/students/$studentId/mypage'));
     if (response.statusCode == 200) {
       return jsonDecode(utf8.decode(response.bodyBytes));
     }
-    throw Exception('마이페이지 로드 실패');
+    throw Exception('마이페이지 데이터 조회 실패');
   }
 
-  Future<Student?> getStudentByUsername(String username) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/students/username/$username'),
-      );
-      if (response.statusCode == 200) {
-        return Student.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
-      }
-      return null;
-    } catch (e) {
-      print('Error getting student: $e');
-      return null;
+  Future<List<Quiz>> getQuizzes(String bossId) async {
+    final response = await http.get(Uri.parse('$baseUrl/api/quizzes/boss/$bossId'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.map((json) => Quiz.fromJson(json)).toList();
     }
+    throw Exception('퀴즈 조회 실패');
   }
 
-  Future<Student> createStudent(String username, String displayName) async {
+  Future<Map<String, dynamic>> submitAnswer(String submissionId, String answer) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/students'),
+      Uri.parse('$baseUrl/api/submissions/$submissionId/answer'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'username': username,
-        'displayName': displayName,
-      }),
+      body: jsonEncode({'answer': answer}),
     );
-    return Student.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    }
+    throw Exception('답안 제출 실패');
   }
 
-  Future<Student> getStudent(String id) async {
-    final response = await http.get(Uri.parse('$baseUrl/students/$id'));
-    return Student.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+  Future<List<Boss>> getBosses() async {
+    final response = await http.get(Uri.parse('$baseUrl/api/bosses'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.map((json) => Boss.fromJson(json)).toList();
+    }
+    throw Exception('보스 조회 실패');
   }
 
-  Future<Instructor> getInstructorByName(String name) async {
-    final response = await http.get(Uri.parse('$baseUrl/instructors/name/$name'));
-    return Instructor.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+  Future<List<Worksheet>> getWorksheets() async {
+    final response = await http.get(Uri.parse('$baseUrl/api/worksheets'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.map((json) => Worksheet.fromJson(json)).toList();
+    }
+    throw Exception('문제지 조회 실패');
   }
 
-  Future<Lesson> getTodayLesson() async {
-    final response = await http.get(Uri.parse('$baseUrl/lessons/today'));
-    return Lesson.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+  Future<List<ShopItem>> getShopItems() async {
+    final response = await http.get(Uri.parse('$baseUrl/api/shop/items'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.map((json) => ShopItem.fromJson(json)).toList();
+    }
+    throw Exception('상점 아이템 조회 실패');
   }
 
-  Future<Boss> getBossByLesson(String lessonId) async {
-    final response = await http.get(Uri.parse('$baseUrl/bosses/lesson/$lessonId'));
-    return Boss.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
-  }
-
-  Future<List<Quiz>> getQuizzesByBoss(String bossId) async {
-    final response = await http.get(Uri.parse('$baseUrl/quizzes/boss/$bossId'));
-    final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
-    return data.map((json) => Quiz.fromJson(json)).toList();
-  }
-
-  Future<Map<String, dynamic>> submitAnswer(String studentId, String quizId, String answer) async {
+  Future<Map<String, dynamic>> purchaseItem(String studentId, String itemId) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/quiz/submit'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'studentId': studentId,
-        'quizId': quizId,
-        'answer': answer,
-      }),
-    );
-    return jsonDecode(utf8.decode(response.bodyBytes));
-  }
-
-  Future<List<Student>> getTopStudents() async {
-    final response = await http.get(Uri.parse('$baseUrl/ranking/top'));
-    final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
-    return data.map((json) => Student.fromJson(json)).toList();
-  }
-
-  static Future<Map<String, dynamic>> adminLogin(String username, String password) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/instructor/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'username': username,
-          'password': password,
-        }),
-      );
-      if (response.statusCode == 200) {
-        return jsonDecode(utf8.decode(response.bodyBytes));
-      }
-      throw Exception('로그인 실패');
-    } catch (e) {
-      print('Login error: $e');
-      rethrow;
-    }
-  }
-
-  static Future<Map<String, dynamic>> createWorksheet({
-    required String title,
-    required String description,
-    required String category,
-    required dynamic file,
-  }) async {
-    var request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/worksheets'),
-    );
-    
-    request.fields['title'] = title;
-    request.fields['description'] = description;
-    request.fields['category'] = category;
-    
-    if (file != null && file.bytes != null) {
-      request.files.add(http.MultipartFile.fromBytes(
-        'file',
-        file.bytes!,
-        filename: file.name,
-      ));
-    }
-    
-    final response = await request.send();
-    final responseBody = await response.stream.bytesToString();
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(responseBody);
-    } else {
-      throw Exception('Failed to create worksheet: $responseBody');
-    }
-  }
-
-  static Future<Map<String, dynamic>> addQuestion(
-    String worksheetId,
-    Map<String, dynamic> question,
-  ) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/worksheets/$worksheetId/questions'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(question),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      throw Exception('Failed to add question');
-    }
-  }
-
-  static Future<List<dynamic>> getAllWorksheets() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/worksheets'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      return [];
-    }
-  }
-
-  static Future<Map<String, dynamic>> getWorksheetsGrouped() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/worksheets/grouped'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      return {};
-    }
-  }
-
-  static Future<Map<String, dynamic>> getWorksheetWithQuestions(
-    String worksheetId,
-  ) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/worksheets/$worksheetId'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      throw Exception('Failed to load worksheet');
-    }
-  }
-
-  static Future<Map<String, dynamic>> submitWorksheet({
-    required String worksheetId,
-    required String studentId,
-    required List<Map<String, String>> answers,
-  }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/worksheets/$worksheetId/submit'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'studentId': studentId,
-        'answers': answers,
-      }),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      throw Exception('Failed to submit worksheet');
-    }
-  }
-
-  static Future<Map<String, dynamic>> getStudentSubmissions(
-    String studentId,
-  ) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/worksheets/student/$studentId/submissions'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      return {'submissions': []};
-    }
-  }
-
-  static Future<Map<String, dynamic>> getShopItems({String? type}) async {
-    String url = '$baseUrl/shop/items';
-    if (type != null && type.isNotEmpty) {
-      url += '/type/$type';
-    } else {
-      url += '/available';
-    }
-    
-    final response = await http.get(Uri.parse(url));
-    
-    if (response.statusCode == 200) {
-      final List<dynamic> items = jsonDecode(utf8.decode(response.bodyBytes));
-      return {'items': items};
-    } else {
-      return {'items': []};
-    }
-  }
-
-  static Future<Map<String, dynamic>> buyItem({
-    required String studentId,
-    required String itemId,
-  }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/shop/purchase'),
+      Uri.parse('$baseUrl/api/shop/purchase'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'studentId': studentId,
         'itemId': itemId,
       }),
     );
-    
+
     if (response.statusCode == 200) {
       return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      final error = jsonDecode(utf8.decode(response.bodyBytes));
-      throw Exception(error['error'] ?? '구매 실패');
     }
+    throw Exception('아이템 구매 실패');
   }
 
-  static Future<Map<String, dynamic>> getStudentInventory(String studentId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/students/$studentId'),
-    );
-    
+  Future<List<Map<String, dynamic>>> getRankings() async {
+    final response = await http.get(Uri.parse('$baseUrl/api/students/rankings'));
     if (response.statusCode == 200) {
-      final student = jsonDecode(utf8.decode(response.bodyBytes));
-      return {
-        'points': student['points'] ?? 0,
-        'currentOutfit': student['characterOutfit'],
-        'currentExpression': student['characterExpression']
-      };
-    } else {
-      return {'points': 0, 'currentOutfit': null, 'currentExpression': null};
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.cast<Map<String, dynamic>>();
     }
-  }
-
-  static Future<Map<String, dynamic>> getAdminStats() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/admin/stats'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      return {};
-    }
-  }
-
-  static Future<List<dynamic>> getAdminStudents() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/students'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      return [];
-    }
-  }
-
-  static Future<bool> deleteStudent(String studentId) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/students/$studentId'),
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  static Future<List<dynamic>> getAdminLessons() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/lessons'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      return [];
-    }
-  }
-
-  static Future<Map<String, dynamic>> createLesson({
-    required String title,
-    required String subject,
-  }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/lessons'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'title': title,
-        'subject': subject,
-      }),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      throw Exception('Failed to create lesson');
-    }
-  }
-
-  static Future<bool> deleteLesson(String lessonId) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/lessons/$lessonId'),
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  static Future<bool> deleteWorksheet(String worksheetId) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/worksheets/$worksheetId'),
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  static Future<List<dynamic>> getAllGroups() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/groups'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      return [];
-    }
-  }
-
-  static Future<Map<String, dynamic>> createGroup({
-    required String groupName,
-    required int year,
-    required String course,
-    required String period,
-    String? description,
-  }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/groups'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'groupName': groupName,
-        'year': year,
-        'course': course,
-        'period': period,
-        'description': description ?? '',
-      }),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      throw Exception('Failed to create group');
-    }
-  }
-
-  static Future<bool> deleteGroup(String groupId) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/groups/$groupId'),
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  static Future<Map<String, dynamic>> updateGroup({
-    required String groupId,
-    required String groupName,
-    required int year,
-    required String course,
-    required String period,
-    String? description,
-  }) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/groups/$groupId'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'groupName': groupName,
-        'year': year,
-        'course': course,
-        'period': period,
-        'description': description ?? '',
-      }),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      throw Exception('Failed to update group');
-    }
-  }
-
-  static Future<bool> assignStudentToGroup({
-    required String studentId,
-    required String groupId,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/groups/$groupId/students/$studentId'),
-        headers: {'Content-Type': 'application/json'},
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  static Future<List<dynamic>> getGroupStudents(String groupId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/groups/$groupId/students'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      return [];
-    }
-  }
-
-  static Future<void> downloadGroupExcel(String groupId, String groupName) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/export/group/$groupId/excel'),
-      );
-      
-      if (response.statusCode == 200) {
-        final bytes = response.bodyBytes;
-        final blob = html.Blob([bytes]);
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: url)
-          ..setAttribute('download', '${groupName}_성적표.xlsx')
-          ..click();
-        html.Url.revokeObjectUrl(url);
-      }
-    } catch (e) {
-      throw Exception('Excel 다운로드 실패: $e');
-    }
-  }
-
-  static Future<void> downloadAllStudentsExcel() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/export/all/excel'),
-      );
-      
-      if (response.statusCode == 200) {
-        final bytes = response.bodyBytes;
-        final blob = html.Blob([bytes]);
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: url)
-          ..setAttribute('download', '전체학생_성적표.xlsx')
-          ..click();
-        html.Url.revokeObjectUrl(url);
-      }
-    } catch (e) {
-      throw Exception('Excel 다운로드 실패: $e');
-    }
-  }
-
-  static Future<List<dynamic>> getAllSubmissions() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/grading/submissions'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      return [];
-    }
-  }
-
-  static Future<Map<String, dynamic>> getSubmissionDetail(String submissionId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/grading/submissions/$submissionId'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      throw Exception('Failed to load submission detail');
-    }
-  }
-
-  static Future<bool> gradeAnswer({
-    required String answerId,
-    required int pointsEarned,
-    required bool isCorrect,
-  }) async {
-    try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/grading/answers/$answerId/grade'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'pointsEarned': pointsEarned,
-          'isCorrect': isCorrect,
-        }),
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  static Future<List<dynamic>> getWorksheetSubmissions(String worksheetId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/grading/worksheet/$worksheetId/submissions'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      return [];
-    }
-  }
-
-
-  static Future<bool> removeStudentFromGroup({
-    required String studentId,
-    required String groupId,
-  }) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/groups/$groupId/students/$studentId'),
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  static Future<List<dynamic>> getWorksheets() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/worksheets'),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
-    } else {
-      return [];
-    }
-  }
-
-  static Future<bool> addQuestionToWorksheet(
-    String worksheetId,
-    Map<String, dynamic> questionData,
-  ) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/worksheets/$worksheetId/questions'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(questionData),
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
+    throw Exception('랭킹 조회 실패');
   }
 }
