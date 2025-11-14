@@ -36,7 +36,6 @@ class GameProvider with ChangeNotifier {
         displayName: name,
         exp: _currentStudent!.exp,
         level: _currentStudent!.level,
-        hp: _currentStudent!.hp,
         points: _currentStudent!.points,
         isProfileComplete: true,
       );

@@ -2,74 +2,30 @@ class Student {
   final String id;
   final String username;
   final String displayName;
-  final String? birthDate;
-  final String? phoneNumber;
-  final String? studentIdNumber;
-  final bool isProfileComplete;
-  final int level;
   final int exp;
+  final int level;
   final int points;
-  final int mentalGauge;
-  final int totalCorrect;
-  final int totalWrong;
-  final String characterExpression;
-  final String characterOutfit;
+  final bool isProfileComplete;
 
   Student({
     required this.id,
     required this.username,
     required this.displayName,
-    this.birthDate,
-    this.phoneNumber,
-    this.studentIdNumber,
-    this.isProfileComplete = false,
-    required this.level,
     required this.exp,
-    this.points = 0,
-    this.mentalGauge = 100,
-    this.totalCorrect = 0,
-    this.totalWrong = 0,
-    this.characterExpression = 'normal',
-    this.characterOutfit = 'default',
+    required this.level,
+    required this.points,
+    required this.isProfileComplete,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
     return Student(
-      id: json['id'] ?? '',
-      username: json['username'] ?? '',
-      displayName: json['displayName'] ?? json['display_name'] ?? '',
-      birthDate: json['birthDate'] ?? json['birth_date'],
-      phoneNumber: json['phoneNumber'] ?? json['phone_number'],
-      studentIdNumber: json['studentIdNumber'] ?? json['student_id_number'],
-      isProfileComplete: json['isProfileComplete'] ?? json['is_profile_complete'] ?? false,
-      level: json['level'] ?? 1,
+      id: json['id'],
+      username: json['username'],
+      displayName: json['displayName'] ?? '',
       exp: json['exp'] ?? 0,
+      level: json['level'] ?? 1,
       points: json['points'] ?? 0,
-      mentalGauge: json['mentalGauge'] ?? json['mental_gauge'] ?? 100,
-      totalCorrect: json['totalCorrect'] ?? json['total_correct'] ?? 0,
-      totalWrong: json['totalWrong'] ?? json['total_wrong'] ?? 0,
-      characterExpression: json['characterExpression'] ?? json['character_expression'] ?? 'normal',
-      characterOutfit: json['characterOutfit'] ?? json['character_outfit'] ?? 'default',
+      isProfileComplete: json['isProfileComplete'] ?? false,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'username': username,
-      'displayName': displayName,
-      'birthDate': birthDate,
-      'phoneNumber': phoneNumber,
-      'studentIdNumber': studentIdNumber,
-      'isProfileComplete': isProfileComplete,
-      'level': level,
-      'exp': exp,
-      'points': points,
-      'mentalGauge': mentalGauge,
-      'totalCorrect': totalCorrect,
-      'totalWrong': totalWrong,
-      'characterExpression': characterExpression,
-      'characterOutfit': characterOutfit,
-    };
   }
 }
