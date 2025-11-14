@@ -2,6 +2,7 @@ package com.dungeon.heotaehoon.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -21,6 +22,19 @@ public class Student {
 
     @Column(name = "display_name", nullable = false, length = 100)
     private String displayName;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+
+    @Column(name = "phone_number", length = 20)
+    private String phoneNumber;
+
+    @Column(name = "student_id_number", length = 50)
+    private String studentIdNumber;
+
+    @Builder.Default
+    @Column(name = "is_profile_complete", nullable = false)
+    private Boolean isProfileComplete = false;
 
     @ManyToOne
     @JoinColumn(name = "group_id")
