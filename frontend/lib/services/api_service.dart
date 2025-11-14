@@ -236,7 +236,6 @@ class ApiService {
   static Future<void> addQuestion(String worksheetId, Map<String, dynamic> question) async {
     await addQuestionToWorksheet(worksheetId, question);
   }
-}
 
   static Future<Map<String, dynamic>> changeExpression({
     required String studentId,
