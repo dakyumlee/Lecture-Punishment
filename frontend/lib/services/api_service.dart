@@ -5,6 +5,7 @@ import '../models/quiz.dart';
 import '../models/boss.dart';
 import '../models/worksheet.dart';
 import '../models/shop_item.dart';
+import '../models/student.dart';
 
 class ApiService {
   static const String baseUrl = 'https://your-api-url.com/api';
@@ -16,6 +17,11 @@ class ApiService {
       body: jsonEncode({'username': username, 'password': password}),
     );
     return jsonDecode(response.body);
+  }
+
+  Future<Student> getStudent(String id) async {
+    final response = await http.get(Uri.parse('$baseUrl/students/$id'));
+    return Student.fromJson(jsonDecode(response.body));
   }
 
   static Future<Map<String, dynamic>> adminLogin(String username, String password) async {
@@ -56,14 +62,15 @@ class ApiService {
     return data.map((json) => ShopItem.fromJson(json)).toList();
   }
 
-  Future<List<Map<String, dynamic>>> getTopStudents() async {
+  Future<List<Student>> getTopStudents() async {
     final response = await http.get(Uri.parse('$baseUrl/students/top'));
-    return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    final data = jsonDecode(response.body) as List;
+    return data.map((json) => Student.fromJson(json)).toList();
   }
 
-  static Future<List<dynamic>> getStudentInventory(String studentId) async {
+  static Future<Map<String, dynamic>> getStudentInventory(String studentId) async {
     final response = await http.get(Uri.parse('$baseUrl/shop/inventory/$studentId'));
-    return jsonDecode(response.body) as List;
+    return {'points': 0, 'items': jsonDecode(response.body)};
   }
 
   static Future<Map<String, dynamic>> buyItem(String studentId, String itemId) async {
@@ -80,11 +87,11 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<void> createLesson(Map<String, dynamic> data) async {
+  static Future<void> createLesson(String title, String description) async {
     await http.post(
       Uri.parse('$baseUrl/admin/lessons'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
+      body: jsonEncode({'title': title, 'description': description}),
     );
   }
 
@@ -113,20 +120,20 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<Map<String, dynamic>> submitWorksheet(String worksheetId, List<Map<String, dynamic>> answers) async {
+  static Future<Map<String, dynamic>> submitWorksheet(String worksheetId, String studentId, List<Map<String, dynamic>> answers) async {
     final response = await http.post(
       Uri.parse('$baseUrl/worksheets/$worksheetId/submit'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'answers': answers}),
+      body: jsonEncode({'studentId': studentId, 'answers': answers}),
     );
     return jsonDecode(response.body);
   }
 
-  static Future<void> createWorksheet(Map<String, dynamic> data) async {
+  static Future<void> createWorksheet(String title, String description) async {
     await http.post(
       Uri.parse('$baseUrl/worksheets'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
+      body: jsonEncode({'title': title, 'description': description}),
     );
   }
 
@@ -145,11 +152,11 @@ class ApiService {
     return jsonDecode(response.body) as List;
   }
 
-  static Future<void> createGroup(Map<String, dynamic> data) async {
+  static Future<void> createGroup(String name, String description) async {
     await http.post(
       Uri.parse('$baseUrl/groups'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
+      body: jsonEncode({'name': name, 'description': description}),
     );
   }
 
@@ -204,12 +211,13 @@ class ApiService {
     return response.statusCode == 200;
   }
 
-  static Future<void> addQuestionToWorksheet(String worksheetId, Map<String, dynamic> question) async {
-    await http.post(
+  static Future<bool> addQuestionToWorksheet(String worksheetId, Map<String, dynamic> question) async {
+    final response = await http.post(
       Uri.parse('$baseUrl/worksheets/$worksheetId/questions'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(question),
     );
+    return response.statusCode == 200;
   }
 
   static Future<void> addQuestion(String worksheetId, Map<String, dynamic> question) async {
