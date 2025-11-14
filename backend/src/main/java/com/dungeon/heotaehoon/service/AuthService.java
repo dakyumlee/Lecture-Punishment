@@ -21,7 +21,7 @@ public class AuthService {
 
     @Transactional
     public Student studentLogin(String name, String birthDate, String phoneNumber) {
-        List<Student> students = studentRepository.findByDisplayName(name);
+        List<Student> students = studentRepository.findAllByDisplayName(name);
         
         if (students.isEmpty()) {
             Student newStudent = Student.builder()
@@ -32,7 +32,7 @@ public class AuthService {
                     .mentalGauge(100)
                     .totalCorrect(0)
                     .totalWrong(0)
-                    .characterExpression("normal")
+                    .characterExpression("😊")
                     .characterOutfit("default")
                     .points(0)
                     .isProfileComplete(false)
