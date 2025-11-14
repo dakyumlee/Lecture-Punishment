@@ -27,7 +27,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         _passwordController.text,
       );
 
-      if (result['success'] == true && mounted) {
+      if (mounted && result['success'] == true) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
