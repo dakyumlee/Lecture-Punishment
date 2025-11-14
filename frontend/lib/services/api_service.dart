@@ -56,10 +56,13 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<List<ShopItem>> getShopItems() async {
+  static Future<Map<String, dynamic>> getShopItems() async {
     final response = await http.get(Uri.parse('$baseUrl/shop/items'));
     final data = jsonDecode(response.body) as List;
-    return data.map((json) => ShopItem.fromJson(json)).toList();
+    return {
+      'items': data,
+      'groupedItems': {'outfit': data, 'face': [], 'accessory': []},
+    };
   }
 
   Future<List<Student>> getTopStudents() async {
@@ -70,10 +73,10 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getStudentInventory(String studentId) async {
     final response = await http.get(Uri.parse('$baseUrl/shop/inventory/$studentId'));
-    return {'points': 0, 'items': jsonDecode(response.body)};
+    return {'points': 100, 'items': jsonDecode(response.body)};
   }
 
-  static Future<Map<String, dynamic>> buyItem(String studentId, String itemId) async {
+  static Future<Map<String, dynamic>> buyItem({required String studentId, required String itemId}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/shop/buy'),
       headers: {'Content-Type': 'application/json'},
@@ -87,7 +90,7 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<void> createLesson(String title, String description) async {
+  static Future<void> createLesson({required String title, required String description}) async {
     await http.post(
       Uri.parse('$baseUrl/admin/lessons'),
       headers: {'Content-Type': 'application/json'},
@@ -120,7 +123,11 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<Map<String, dynamic>> submitWorksheet(String worksheetId, String studentId, List<Map<String, dynamic>> answers) async {
+  static Future<Map<String, dynamic>> submitWorksheet({
+    required String worksheetId,
+    required String studentId,
+    required List<Map<String, dynamic>> answers,
+  }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/worksheets/$worksheetId/submit'),
       headers: {'Content-Type': 'application/json'},
@@ -129,7 +136,7 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<void> createWorksheet(String title, String description) async {
+  static Future<void> createWorksheet({required String title, String? description}) async {
     await http.post(
       Uri.parse('$baseUrl/worksheets'),
       headers: {'Content-Type': 'application/json'},
@@ -152,7 +159,7 @@ class ApiService {
     return jsonDecode(response.body) as List;
   }
 
-  static Future<void> createGroup(String name, String description) async {
+  static Future<void> createGroup({required String name, String? description}) async {
     await http.post(
       Uri.parse('$baseUrl/groups'),
       headers: {'Content-Type': 'application/json'},
@@ -178,12 +185,12 @@ class ApiService {
     return jsonDecode(response.body) as List;
   }
 
-  static Future<bool> removeStudentFromGroup(String groupId, String studentId) async {
+  static Future<bool> removeStudentFromGroup({required String groupId, required String studentId}) async {
     final response = await http.delete(Uri.parse('$baseUrl/groups/$groupId/students/$studentId'));
     return response.statusCode == 200;
   }
 
-  static Future<bool> assignStudentToGroup(String groupId, String studentId) async {
+  static Future<bool> assignStudentToGroup({required String groupId, required String studentId}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/groups/$groupId/students'),
       headers: {'Content-Type': 'application/json'},
@@ -202,7 +209,12 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<bool> gradeAnswer(String submissionId, String answerId, bool isCorrect, int score) async {
+  static Future<bool> gradeAnswer({
+    required String submissionId,
+    required String answerId,
+    required bool isCorrect,
+    required int score,
+  }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/submissions/$submissionId/grade'),
       headers: {'Content-Type': 'application/json'},

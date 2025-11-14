@@ -20,20 +20,20 @@ class GameProvider with ChangeNotifier {
   int get correctCount => _correctCount;
   int get wrongCount => _wrongCount;
 
-  Future<void> studentLogin(String username, String password) async {
-    final result = await ApiService.login(username, password);
+  Future<void> studentLogin(String name, {String? birthDate, String? phoneNumber}) async {
+    final result = await ApiService.login(name, birthDate ?? '');
     if (result['student'] != null) {
       _currentStudent = Student.fromJson(result['student']);
       notifyListeners();
     }
   }
 
-  Future<void> completeProfile(String name, String email) async {
+  Future<void> completeProfile({String? birthDate, String? phoneNumber}) async {
     if (_currentStudent != null) {
       _currentStudent = Student(
         id: _currentStudent!.id,
         username: _currentStudent!.username,
-        displayName: name,
+        displayName: _currentStudent!.displayName,
         exp: _currentStudent!.exp,
         level: _currentStudent!.level,
         points: _currentStudent!.points,

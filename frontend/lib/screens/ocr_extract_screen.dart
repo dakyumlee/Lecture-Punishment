@@ -105,14 +105,14 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                 final worksheet = worksheets[index];
                 return ListTile(
                   title: Text(
-                    worksheet['title'],
+                    worksheet.title,
                     style: const TextStyle(color: Color(0xFFD9D4D2)),
                   ),
                   subtitle: Text(
-                    '${worksheet['description'] ?? ''}',
+                    worksheet.description ?? '',
                     style: const TextStyle(color: Color(0xFF736A63)),
                   ),
-                  onTap: () => Navigator.pop(context, worksheet['id']),
+                  onTap: () => Navigator.pop(context, worksheet.id),
                 );
               },
             ),
@@ -328,7 +328,6 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                 ),
     );
   }
-
 
   Future<void> _editQuestion(int index) async {
     final question = _extractedQuestions[index];
