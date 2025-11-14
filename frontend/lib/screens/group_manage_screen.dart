@@ -122,10 +122,7 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
               if (formKey.currentState!.validate()) {
                 try {
                   await ApiService.createGroup(
-                    groupName: nameController.text,
-                    year: int.parse(yearController.text),
-                    course: courseController.text,
-                    period: periodController.text,
+                    name: nameController.text,
                     description: descController.text,
                   );
                   Navigator.pop(context);

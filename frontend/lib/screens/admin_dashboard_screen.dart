@@ -333,7 +333,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             try {
               await ApiService.createLesson(
                 title: titleController.text,
-                subject: subjectController.text,
+                description: subjectController.text,
               );
               if (context.mounted) Navigator.pop(context, true);
             } catch (e) {

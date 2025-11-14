@@ -63,141 +63,43 @@ class _GradingScreenState extends State<GradingScreen> {
       backgroundColor: const Color(0xFF00010D),
       appBar: AppBar(
         title: const Text(
-          '제출 답안 채점',
-          style: TextStyle(
-            fontFamily: 'JoseonGulim',
-            color: Color(0xFFD9D4D2),
-          ),
+          '채점',
+          style: TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2)),
         ),
         backgroundColor: const Color(0xFF00010D),
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFD9D4D2)),
-            )
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFD9D4D2)))
           : _submissions.isEmpty
               ? const Center(
                   child: Text(
-                    '제출된 답안이 없습니다',
-                    style: TextStyle(
-                      color: Color(0xFF736A63),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 18,
-                    ),
+                    '제출된 과제가 없습니다',
+                    style: TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
                   ),
                 )
-              : RefreshIndicator(
-                  onRefresh: _loadSubmissions,
-                  color: const Color(0xFFD9D4D2),
-                  backgroundColor: const Color(0xFF595048),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _submissions.length,
-                    itemBuilder: (context, index) {
-                      final submission = _submissions[index];
-                      return _buildSubmissionCard(submission);
-                    },
-                  ),
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _submissions.length,
+                  itemBuilder: (context, index) {
+                    final submission = _submissions[index];
+                    return Card(
+                      color: const Color(0xFF595048),
+                      child: ListTile(
+                        title: Text(
+                          submission['studentName'] ?? '학생',
+                          style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+                        ),
+                        subtitle: Text(
+                          submission['worksheetTitle'] ?? '',
+                          style: const TextStyle(color: Color(0xFF736A63)),
+                        ),
+                        trailing: const Icon(Icons.chevron_right, color: Color(0xFFD9D4D2)),
+                        onTap: () => _openGradingDetail(submission['id']),
+                      ),
+                    );
+                  },
                 ),
-    );
-  }
-
-  Widget _buildSubmissionCard(dynamic submission) {
-    final studentName = submission['studentName'] ?? '';
-    final worksheetTitle = submission['worksheetTitle'] ?? '';
-    final totalScore = submission['totalScore'] ?? 0;
-    final maxScore = submission['maxScore'] ?? 0;
-    final submissionId = submission['id'] ?? '';
-    final percentage = maxScore > 0 ? (totalScore * 100 / maxScore).toStringAsFixed(1) : '0.0';
-
-    return Card(
-      color: const Color(0xFF0D0D0D),
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFF595048)),
-      ),
-      child: InkWell(
-        onTap: () => _openGradingDetail(submissionId),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          studentName,
-                          style: const TextStyle(
-                            color: Color(0xFFD9D4D2),
-                            fontFamily: 'JoseonGulim',
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          worksheetTitle,
-                          style: const TextStyle(
-                            color: Color(0xFF736A63),
-                            fontFamily: 'JoseonGulim',
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '$totalScore / $maxScore',
-                        style: const TextStyle(
-                          color: Color(0xFFD9D4D2),
-                          fontFamily: 'JoseonGulim',
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '$percentage%',
-                        style: const TextStyle(
-                          color: Color(0xFF736A63),
-                          fontFamily: 'JoseonGulim',
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Icon(Icons.access_time, color: Color(0xFF736A63), size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    submission['submittedAt']?.toString().substring(0, 19) ?? '',
-                    style: const TextStyle(
-                      color: Color(0xFF736A63),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 12,
-                    ),
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.arrow_forward_ios, color: Color(0xFF736A63), size: 16),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -227,9 +129,10 @@ class _GradingDetailScreenState extends State<GradingDetailScreen> {
   Future<void> _updateGrade(String answerId, int points, bool isCorrect) async {
     try {
       final success = await ApiService.gradeAnswer(
+        submissionId: widget.submission['id'],
         answerId: answerId,
-        pointsEarned: points,
         isCorrect: isCorrect,
+        score: points,
       );
       
       if (success && mounted) {
@@ -249,253 +152,118 @@ class _GradingDetailScreenState extends State<GradingDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final studentName = widget.submission['studentName'] ?? '';
-    final worksheetTitle = widget.submission['worksheetTitle'] ?? '';
-    final totalScore = widget.submission['totalScore'] ?? 0;
-    final maxScore = widget.submission['maxScore'] ?? 0;
-
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
       appBar: AppBar(
         title: Text(
-          '$studentName - $worksheetTitle',
-          style: const TextStyle(
-            fontFamily: 'JoseonGulim',
-            color: Color(0xFFD9D4D2),
-          ),
+          '${widget.submission['studentName']} - 채점',
+          style: const TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2)),
         ),
-        backgroundColor: const Color(0xFF595048),
+        backgroundColor: const Color(0xFF00010D),
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            color: const Color(0xFF595048),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  '총점',
-                  style: TextStyle(
-                    color: Color(0xFF736A63),
-                    fontFamily: 'JoseonGulim',
-                    fontSize: 16,
-                  ),
-                ),
-                Text(
-                  '$totalScore / $maxScore',
-                  style: const TextStyle(
-                    color: Color(0xFFD9D4D2),
-                    fontFamily: 'JoseonGulim',
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _answers.length,
-              itemBuilder: (context, index) {
-                final answer = _answers[index];
-                return _buildAnswerCard(answer);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnswerCard(dynamic answer) {
-    final questionNumber = answer['questionNumber'] ?? 0;
-    final questionText = answer['questionText'] ?? '';
-    final correctAnswer = answer['correctAnswer'] ?? '';
-    final studentAnswer = answer['studentAnswer'] ?? '';
-    final isCorrect = answer['isCorrect'] ?? false;
-    final pointsEarned = answer['pointsEarned'] ?? 0;
-    final maxPoints = answer['maxPoints'] ?? 0;
-    final answerId = answer['id'] ?? '';
-    final questionType = answer['questionType'] ?? 'subjective';
-
-    return Card(
-      color: const Color(0xFF595048),
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
+      body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00010D),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '$questionNumber번',
+        itemCount: _answers.length,
+        itemBuilder: (context, index) {
+          final answer = _answers[index];
+          final answerId = answer['id'];
+          final questionText = answer['questionText'] ?? '';
+          final studentAnswer = answer['answer'] ?? '';
+          final maxPoints = answer['maxPoints'] ?? 10;
+
+          return Card(
+            color: const Color(0xFF595048),
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '문제 ${index + 1}',
                     style: const TextStyle(
                       color: Color(0xFFD9D4D2),
                       fontFamily: 'JoseonGulim',
                       fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   ),
-                ),
-                const Spacer(),
-                Text(
-                  '$pointsEarned / $maxPoints점',
-                  style: const TextStyle(
-                    color: Color(0xFFD9D4D2),
-                    fontFamily: 'JoseonGulim',
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              questionText,
-              style: const TextStyle(
-                color: Color(0xFFD9D4D2),
-                fontFamily: 'JoseonGulim',
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00010D),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '정답',
-                    style: TextStyle(
-                      color: Color(0xFF736A63),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
-                    correctAnswer,
-                    style: const TextStyle(
-                      color: Color(0xFFD9D4D2),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 14,
+                    questionText,
+                    style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D0D0D),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '학생 답안: $studentAnswer',
+                      style: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isCorrect ? Colors.green.shade900 : Colors.red.shade900,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '학생 답안',
-                    style: TextStyle(
-                      color: Color(0xFFD9D4D2),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    studentAnswer,
-                    style: const TextStyle(
-                      color: Color(0xFFD9D4D2),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (questionType == 'subjective') ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '부여 점수',
-                          style: TextStyle(
-                            color: Color(0xFF736A63),
-                            fontFamily: 'JoseonGulim',
-                            fontSize: 12,
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Text(
+                        '점수:',
+                        style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 80,
+                        child: TextField(
+                          style: const TextStyle(color: Color(0xFFD9D4D2)),
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: '0',
+                            hintStyle: const TextStyle(color: Color(0xFF736A63)),
+                            filled: true,
+                            fillColor: const Color(0xFF0D0D0D),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Slider(
-                          value: _pointsControllers[answerId]?.toDouble() ?? 0,
-                          min: 0,
-                          max: maxPoints.toDouble(),
-                          divisions: maxPoints,
-                          activeColor: const Color(0xFFD9D4D2),
-                          inactiveColor: const Color(0xFF736A63),
-                          label: '${_pointsControllers[answerId] ?? 0}점',
                           onChanged: (value) {
-                            setState(() {
-                              _pointsControllers[answerId] = value.toInt();
-                            });
+                            _pointsControllers[answerId] = int.tryParse(value) ?? 0;
                           },
                         ),
-                        Text(
-                          '${_pointsControllers[answerId] ?? 0} / $maxPoints점',
-                          style: const TextStyle(
-                            color: Color(0xFFD9D4D2),
+                      ),
+                      Text(
+                        ' / $maxPoints',
+                        style: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          final points = _pointsControllers[answerId] ?? 0;
+                          final correct = points == maxPoints;
+                          _updateGrade(answerId, points, correct);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD9D4D2),
+                          foregroundColor: const Color(0xFF00010D),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: const Text(
+                          '저장',
+                          style: TextStyle(
                             fontFamily: 'JoseonGulim',
-                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      final points = _pointsControllers[answerId] ?? 0;
-                      final correct = points == maxPoints;
-                      _updateGrade(answerId, points, correct);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD9D4D2),
-                      foregroundColor: const Color(0xFF00010D),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    ),
-                    child: const Text(
-                      '저장',
-                      style: TextStyle(
-                        fontFamily: 'JoseonGulim',
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ],
-        ),
+            ),
+          );
+        },
       ),
     );
   }

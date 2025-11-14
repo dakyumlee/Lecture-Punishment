@@ -6,6 +6,11 @@ class Student {
   final int level;
   final int points;
   final bool isProfileComplete;
+  final int? totalCorrect;
+  final int? totalWrong;
+  final String? characterExpression;
+  final String? birthDate;
+  final String? phoneNumber;
 
   Student({
     required this.id,
@@ -15,6 +20,11 @@ class Student {
     required this.level,
     required this.points,
     required this.isProfileComplete,
+    this.totalCorrect,
+    this.totalWrong,
+    this.characterExpression,
+    this.birthDate,
+    this.phoneNumber,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
@@ -26,6 +36,11 @@ class Student {
       level: json['level'] ?? 1,
       points: json['points'] ?? 0,
       isProfileComplete: json['isProfileComplete'] ?? false,
+      totalCorrect: json['totalCorrect'],
+      totalWrong: json['totalWrong'],
+      characterExpression: json['characterExpression'],
+      birthDate: json['birthDate'],
+      phoneNumber: json['phoneNumber'],
     );
   }
 }

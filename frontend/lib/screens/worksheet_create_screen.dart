@@ -41,13 +41,6 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
 
   Future<void> _createWorksheet() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    if (_selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PDF 파일을 선택해주세요')),
-      );
-      return;
-    }
 
     setState(() => _isLoading = true);
 
@@ -55,8 +48,6 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
       await ApiService.createWorksheet(
         title: _titleController.text,
         description: _descriptionController.text,
-        category: _categoryController.text,
-        file: _selectedFile,
       );
 
       if (mounted) {
@@ -83,7 +74,6 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF00010D),
         title: const Text(
           '문제지 생성',
           style: TextStyle(
@@ -91,20 +81,21 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
             color: Color(0xFFD9D4D2),
           ),
         ),
+        backgroundColor: const Color(0xFF00010D),
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextFormField(
                 controller: _titleController,
-                style: const TextStyle(color: Color(0xFFD9D4D2)),
+                style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
                 decoration: InputDecoration(
-                  labelText: '문제지 제목',
+                  labelText: '제목',
                   labelStyle: const TextStyle(color: Color(0xFF736A63)),
                   filled: true,
                   fillColor: const Color(0xFF0D0D0D),
@@ -113,40 +104,12 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                     borderSide: const BorderSide(color: Color(0xFF595048)),
                   ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '제목을 입력하세요';
-                  }
-                  return null;
-                },
+                validator: (value) => value?.isEmpty ?? true ? '제목을 입력하세요' : null,
               ),
               const SizedBox(height: 16),
-              
-              TextFormField(
-                controller: _categoryController,
-                style: const TextStyle(color: Color(0xFFD9D4D2)),
-                decoration: InputDecoration(
-                  labelText: '카테고리 (예: 프로그래밍, 자료구조, 네트워크)',
-                  labelStyle: const TextStyle(color: Color(0xFF736A63)),
-                  filled: true,
-                  fillColor: const Color(0xFF0D0D0D),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF595048)),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '카테고리를 입력하세요';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              
               TextFormField(
                 controller: _descriptionController,
-                style: const TextStyle(color: Color(0xFFD9D4D2)),
+                style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
                 maxLines: 3,
                 decoration: InputDecoration(
                   labelText: '설명',
@@ -159,50 +122,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-              
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0D0D0D),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF595048)),
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'PDF 문제지 파일',
-                      style: TextStyle(
-                        color: Color(0xFFD9D4D2),
-                        fontSize: 16,
-                        fontFamily: 'JoseonGulim',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: _pickFile,
-                      icon: const Icon(Icons.upload_file),
-                      label: const Text('PDF 선택'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF595048),
-                        foregroundColor: const Color(0xFFD9D4D2),
-                      ),
-                    ),
-                    if (_fileName != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        '선택된 파일: $_fileName',
-                        style: const TextStyle(
-                          color: Color(0xFF736A63),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
               const SizedBox(height: 32),
-              
               ElevatedButton(
                 onPressed: _isLoading ? null : _createWorksheet,
                 style: ElevatedButton.styleFrom(
@@ -216,11 +136,8 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Color(0xFFD9D4D2))
                     : const Text(
-                        '문제지 생성',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'JoseonGulim',
-                        ),
+                        '생성',
+                        style: TextStyle(fontSize: 18, fontFamily: 'JoseonGulim'),
                       ),
               ),
             ],
