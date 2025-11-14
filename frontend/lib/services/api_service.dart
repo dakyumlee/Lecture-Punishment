@@ -6,9 +6,10 @@ import '../models/boss.dart';
 import '../models/worksheet.dart';
 import '../models/shop_item.dart';
 import '../models/student.dart';
+import '../config/env.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://your-api-url.com/api';
+  static String get baseUrl => Env.apiUrl;
 
   static Future<Map<String, dynamic>> login(String username, String password) async {
     final response = await http.post(
