@@ -13,32 +13,12 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class AdminController {
     
     private final LessonRepository lessonRepository;
     private final InstructorRepository instructorRepository;
     private final StudentRepository studentRepository;
     private final BossRepository bossRepository;
-    
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> credentials) {
-        String username = credentials.get("username");
-        String password = credentials.get("password");
-        
-        if ("hth422".equals(username) && "password1234!".equals(password)) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "로그인 성공");
-            response.put("token", "admin-token-" + System.currentTimeMillis());
-            return ResponseEntity.ok(response);
-        }
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", false);
-        response.put("message", "아이디 또는 비밀번호가 틀렸습니다");
-        return ResponseEntity.status(401).body(response);
-    }
     
     @PostMapping("/lessons")
     public ResponseEntity<Lesson> createLesson(@RequestBody Map<String, Object> lessonData) {

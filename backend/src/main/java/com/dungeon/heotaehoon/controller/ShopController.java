@@ -8,13 +8,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/shop")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class ShopController {
 
     private final ShopItemRepository shopItemRepository;
@@ -22,7 +22,11 @@ public class ShopController {
 
     @GetMapping("/items")
     public ResponseEntity<List<ShopItem>> getAllItems() {
-        return ResponseEntity.ok(shopItemRepository.findAll());
+        List<ShopItem> items = shopItemRepository.findAll();
+        if (items.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(items);
     }
 
     @GetMapping("/items/available")
@@ -48,57 +52,40 @@ public class ShopController {
                     .orElseThrow(() -> new RuntimeException("아이템을 찾을 수 없습니다"));
 
             if (!item.getIsAvailable()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "구매할 수 없는 아이템입니다"));
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "구매할 수 없는 아이템입니다");
+                return ResponseEntity.badRequest().body(errorResponse);
             }
 
             if (student.getPoints() < item.getPrice()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "포인트가 부족합니다"));
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "포인트가 부족합니다");
+                return ResponseEntity.badRequest().body(errorResponse);
             }
 
             student.setPoints(student.getPoints() - item.getPrice());
-
+            
             if ("expression".equals(item.getItemType())) {
-                student.setCharacterExpression(item.getName());
+                student.setCharacterExpression(item.getEffectValue());
             } else if ("outfit".equals(item.getItemType())) {
-                student.setCharacterOutfit(item.getName());
+                student.setCharacterOutfit(item.getEffectValue());
             }
-
+            
             studentRepository.save(student);
 
-            return ResponseEntity.ok(Map.of(
-                    "message", "구매 완료",
-                    "remainingPoints", student.getPoints()
-            ));
-
+            Map<String, Object> successResponse = new HashMap<>();
+            successResponse.put("success", true);
+            successResponse.put("message", "구매 완료");
+            successResponse.put("student", student);
+            return ResponseEntity.ok(successResponse);
+            
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @PostMapping("/equip")
-    public ResponseEntity<?> equipItem(@RequestBody Map<String, String> request) {
-        try {
-            String studentId = request.get("studentId");
-            String itemId = request.get("itemId");
-
-            Student student = studentRepository.findById(studentId)
-                    .orElseThrow(() -> new RuntimeException("학생을 찾을 수 없습니다"));
-
-            ShopItem item = shopItemRepository.findById(itemId)
-                    .orElseThrow(() -> new RuntimeException("아이템을 찾을 수 없습니다"));
-
-            if ("expression".equals(item.getItemType())) {
-                student.setCharacterExpression(item.getName());
-            } else if ("outfit".equals(item.getItemType())) {
-                student.setCharacterOutfit(item.getName());
-            }
-
-            studentRepository.save(student);
-
-            return ResponseEntity.ok(Map.of("message", "장착 완료"));
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "구매 실패: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 }
