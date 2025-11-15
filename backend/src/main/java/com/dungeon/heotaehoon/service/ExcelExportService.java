@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -44,7 +43,8 @@ public class ExcelExportService {
 
         Row metaRow1 = sheet.createRow(rowNum++);
         metaRow1.createCell(0).setCellValue("과정명");
-        Cell courseCell = metaRow1.createCell(1).setCellValue(group.getCourse() != null ? group.getCourse() : "");
+        Cell courseCell = metaRow1.createCell(1);
+        courseCell.setCellValue(group.getCourse() != null ? group.getCourse() : "");
         courseCell.setCellStyle(metaStyle);
         sheet.addMergedRegion(new CellRangeAddress(0, 0, 1, 5));
 
