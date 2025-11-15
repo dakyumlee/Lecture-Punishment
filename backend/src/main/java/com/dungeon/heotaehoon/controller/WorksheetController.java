@@ -48,6 +48,16 @@ public class WorksheetController {
         }
     }
 
+    @GetMapping("/{worksheetId}/questions")
+    public ResponseEntity<List<WorksheetQuestion>> getWorksheetQuestions(@PathVariable String worksheetId) {
+        try {
+            List<WorksheetQuestion> questions = worksheetService.getQuestionsByWorksheetId(worksheetId);
+            return ResponseEntity.ok(questions);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @PostMapping("/{worksheetId}/questions")
     public ResponseEntity<WorksheetQuestion> addQuestion(
             @PathVariable String worksheetId,
