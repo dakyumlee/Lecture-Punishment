@@ -56,10 +56,18 @@ public class OcrService {
                     pageImages.add(base64Image);
                     
                     String pageText = tesseract.doOCR(image);
-                    fullText.append(pageText).append("\n");
                     
-                    log.info("Page {} processed: {} chars, image size: {}KB", 
-                        page + 1, pageText.length(), base64Image.length() / 1024);
+                    String cleanedText = pageText
+                        .replaceAll("<[^>]+>", "")
+                        .replaceAll("\\(pre\\)", "")
+                        .replaceAll("\\{[^}]+\\}", "")
+                        .replaceAll("\\s+", " ")
+                        .trim();
+                    
+                    fullText.append(cleanedText).append("\n\n");
+                    
+                    log.info("Page {} processed: {} chars -> {} chars cleaned", 
+                        page + 1, pageText.length(), cleanedText.length());
                 } catch (Exception e) {
                     log.error("Failed to process page {}", page + 1, e);
                 }
@@ -98,7 +106,7 @@ public class OcrService {
         List<QuestionData> questions = new ArrayList<>();
         
         Pattern questionPattern = Pattern.compile(
-            "(\\d+)\\s*[번.)]?\\s*(.+?)(?=\\n\\s*\\d+\\s*[번.)]|$)",
+            "(\\d+)\\s*번?[.)]?\\s+(.+?)(?=\\d+\\s*번?[.)]|$)",
             Pattern.DOTALL
         );
         
@@ -109,20 +117,25 @@ public class OcrService {
                 int questionNumber = Integer.parseInt(matcher.group(1).trim());
                 String questionContent = matcher.group(2).trim();
                 
+                if (questionContent.length() < 5) {
+                    continue;
+                }
+                
                 QuestionData question = new QuestionData();
                 question.setQuestionNumber(questionNumber);
-                question.setQuestionText(questionContent);
                 question.setPoints(10);
-                question.setCorrectAnswer("A");
+                question.setCorrectAnswer("1");
                 
-                if (isMultipleChoice(questionContent)) {
+                if (hasOptions(questionContent)) {
                     question.setQuestionType("multiple_choice");
-                    parseOptions(question, questionContent);
+                    parseQuestionWithOptions(question, questionContent);
                 } else {
                     question.setQuestionType("subjective");
+                    question.setQuestionText(questionContent);
                 }
                 
                 questions.add(question);
+                log.info("Parsed question {}: {} chars", questionNumber, questionContent.length());
             } catch (Exception e) {
                 log.warn("Failed to parse question", e);
             }
@@ -131,51 +144,54 @@ public class OcrService {
         return questions;
     }
 
-    private boolean isMultipleChoice(String content) {
-        Pattern pattern1 = Pattern.compile("1\\)\\s*.");
-        if (pattern1.matcher(content).find()) return true;
-        
-        Pattern pattern2 = Pattern.compile("①");
-        if (pattern2.matcher(content).find()) return true;
-        
-        Pattern pattern3 = Pattern.compile("\\d+\\)\\s+[^\\d)]{2,}.*?\\d+\\)");
-        if (pattern3.matcher(content).find()) return true;
-        
-        Pattern pattern4 = Pattern.compile("\\(\\d+\\)\\s+[^()]{2,}.*?\\(\\d+\\)");
-        if (pattern4.matcher(content).find()) return true;
-        
-        return false;
+    private boolean hasOptions(String content) {
+        return content.matches(".*[①②③④⑤].*") || 
+               content.matches(".*\\d+\\).*\\d+\\).*") ||
+               content.matches(".*\\(\\d+\\).*\\(\\d+\\).*");
     }
 
-    private void parseOptions(QuestionData question, String content) {
-        Pattern pattern1 = Pattern.compile("1\\)\\s*(.+?)\\s*2\\)\\s*(.+?)\\s*3\\)\\s*(.+?)\\s*4\\)\\s*(.+?)(?=\\s*\\d+\\.|$)", Pattern.DOTALL);
-        Matcher matcher1 = pattern1.matcher(content);
-        if (matcher1.find()) {
-            question.setOptionA(matcher1.group(1).trim().replaceAll("\\s+", " "));
-            question.setOptionB(matcher1.group(2).trim().replaceAll("\\s+", " "));
-            question.setOptionC(matcher1.group(3).trim().replaceAll("\\s+", " "));
-            question.setOptionD(matcher1.group(4).trim().replaceAll("\\s+", " "));
-            return;
-        }
+    private void parseQuestionWithOptions(QuestionData question, String content) {
+        String questionText = content;
+        String[] options = new String[4];
         
-        Pattern circlePattern = Pattern.compile("①\\s*(.+?)\\s*②\\s*(.+?)\\s*③\\s*(.+?)\\s*④\\s*(.+?)(?=\\s*⑤|$)", Pattern.DOTALL);
+        Pattern circlePattern = Pattern.compile("(.*?)①\\s*([^②③④⑤]+?)\\s*②\\s*([^②③④⑤]+?)\\s*③\\s*([^②③④⑤]+?)\\s*④\\s*([^②③④⑤]+?).*", Pattern.DOTALL);
         Matcher circleMatcher = circlePattern.matcher(content);
+        
         if (circleMatcher.find()) {
-            question.setOptionA(circleMatcher.group(1).trim().replaceAll("\\s+", " "));
-            question.setOptionB(circleMatcher.group(2).trim().replaceAll("\\s+", " "));
-            question.setOptionC(circleMatcher.group(3).trim().replaceAll("\\s+", " "));
-            question.setOptionD(circleMatcher.group(4).trim().replaceAll("\\s+", " "));
-            return;
+            questionText = circleMatcher.group(1).trim();
+            options[0] = circleMatcher.group(2).trim();
+            options[1] = circleMatcher.group(3).trim();
+            options[2] = circleMatcher.group(4).trim();
+            options[3] = circleMatcher.group(5).trim();
+        } else {
+            Pattern numberPattern = Pattern.compile("(.*?)1\\)\\s*([^2)]+?)\\s*2\\)\\s*([^3)]+?)\\s*3\\)\\s*([^4)]+?)\\s*4\\)\\s*([^5)]+?).*", Pattern.DOTALL);
+            Matcher numberMatcher = numberPattern.matcher(content);
+            
+            if (numberMatcher.find()) {
+                questionText = numberMatcher.group(1).trim();
+                options[0] = numberMatcher.group(2).trim();
+                options[1] = numberMatcher.group(3).trim();
+                options[2] = numberMatcher.group(4).trim();
+                options[3] = numberMatcher.group(5).trim();
+            } else {
+                Pattern parenPattern = Pattern.compile("(.*?)\\(1\\)\\s*([^()]+?)\\s*\\(2\\)\\s*([^()]+?)\\s*\\(3\\)\\s*([^()]+?)\\s*\\(4\\)\\s*([^()]+?).*", Pattern.DOTALL);
+                Matcher parenMatcher = parenPattern.matcher(content);
+                
+                if (parenMatcher.find()) {
+                    questionText = parenMatcher.group(1).trim();
+                    options[0] = parenMatcher.group(2).trim();
+                    options[1] = parenMatcher.group(3).trim();
+                    options[2] = parenMatcher.group(4).trim();
+                    options[3] = parenMatcher.group(5).trim();
+                }
+            }
         }
         
-        Pattern parenthesisPattern = Pattern.compile("\\(1\\)\\s*(.+?)\\s*\\(2\\)\\s*(.+?)\\s*\\(3\\)\\s*(.+?)\\s*\\(4\\)\\s*(.+?)(?=\\s*\\(\\d+\\)|$)", Pattern.DOTALL);
-        Matcher parenthesisMatcher = parenthesisPattern.matcher(content);
-        if (parenthesisMatcher.find()) {
-            question.setOptionA(parenthesisMatcher.group(1).trim().replaceAll("\\s+", " "));
-            question.setOptionB(parenthesisMatcher.group(2).trim().replaceAll("\\s+", " "));
-            question.setOptionC(parenthesisMatcher.group(3).trim().replaceAll("\\s+", " "));
-            question.setOptionD(parenthesisMatcher.group(4).trim().replaceAll("\\s+", " "));
-        }
+        question.setQuestionText(questionText);
+        question.setOptionA(options[0] != null ? options[0].replaceAll("\\s+", " ") : "");
+        question.setOptionB(options[1] != null ? options[1].replaceAll("\\s+", " ") : "");
+        question.setOptionC(options[2] != null ? options[2].replaceAll("\\s+", " ") : "");
+        question.setOptionD(options[3] != null ? options[3].replaceAll("\\s+", " ") : "");
     }
 
     public static class QuestionData {
