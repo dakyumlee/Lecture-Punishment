@@ -33,7 +33,13 @@ public class OcrService {
             PDFRenderer pdfRenderer = new PDFRenderer(document);
             Tesseract tesseract = new Tesseract();
             
-            tesseract.setDatapath("/usr/share/tesseract-ocr/4.00/tessdata");
+            try {
+                tesseract.setDatapath("/usr/share/tesseract-ocr/4.00/tessdata");
+                log.info("Tesseract datapath set to: /usr/share/tesseract-ocr/4.00/tessdata");
+            } catch (Exception e) {
+                log.warn("Failed to set datapath, trying default");
+            }
+            
             tesseract.setLanguage("kor+eng");
             tesseract.setPageSegMode(1);
             tesseract.setOcrEngineMode(1);
@@ -42,16 +48,28 @@ public class OcrService {
             
             log.info("PDF has {} pages", document.getNumberOfPages());
             
-            for (int page = 0; page < document.getNumberOfPages(); page++) {
-                log.info("Processing page {}", page + 1);
-                BufferedImage image = pdfRenderer.renderImageWithDPI(page, 300);
-                String pageText = tesseract.doOCR(image);
-                fullText.append(pageText).append("\n");
+            int maxPages = Math.min(document.getNumberOfPages(), 10);
+            
+            for (int page = 0; page < maxPages; page++) {
+                try {
+                    log.info("Processing page {}/{}", page + 1, maxPages);
+                    BufferedImage image = pdfRenderer.renderImageWithDPI(page, 200);
+                    String pageText = tesseract.doOCR(image);
+                    fullText.append(pageText).append("\n");
+                    log.info("Page {} processed successfully, extracted {} characters", page + 1, pageText.length());
+                } catch (Exception e) {
+                    log.error("Failed to process page {}", page + 1, e);
+                }
             }
             
-            log.info("Extracted text length: {}", fullText.length());
-            questions = parseQuestions(fullText.toString());
-            log.info("Parsed {} questions", questions.size());
+            log.info("Total extracted text length: {}", fullText.length());
+            
+            if (fullText.length() > 0) {
+                questions = parseQuestions(fullText.toString());
+                log.info("Parsed {} questions", questions.size());
+            } else {
+                log.warn("No text extracted from PDF");
+            }
             
         } catch (Exception e) {
             log.error("OCR extraction failed", e);
@@ -72,23 +90,27 @@ public class OcrService {
         Matcher matcher = questionPattern.matcher(text);
         
         while (matcher.find()) {
-            int questionNumber = Integer.parseInt(matcher.group(1).trim());
-            String questionContent = matcher.group(2).trim();
-            
-            QuestionData question = new QuestionData();
-            question.setQuestionNumber(questionNumber);
-            question.setQuestionText(questionContent);
-            question.setPoints(10);
-            question.setCorrectAnswer("A");
-            
-            if (isMultipleChoice(questionContent)) {
-                question.setQuestionType("multiple_choice");
-                parseOptions(question, questionContent);
-            } else {
-                question.setQuestionType("subjective");
+            try {
+                int questionNumber = Integer.parseInt(matcher.group(1).trim());
+                String questionContent = matcher.group(2).trim();
+                
+                QuestionData question = new QuestionData();
+                question.setQuestionNumber(questionNumber);
+                question.setQuestionText(questionContent);
+                question.setPoints(10);
+                question.setCorrectAnswer("A");
+                
+                if (isMultipleChoice(questionContent)) {
+                    question.setQuestionType("multiple_choice");
+                    parseOptions(question, questionContent);
+                } else {
+                    question.setQuestionType("subjective");
+                }
+                
+                questions.add(question);
+            } catch (Exception e) {
+                log.warn("Failed to parse question", e);
             }
-            
-            questions.add(question);
         }
         
         return questions;
