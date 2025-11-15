@@ -146,7 +146,7 @@ public class ExcelExportService {
             dataRow.createCell(colNum++).setCellValue(studentIndex++);
             dataRow.createCell(colNum++).setCellValue(student.getDisplayName());
             
-            String birthDate = student.getBirthDate() != null ? student.getBirthDate() : "-";
+            String birthDate = student.getBirthDate() != null ? student.getBirthDate().toString() : "-";
             dataRow.createCell(colNum++).setCellValue(birthDate);
             
             StringBuilder correctTopics = new StringBuilder();
