@@ -145,8 +145,22 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
+  static Future<Map<String, dynamic>> assignStudentToGroup({
+    required String groupId,
+    required String studentId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/groups/$groupId/students/$studentId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode != 200) {
+      throw Exception('학생 배정 실패: ${response.statusCode}');
+    }
+    return jsonDecode(response.body);
+  }
+
   static Future<Map<String, dynamic>> getWorksheetWithQuestions(String id) async {
-    final response = await http.get(Uri.parse('$baseUrl/worksheets/$id/questions'));
+    final response = await http.get(Uri.parse('$baseUrl/worksheets/$id'));
     return jsonDecode(response.body);
   }
 

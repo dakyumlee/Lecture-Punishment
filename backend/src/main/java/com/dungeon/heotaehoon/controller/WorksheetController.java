@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +21,21 @@ public class WorksheetController {
     private final WorksheetService worksheetService;
 
     @PostMapping
-    public ResponseEntity<PdfWorksheet> createWorksheet(
+    public ResponseEntity<Map<String, Object>> createWorksheetFromJson(@RequestBody Map<String, Object> request) {
+        try {
+            String title = (String) request.get("title");
+            String description = (String) request.get("description");
+            List<Map<String, Object>> questions = (List<Map<String, Object>>) request.get("questions");
+            
+            Map<String, Object> result = worksheetService.createWorksheetWithQuestions(title, description, questions);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/pdf")
+    public ResponseEntity<PdfWorksheet> createWorksheetFromPdf(
             @RequestParam String title,
             @RequestParam String description,
             @RequestParam String category,
@@ -78,10 +94,12 @@ public class WorksheetController {
     public ResponseEntity<byte[]> viewPdf(@PathVariable String worksheetId) {
         try {
             PdfWorksheet worksheet = worksheetService.getWorksheetById(worksheetId);
+            String encodedFilename = URLEncoder.encode(worksheet.getFileName(), StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
             
             return ResponseEntity.ok()
                     .header("Content-Type", "application/pdf")
-                    .header("Content-Disposition", "inline; filename=\"" + worksheet.getFileName() + "\"")
+                    .header("Content-Disposition", "inline; filename*=UTF-8''" + encodedFilename)
                     .body(worksheet.getPdfContent());
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
@@ -92,10 +110,12 @@ public class WorksheetController {
     public ResponseEntity<byte[]> downloadPdf(@PathVariable String worksheetId) {
         try {
             PdfWorksheet worksheet = worksheetService.getWorksheetById(worksheetId);
+            String encodedFilename = URLEncoder.encode(worksheet.getFileName(), StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
             
             return ResponseEntity.ok()
                     .header("Content-Type", "application/pdf")
-                    .header("Content-Disposition", "attachment; filename=\"" + worksheet.getFileName() + "\"")
+                    .header("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFilename)
                     .body(worksheet.getPdfContent());
         } catch (Exception e) {
             return ResponseEntity.notFound().build();

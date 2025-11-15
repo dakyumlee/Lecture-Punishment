@@ -71,6 +71,59 @@ public class WorksheetService {
     }
 
     @Transactional
+    public Map<String, Object> createWorksheetWithQuestions(String title, String description, List<Map<String, Object>> questionsList) {
+        PdfWorksheet worksheet = PdfWorksheet.builder()
+                .title(title)
+                .description(description)
+                .category("일반")
+                .fileName(title + ".json")
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        worksheet = worksheetRepository.save(worksheet);
+        
+        List<WorksheetQuestion> savedQuestions = new ArrayList<>();
+        
+        for (Map<String, Object> questionData : questionsList) {
+            Integer questionNumber = (Integer) questionData.get("questionNumber");
+            String questionType = (String) questionData.get("questionType");
+            String questionText = (String) questionData.get("questionText");
+            String correctAnswer = (String) questionData.get("correctAnswer");
+            String optionA = (String) questionData.get("optionA");
+            String optionB = (String) questionData.get("optionB");
+            String optionC = (String) questionData.get("optionC");
+            String optionD = (String) questionData.get("optionD");
+            Integer points = (Integer) questionData.get("points");
+            
+            WorksheetQuestion question = WorksheetQuestion.builder()
+                    .worksheet(worksheet)
+                    .questionNumber(questionNumber)
+                    .questionType(questionType)
+                    .questionText(questionText)
+                    .correctAnswer(correctAnswer)
+                    .optionA(optionA)
+                    .optionB(optionB)
+                    .optionC(optionC)
+                    .optionD(optionD)
+                    .points(points != null ? points : 10)
+                    .allowPartial(false)
+                    .similarityThreshold(0.85)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            
+            savedQuestions.add(questionRepository.save(question));
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("worksheet", worksheet);
+        result.put("questions", savedQuestions);
+        result.put("id", worksheet.getId());
+        result.put("title", worksheet.getTitle());
+        
+        return result;
+    }
+
+    @Transactional
     public Map<String, Object> submitWorksheet(String studentId, String worksheetId, List<Map<String, String>> answersList) {
         PdfWorksheet worksheet = getWorksheetById(worksheetId);
         Student student = studentRepository.findById(studentId)

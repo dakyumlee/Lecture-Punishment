@@ -191,6 +191,103 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
     }
   }
 
+  Future<void> _showAddStudentDialog(String groupId, String groupName) async {
+    try {
+      final allStudents = await ApiService.getAllStudents();
+      final groupStudents = await ApiService.getGroupStudents(groupId);
+      final groupStudentIds = groupStudents.map((s) => s['id']).toSet();
+      final availableStudents = allStudents.where((s) => !groupStudentIds.contains(s['id'])).toList();
+
+      if (!mounted) return;
+
+      if (availableStudents.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('추가할 수 있는 학생이 없습니다')),
+        );
+        return;
+      }
+
+      String? selectedStudentId;
+
+      await showDialog(
+        context: context,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            backgroundColor: const Color(0xFF595048),
+            title: Text(
+              '$groupName에 학생 추가',
+              style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: selectedStudentId,
+                    dropdownColor: const Color(0xFF595048),
+                    decoration: const InputDecoration(
+                      labelText: '학생 선택',
+                      labelStyle: TextStyle(color: Color(0xFF736A63)),
+                    ),
+                    items: availableStudents.map<DropdownMenuItem<String>>((student) {
+                      return DropdownMenuItem<String>(
+                        value: student['id'],
+                        child: Text(
+                          '${student['displayName']} (@${student['username']})',
+                          style: const TextStyle(color: Color(0xFFD9D4D2)),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedStudentId = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+              ),
+              TextButton(
+                onPressed: selectedStudentId == null
+                  ? null
+                  : () async {
+                      try {
+                        await ApiService.assignStudentToGroup(
+                          groupId: groupId,
+                          studentId: selectedStudentId!,
+                        );
+                        
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('학생을 추가했습니다')),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('추가 실패: $e')),
+                        );
+                      }
+                    },
+                child: const Text('추가', style: TextStyle(color: Color(0xFFD9D4D2))),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('학생 목록 로드 실패: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _showGroupDetail(dynamic group) async {
     try {
       final students = await ApiService.getGroupStudents(group['id']);
@@ -249,13 +346,32 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                     style: const TextStyle(color: Color(0xFF736A63)),
                   ),
                 const SizedBox(height: 16),
-                const Text(
-                  '학생 목록',
-                  style: TextStyle(
-                    color: Color(0xFFD9D4D2),
-                    fontFamily: 'JoseonGulim',
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      '학생 목록',
+                      style: TextStyle(
+                        color: Color(0xFFD9D4D2),
+                        fontFamily: 'JoseonGulim',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await _showAddStudentDialog(group['id'], group['groupName']);
+                        _showGroupDetail(group);
+                      },
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('학생 추가', style: TextStyle(fontSize: 12)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0D0D0D),
+                        foregroundColor: const Color(0xFFD9D4D2),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                  ],
                 ),
                 const Divider(color: Color(0xFF736A63)),
                 Flexible(
