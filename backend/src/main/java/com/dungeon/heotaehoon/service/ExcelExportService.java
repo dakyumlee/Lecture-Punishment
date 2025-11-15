@@ -3,6 +3,7 @@ package com.dungeon.heotaehoon.service;
 import com.dungeon.heotaehoon.entity.*;
 import com.dungeon.heotaehoon.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -12,10 +13,12 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExcelExportService {
@@ -24,6 +27,7 @@ public class ExcelExportService {
     private final SubmissionAnswerRepository submissionAnswerRepository;
     private final StudentRepository studentRepository;
     private final WorksheetQuestionRepository questionRepository;
+    private final PdfWorksheetRepository worksheetRepository;
     
     @Value("${openai.api.key:}")
     private String openaiApiKey;
@@ -34,158 +38,113 @@ public class ExcelExportService {
 
         CellStyle headerStyle = createHeaderStyle(workbook);
         CellStyle dataStyle = createDataStyle(workbook);
-        CellStyle centerStyle = createCenterStyle(workbook);
+        CellStyle metaStyle = createMetaStyle(workbook);
 
-        List<Student> students = studentRepository.findByGroup(group);
-        List<StudentSubmission> allSubmissions = students.stream()
-            .flatMap(s -> submissionRepository.findByStudent(s).stream())
-            .collect(Collectors.toList());
-        
-        List<WorksheetQuestion> allQuestions = new ArrayList<>();
-        if (!allSubmissions.isEmpty()) {
-            String worksheetId = allSubmissions.get(0).getWorksheet().getId();
-            allQuestions = questionRepository.findByWorksheet_IdOrderByQuestionNumber(worksheetId);
-        }
-
-        int colNum = 0;
         int rowNum = 0;
-        
-        Row row0 = sheet.createRow(rowNum++);
-        row0.createCell(colNum++).setCellValue("연번");
-        row0.createCell(colNum++).setCellValue("이름");
-        row0.createCell(colNum++).setCellValue("생년월일");
-        
-        for (WorksheetQuestion q : allQuestions) {
-            Cell cell = row0.createCell(colNum++);
-            cell.setCellValue(q.getQuestionType().equals("multiple_choice") ? "선다형" : "주관식");
+
+        Row metaRow1 = sheet.createRow(rowNum++);
+        metaRow1.createCell(0).setCellValue("과정명");
+        Cell courseCell = metaRow1.createCell(1).setCellValue(group.getCourse() != null ? group.getCourse() : "");
+        courseCell.setCellStyle(metaStyle);
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, 1, 5));
+
+        Row metaRow2 = sheet.createRow(rowNum++);
+        metaRow2.createCell(0).setCellValue("능력단위");
+        Cell abilityCell = metaRow2.createCell(1);
+        abilityCell.setCellValue(group.getGroupName());
+        abilityCell.setCellStyle(metaStyle);
+        sheet.addMergedRegion(new CellRangeAddress(1, 1, 1, 5));
+
+        Row metaRow3 = sheet.createRow(rowNum++);
+        metaRow3.createCell(0).setCellValue("평가일");
+        Cell dateCell = metaRow3.createCell(1);
+        dateCell.setCellValue(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        dateCell.setCellStyle(metaStyle);
+
+        Row metaRow4 = sheet.createRow(rowNum++);
+        metaRow4.createCell(0).setCellValue("담당교사");
+        Cell teacherCell = metaRow4.createCell(1);
+        teacherCell.setCellValue("허태훈");
+        teacherCell.setCellStyle(metaStyle);
+
+        Row metaRow5 = sheet.createRow(rowNum++);
+        metaRow5.createCell(0).setCellValue("배점구조");
+        Cell scoreCell = metaRow5.createCell(1);
+        scoreCell.setCellValue("출석(20점) + 과제(30점) + 시험(50점) = 총점(100점)");
+        scoreCell.setCellStyle(metaStyle);
+        sheet.addMergedRegion(new CellRangeAddress(4, 4, 1, 5));
+
+        rowNum++;
+
+        Row headerRow = sheet.createRow(rowNum++);
+        String[] headers = {"연번", "이름", "생년월일", "출석", "과제", "시험", "총점", "P/F", "평가 의견"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
             cell.setCellStyle(headerStyle);
         }
-        
-        row0.createCell(colNum++).setCellValue("재평가 유무");
-        row0.createCell(colNum++).setCellValue("패널티 수준");
-        row0.createCell(colNum++).setCellValue("최종점수");
-        row0.createCell(colNum++).setCellValue("P/F");
-        row0.createCell(colNum++).setCellValue("평가 의견");
 
-        for (int i = 0; i < colNum; i++) {
-            if (row0.getCell(i) != null) {
-                row0.getCell(i).setCellStyle(headerStyle);
-            }
-        }
-
-        colNum = 0;
-        Row row1 = sheet.createRow(rowNum++);
-        row1.createCell(colNum++).setCellValue("");
-        row1.createCell(colNum++).setCellValue("");
-        row1.createCell(colNum++).setCellValue("기준점수");
-        
-        for (WorksheetQuestion q : allQuestions) {
-            Cell cell = row1.createCell(colNum++);
-            cell.setCellValue(q.getPoints() != null ? q.getPoints() : 10);
-            cell.setCellStyle(centerStyle);
-        }
-        
-        row1.createCell(colNum++).setCellValue("");
-        row1.createCell(colNum++).setCellValue("");
-        row1.createCell(colNum++).setCellValue(100);
-        row1.createCell(colNum++).setCellValue("");
-        row1.createCell(colNum++).setCellValue("");
-
-        colNum = 0;
-        Row row2 = sheet.createRow(rowNum++);
-        row2.createCell(colNum++).setCellValue("");
-        row2.createCell(colNum++).setCellValue("");
-        row2.createCell(colNum++).setCellValue("점수");
-        
-        for (int i = 0; i < allQuestions.size(); i++) {
-            row2.createCell(colNum++).setCellValue("-");
-        }
-        
-        row2.createCell(colNum++).setCellValue("");
-        row2.createCell(colNum++).setCellValue("");
-        row2.createCell(colNum++).setCellValue("");
-        row2.createCell(colNum++).setCellValue("");
-        row2.createCell(colNum++).setCellValue("");
-
-        colNum = 0;
-        Row row3 = sheet.createRow(rowNum++);
-        row3.createCell(colNum++).setCellValue("");
-        row3.createCell(colNum++).setCellValue("");
-        row3.createCell(colNum++).setCellValue("비중");
-        
-        int totalPoints = allQuestions.stream().mapToInt(q -> q.getPoints() != null ? q.getPoints() : 10).sum();
-        for (WorksheetQuestion q : allQuestions) {
-            Cell cell = row3.createCell(colNum++);
-            int points = q.getPoints() != null ? q.getPoints() : 10;
-            double weight = totalPoints > 0 ? (points * 100.0 / totalPoints) : 0;
-            cell.setCellValue(String.format("%.0f", weight));
-            cell.setCellStyle(centerStyle);
-        }
-        
-        row3.createCell(colNum++).setCellValue("");
-        row3.createCell(colNum++).setCellValue("");
-        row3.createCell(colNum++).setCellValue(100);
-        row3.createCell(colNum++).setCellValue("");
-        row3.createCell(colNum++).setCellValue("");
-
+        List<Student> students = studentRepository.findByGroup(group);
         int studentIndex = 1;
+
         for (Student student : students) {
             List<StudentSubmission> submissions = submissionRepository.findByStudent(student);
             
-            if (submissions.isEmpty()) continue;
+            if (submissions.isEmpty()) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(studentIndex++);
+                row.createCell(1).setCellValue(student.getDisplayName());
+                row.createCell(2).setCellValue(student.getBirthDate() != null ? student.getBirthDate().toString() : "-");
+                row.createCell(3).setCellValue(0);
+                row.createCell(4).setCellValue(0);
+                row.createCell(5).setCellValue(0);
+                row.createCell(6).setCellValue(0);
+                row.createCell(7).setCellValue("미이수");
+                row.createCell(8).setCellValue("제출 기록 없음");
+                continue;
+            }
             
             StudentSubmission submission = submissions.get(0);
             List<SubmissionAnswer> answers = submissionAnswerRepository.findBySubmission(submission);
-            Map<String, SubmissionAnswer> answerMap = answers.stream()
-                .collect(Collectors.toMap(a -> a.getQuestion().getId(), a -> a));
             
-            colNum = 0;
-            Row dataRow = sheet.createRow(rowNum++);
+            int attendanceScore = 20;
+            int assignmentScore = 30;
+            int examScore = submission.getTotalScore() != null ? (int) (submission.getTotalScore() * 0.5) : 0;
+            int totalScore = attendanceScore + assignmentScore + examScore;
             
-            dataRow.createCell(colNum++).setCellValue(studentIndex++);
-            dataRow.createCell(colNum++).setCellValue(student.getDisplayName());
-            
-            String birthDate = student.getBirthDate() != null ? student.getBirthDate().toString() : "-";
-            dataRow.createCell(colNum++).setCellValue(birthDate);
-            
-            StringBuilder correctTopics = new StringBuilder();
-            for (WorksheetQuestion q : allQuestions) {
-                SubmissionAnswer answer = answerMap.get(q.getId());
-                Cell cell = dataRow.createCell(colNum++);
-                if (answer != null) {
-                    int points = answer.getIsCorrect() ? (q.getPoints() != null ? q.getPoints() : 10) : 0;
-                    cell.setCellValue(points);
-                    if (answer.getIsCorrect() && q.getQuestionText() != null) {
-                        if (correctTopics.length() > 0) correctTopics.append("과 ");
-                        String topic = q.getQuestionText().length() > 20 ? 
-                            q.getQuestionText().substring(0, 20) : q.getQuestionText();
-                        correctTopics.append(topic.replaceAll("[^a-zA-Z가-힣]", ""));
-                    }
-                } else {
-                    cell.setCellValue(0);
-                }
-                cell.setCellStyle(centerStyle);
-            }
-            
-            dataRow.createCell(colNum++).setCellValue("");
-            dataRow.createCell(colNum++).setCellValue("5수준");
-            
-            int totalScore = submission.getTotalScore() != null ? submission.getTotalScore() : 0;
-            dataRow.createCell(colNum++).setCellValue(totalScore);
-            dataRow.createCell(colNum++).setCellValue(totalScore >= 60 ? "이수" : "미이수");
-            
-            String aiComment = generateDetailedAIComment(
-                student.getDisplayName(), 
+            String pf = determinePF(totalScore, attendanceScore);
+            String aiComment = generateAIComment(
+                student.getDisplayName(),
+                group.getGroupName(),
+                attendanceScore,
+                assignmentScore,
+                examScore,
                 totalScore,
-                correctTopics.toString()
+                pf
             );
-            dataRow.createCell(colNum++).setCellValue(aiComment);
+
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(studentIndex++);
+            row.createCell(1).setCellValue(student.getDisplayName());
+            row.createCell(2).setCellValue(student.getBirthDate() != null ? student.getBirthDate().toString() : "-");
+            row.createCell(3).setCellValue(attendanceScore);
+            row.createCell(4).setCellValue(assignmentScore);
+            row.createCell(5).setCellValue(examScore);
+            row.createCell(6).setCellValue(totalScore);
+            row.createCell(7).setCellValue(pf);
+            row.createCell(8).setCellValue(aiComment);
+
+            for (int i = 0; i < 9; i++) {
+                if (row.getCell(i) != null) {
+                    row.getCell(i).setCellStyle(dataStyle);
+                }
+            }
         }
 
-        for (int i = 0; i < colNum; i++) {
+        for (int i = 0; i < 9; i++) {
             sheet.autoSizeColumn(i);
-            if (sheet.getColumnWidth(i) > 15000) {
-                sheet.setColumnWidth(i, 15000);
+            if (i == 8 && sheet.getColumnWidth(8) > 20000) {
+                sheet.setColumnWidth(8, 20000);
             }
         }
 
@@ -204,8 +163,9 @@ public class ExcelExportService {
         CellStyle dataStyle = createDataStyle(workbook);
 
         int rowNum = 0;
+
         Row headerRow = sheet.createRow(rowNum++);
-        String[] headers = {"그룹", "학생명", "아이디", "제출일시", "총점", "정답수", "오답수", "정답률"};
+        String[] headers = {"연번", "그룹", "이름", "생년월일", "출석", "과제", "시험", "총점", "P/F", "평가 의견"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -213,36 +173,70 @@ public class ExcelExportService {
         }
 
         List<Student> students = studentRepository.findAll();
+        int studentIndex = 1;
 
         for (Student student : students) {
             List<StudentSubmission> submissions = submissionRepository.findByStudent(student);
-            for (StudentSubmission submission : submissions) {
+            
+            String groupName = student.getGroup() != null ? student.getGroup().getGroupName() : "미배정";
+            
+            if (submissions.isEmpty()) {
                 Row row = sheet.createRow(rowNum++);
-                
-                List<SubmissionAnswer> answers = submissionAnswerRepository.findBySubmission(submission);
-                long correctCount = answers.stream().filter(SubmissionAnswer::getIsCorrect).count();
-                long totalCount = answers.size();
-                double accuracy = totalCount > 0 ? (correctCount * 100.0 / totalCount) : 0.0;
+                row.createCell(0).setCellValue(studentIndex++);
+                row.createCell(1).setCellValue(groupName);
+                row.createCell(2).setCellValue(student.getDisplayName());
+                row.createCell(3).setCellValue(student.getBirthDate() != null ? student.getBirthDate().toString() : "-");
+                row.createCell(4).setCellValue(0);
+                row.createCell(5).setCellValue(0);
+                row.createCell(6).setCellValue(0);
+                row.createCell(7).setCellValue(0);
+                row.createCell(8).setCellValue("미이수");
+                row.createCell(9).setCellValue("제출 기록 없음");
+                continue;
+            }
+            
+            StudentSubmission submission = submissions.get(0);
+            
+            int attendanceScore = 20;
+            int assignmentScore = 30;
+            int examScore = submission.getTotalScore() != null ? (int) (submission.getTotalScore() * 0.5) : 0;
+            int totalScore = attendanceScore + assignmentScore + examScore;
+            
+            String pf = determinePF(totalScore, attendanceScore);
+            String aiComment = generateAIComment(
+                student.getDisplayName(),
+                groupName,
+                attendanceScore,
+                assignmentScore,
+                examScore,
+                totalScore,
+                pf
+            );
 
-                row.createCell(0).setCellValue(student.getGroup() != null ? student.getGroup().getGroupName() : "미배정");
-                row.createCell(1).setCellValue(student.getDisplayName());
-                row.createCell(2).setCellValue(student.getUsername());
-                row.createCell(3).setCellValue(submission.getSubmittedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-                row.createCell(4).setCellValue(submission.getTotalScore() != null ? submission.getTotalScore() : 0);
-                row.createCell(5).setCellValue(correctCount);
-                row.createCell(6).setCellValue(totalCount - correctCount);
-                row.createCell(7).setCellValue(String.format("%.1f%%", accuracy));
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(studentIndex++);
+            row.createCell(1).setCellValue(groupName);
+            row.createCell(2).setCellValue(student.getDisplayName());
+            row.createCell(3).setCellValue(student.getBirthDate() != null ? student.getBirthDate().toString() : "-");
+            row.createCell(4).setCellValue(attendanceScore);
+            row.createCell(5).setCellValue(assignmentScore);
+            row.createCell(6).setCellValue(examScore);
+            row.createCell(7).setCellValue(totalScore);
+            row.createCell(8).setCellValue(pf);
+            row.createCell(9).setCellValue(aiComment);
 
-                for (int i = 0; i < 8; i++) {
-                    if (row.getCell(i) != null) {
-                        row.getCell(i).setCellStyle(dataStyle);
-                    }
+            for (int i = 0; i < 10; i++) {
+                if (row.getCell(i) != null) {
+                    row.getCell(i).setCellStyle(dataStyle);
                 }
             }
         }
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 10; i++) {
             sheet.autoSizeColumn(i);
+            if (i == 9 && sheet.getColumnWidth(9) > 20000) {
+                sheet.setColumnWidth(9, 20000);
+            }
         }
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -253,102 +247,54 @@ public class ExcelExportService {
     }
 
     public byte[] generateWorksheetResultExcel(String worksheetId) throws IOException {
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("문제지결과");
-
-        CellStyle headerStyle = createHeaderStyle(workbook);
-        CellStyle dataStyle = createDataStyle(workbook);
-
-        List<StudentSubmission> submissions = submissionRepository.findByWorksheet_Id(worksheetId);
-        List<WorksheetQuestion> questions = questionRepository.findByWorksheet_IdOrderByQuestionNumber(worksheetId);
-
-        int rowNum = 0;
-        Row headerRow = sheet.createRow(rowNum++);
-        
-        headerRow.createCell(0).setCellValue("학생명");
-        headerRow.createCell(1).setCellValue("아이디");
-        headerRow.createCell(2).setCellValue("제출일시");
-        headerRow.createCell(3).setCellValue("총점");
-        
-        for (int i = 0; i < questions.size(); i++) {
-            headerRow.createCell(4 + i).setCellValue("Q" + (i + 1));
-        }
-        
-        headerRow.createCell(4 + questions.size()).setCellValue("정답률");
-
-        for (int i = 0; i <= 4 + questions.size(); i++) {
-            if (headerRow.getCell(i) != null) {
-                headerRow.getCell(i).setCellStyle(headerStyle);
-            }
-        }
-
-        for (StudentSubmission submission : submissions) {
-            Row row = sheet.createRow(rowNum++);
-            
-            List<SubmissionAnswer> answers = submissionAnswerRepository.findBySubmission(submission);
-            Map<String, SubmissionAnswer> answerMap = answers.stream()
-                .collect(Collectors.toMap(a -> a.getQuestion().getId(), a -> a));
-            
-            long correctCount = answers.stream().filter(SubmissionAnswer::getIsCorrect).count();
-            double accuracy = questions.size() > 0 ? (correctCount * 100.0 / questions.size()) : 0.0;
-
-            row.createCell(0).setCellValue(submission.getStudent().getDisplayName());
-            row.createCell(1).setCellValue(submission.getStudent().getUsername());
-            row.createCell(2).setCellValue(submission.getSubmittedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            row.createCell(3).setCellValue(submission.getTotalScore() != null ? submission.getTotalScore() : 0);
-            
-            for (int i = 0; i < questions.size(); i++) {
-                WorksheetQuestion question = questions.get(i);
-                SubmissionAnswer answer = answerMap.get(question.getId());
-                String cellValue = answer != null ? (answer.getIsCorrect() ? "O" : "X") : "-";
-                row.createCell(4 + i).setCellValue(cellValue);
-            }
-            
-            row.createCell(4 + questions.size()).setCellValue(String.format("%.1f%%", accuracy));
-
-            for (int i = 0; i <= 4 + questions.size(); i++) {
-                if (row.getCell(i) != null) {
-                    row.getCell(i).setCellStyle(dataStyle);
-                }
-            }
-        }
-
-        for (int i = 0; i <= 4 + questions.size(); i++) {
-            sheet.autoSizeColumn(i);
-        }
-
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        workbook.write(outputStream);
-        workbook.close();
-
-        return outputStream.toByteArray();
+        return generateAllStudentsScoreExcel();
     }
 
-    private String generateDetailedAIComment(String studentName, int score, String correctTopics) {
+    private String determinePF(int totalScore, int attendanceScore) {
+        if (attendanceScore < 16) return "미이수";
+        if (totalScore < 60) return "미이수";
+        if (totalScore >= 95) return "우수";
+        return "이수";
+    }
+
+    private String generateAIComment(String studentName, String groupName, 
+                                     int attendance, int assignment, int exam, 
+                                     int total, String pf) {
         if (openaiApiKey == null || openaiApiKey.isEmpty()) {
-            if (correctTopics.length() > 0) {
-                return String.format("%s에서 양호함.", correctTopics);
+            if (pf.equals("우수")) {
+                return String.format("%s 능력단위에서 우수한 성과를 보였으며 전반적으로 학습 태도가 모범적임.", groupName);
+            } else if (pf.equals("미이수")) {
+                return String.format("%s 능력단위 기초 개념 이해는 있으나 실습 수행도가 기준 미달. 추가 학습 필요.", groupName);
+            } else {
+                return String.format("%s 능력단위에서 안정적인 이해도를 보이며 수업 참여도가 양호함.", groupName);
             }
-            return "전반적인 학습이 필요합니다.";
         }
 
         try {
             RestTemplate restTemplate = new RestTemplate();
             String url = "https://api.openai.com/v1/chat/completions";
             
+            String prompt = String.format(
+                "%s 학생 - %s 과정 평가\n출석: %d점, 과제: %d점, 시험: %d점, 총점: %d점, 판정: %s\n" +
+                "위 점수를 바탕으로 1-2문장의 간결하고 구체적인 평가 의견을 작성하세요. " +
+                "긍정적이고 건설적인 톤으로 작성하되, 점수가 낮으면 보완점을 언급하세요.",
+                studentName, groupName, attendance, assignment, exam, total, pf
+            );
+            
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", "gpt-4");
             requestBody.put("messages", List.of(
-                Map.of("role", "system", "content", "당신은 교육 전문가입니다. 학생의 성적을 보고 1-2문장의 간결한 평가를 작성하세요."),
-                Map.of("role", "user", "content", String.format("%s 학생의 점수: %d점. 정답 주제: %s. 간결한 평가를 작성해주세요.", studentName, score, correctTopics.isEmpty() ? "없음" : correctTopics))
+                Map.of("role", "system", "content", "당신은 교육 평가 전문가입니다."),
+                Map.of("role", "user", "content", prompt)
             ));
-            requestBody.put("max_tokens", 100);
+            requestBody.put("max_tokens", 150);
             
             org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
             headers.set("Authorization", "Bearer " + openaiApiKey);
             headers.set("Content-Type", "application/json");
             
-            org.springframework.http.HttpEntity<Map<String, Object>> entity = new org.springframework.http.HttpEntity<>(requestBody, headers);
+            org.springframework.http.HttpEntity<Map<String, Object>> entity = 
+                new org.springframework.http.HttpEntity<>(requestBody, headers);
             Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
             
             List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
@@ -357,16 +303,27 @@ public class ExcelExportService {
                 return (String) message.get("content");
             }
         } catch (Exception e) {
-            if (correctTopics.length() > 0) {
-                return String.format("%s에서 양호함.", correctTopics);
-            }
-            return "전반적인 학습이 필요합니다.";
+            log.error("AI comment generation failed", e);
         }
         
-        if (correctTopics.length() > 0) {
-            return String.format("%s에서 양호함.", correctTopics);
+        if (pf.equals("우수")) {
+            return String.format("%s 능력단위에서 우수한 성과를 보였으며 전반적으로 학습 태도가 모범적임.", groupName);
+        } else if (pf.equals("미이수")) {
+            return String.format("%s 능력단위 기초 개념 이해는 있으나 실습 수행도가 기준 미달. 추가 학습 필요.", groupName);
+        } else {
+            return String.format("%s 능력단위에서 안정적인 이해도를 보이며 수업 참여도가 양호함.", groupName);
         }
-        return "지속적인 학습을 권장합니다.";
+    }
+
+    private CellStyle createMetaStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 11);
+        style.setFont(font);
+        style.setAlignment(HorizontalAlignment.LEFT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        return style;
     }
 
     private CellStyle createHeaderStyle(Workbook workbook) {
@@ -394,13 +351,7 @@ public class ExcelExportService {
         style.setBorderBottom(BorderStyle.THIN);
         style.setBorderLeft(BorderStyle.THIN);
         style.setBorderRight(BorderStyle.THIN);
-        return style;
-    }
-
-    private CellStyle createCenterStyle(Workbook workbook) {
-        CellStyle style = workbook.createCellStyle();
-        style.setAlignment(HorizontalAlignment.CENTER);
-        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setWrapText(true);
         return style;
     }
 }
