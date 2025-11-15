@@ -253,3 +253,74 @@ class ApiService {
     html.Url.revokeObjectUrl(url);
   }
 }
+
+  static Future<Map<String, dynamic>> completeProfile(String studentId, Map<String, String> profileData) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/students/$studentId/profile'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(profileData),
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> getMyPageData(String studentId) async {
+    final response = await http.get(Uri.parse('$baseUrl/students/$studentId/mypage'));
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> updateProfile(String studentId, Map<String, String> profileData) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/students/$studentId/profile'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(profileData),
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<List<dynamic>> getAllWorksheets() async {
+    final response = await http.get(Uri.parse('$baseUrl/worksheets'));
+    return jsonDecode(response.body) as List;
+  }
+
+  static Future<bool> deleteWorksheet(String worksheetId) async {
+    final response = await http.delete(Uri.parse('$baseUrl/worksheets/$worksheetId'));
+    return response.statusCode == 200;
+  }
+
+  static Future<List<dynamic>> getAllSubmissions() async {
+    final response = await http.get(Uri.parse('$baseUrl/submissions'));
+    return jsonDecode(response.body) as List;
+  }
+
+  static Future<Map<String, dynamic>> getSubmissionDetail(String submissionId) async {
+    final response = await http.get(Uri.parse('$baseUrl/submissions/$submissionId'));
+    return jsonDecode(response.body);
+  }
+
+  static Future<bool> gradeAnswer(String answerId, bool isCorrect, int score) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/submissions/answers/$answerId/grade'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'isCorrect': isCorrect, 'score': score}),
+    );
+    return response.statusCode == 200;
+  }
+
+  static Future<Map<String, dynamic>> changeExpression(String studentId, String expression) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/students/$studentId/expression'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'expression': expression}),
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<bool> addQuestion(String worksheetId, Map<String, dynamic> questionData) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/worksheets/$worksheetId/questions'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(questionData),
+    );
+    return response.statusCode == 200;
+  }
+}
