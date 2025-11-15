@@ -6,6 +6,7 @@ import com.dungeon.heotaehoon.repository.InstructorRepository;
 import com.dungeon.heotaehoon.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ public class AuthController {
 
     private final StudentRepository studentRepository;
     private final InstructorRepository instructorRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/login")
     public ResponseEntity<?> studentLogin(@RequestBody Map<String, String> request) {
@@ -82,7 +84,6 @@ public class AuthController {
                 LocalDate birthDate = LocalDate.parse(birthDateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
                 foundStudent = studentRepository.findByUsernameAndBirthDate(username, birthDate).orElse(null);
             } catch (Exception e) {
-                // 날짜 파싱 실패
             }
         }
 
@@ -120,7 +121,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        if (!instructor.getPassword().equals(password)) {
+        if (!passwordEncoder.matches(password, instructor.getPassword())) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "비밀번호가 일치하지 않습니다");
@@ -150,7 +151,7 @@ public class AuthController {
 
         Instructor instructor = Instructor.builder()
                 .username(username)
-                .password(password)
+                .password(passwordEncoder.encode(password))
                 .name(name)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -181,7 +182,6 @@ public class AuthController {
                 LocalDate birthDate = LocalDate.parse(birthDateStr);
                 student.setBirthDate(birthDate);
             } catch (Exception e) {
-                // 파싱 실패 무시
             }
         }
 
