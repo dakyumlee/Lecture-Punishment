@@ -47,7 +47,7 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
         var response = await http.Response.fromStream(streamedResponse);
         
         if (response.statusCode == 200) {
-          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          final data = jsonDecode(response.body);
           setState(() {
             _extractedQuestions = data['questions'] ?? [];
             _selectedQuestions = List.filled(_extractedQuestions.length, true);
