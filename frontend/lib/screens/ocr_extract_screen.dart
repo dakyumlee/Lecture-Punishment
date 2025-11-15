@@ -282,11 +282,13 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
           title: Text(
             '${question['questionNumber']}번 문제 수정',
             style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
+                  children: [
                     const Text('문제 유형:', style: TextStyle(color: Color(0xFFD9D4D2))),
                     const SizedBox(width: 16),
                     ChoiceChip(
