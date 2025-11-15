@@ -21,6 +21,20 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
+  static Future<Map<String, dynamic>> loginWithAuth(Map<String, dynamic> credentials) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(credentials),
+    );
+    
+    if (response.statusCode == 400) {
+      return jsonDecode(response.body);
+    }
+    
+    return jsonDecode(response.body);
+  }
+
   Future<Student> getStudent(String id) async {
     final response = await http.get(Uri.parse('$baseUrl/students/$id'));
     return Student.fromJson(jsonDecode(response.body));
@@ -381,17 +395,3 @@ class ApiService {
     return jsonDecode(response.body);
   }
 }
-
-  static Future<Map<String, dynamic>> loginWithAuth(Map<String, dynamic> credentials) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(credentials),
-    );
-    
-    if (response.statusCode == 400) {
-      return jsonDecode(response.body);
-    }
-    
-    return jsonDecode(response.body);
-  }
