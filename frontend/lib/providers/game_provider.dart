@@ -21,34 +21,65 @@ class GameProvider with ChangeNotifier {
   int get wrongCount => _wrongCount;
 
   Future<void> studentLogin(String name, {String? birthDate, String? phoneNumber}) async {
-    final result = await ApiService.login(name, birthDate ?? '');
-    if (result['student'] != null) {
-      _currentStudent = Student.fromJson(result['student']);
+    final Map<String, String> requestBody = {'username': name};
+    
+    if (birthDate != null && birthDate.isNotEmpty) {
+      requestBody['birthDate'] = birthDate;
+    }
+    if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      requestBody['phoneNumber'] = phoneNumber;
+    }
+
+    final response = await ApiService.login(name, birthDate ?? '');
+    
+    if (response['success'] == true && response['student'] != null) {
+      _currentStudent = Student.fromJson(response['student']);
       notifyListeners();
+    } else if (response['hasDuplicates'] == true) {
+      throw Exception('동명이인');
+    } else {
+      throw Exception(response['message'] ?? '로그인 실패');
     }
   }
 
   Future<void> completeProfile({String? birthDate, String? phoneNumber}) async {
-    if (_currentStudent != null) {
-      _currentStudent = Student(
-        id: _currentStudent!.id,
-        username: _currentStudent!.username,
-        displayName: _currentStudent!.displayName,
-        exp: _currentStudent!.exp,
-        level: _currentStudent!.level,
-        points: _currentStudent!.points,
-        isProfileComplete: true,
+    if (_currentStudent == null) return;
+
+    try {
+      final response = await ApiService.completeProfile(
+        studentId: _currentStudent!.id,
+        birthDate: birthDate,
+        phoneNumber: phoneNumber,
       );
-      notifyListeners();
+
+      if (response['success'] == true && response['student'] != null) {
+        _currentStudent = Student.fromJson(response['student']);
+        notifyListeners();
+      }
+    } catch (e) {
+      throw Exception('프로필 완성 실패: $e');
     }
   }
 
   Future<Map<String, dynamic>> getMyPageData() async {
-    return {
-      'badges': [],
-      'recentActivities': [],
-      'stats': {},
-    };
+    if (_currentStudent == null) {
+      return {
+        'badges': [],
+        'recentActivities': [],
+        'stats': {},
+      };
+    }
+
+    try {
+      final data = await ApiService.getMyPageData(_currentStudent!.id);
+      return data;
+    } catch (e) {
+      return {
+        'badges': [],
+        'recentActivities': [],
+        'stats': {},
+      };
+    }
   }
 
   Future<void> loadInstructor(String name) async {
