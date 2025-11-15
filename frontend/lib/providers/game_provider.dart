@@ -28,16 +28,16 @@ class GameProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final Map<String, String> requestBody = {'username': name};
+      final Map<String, dynamic> requestBody = {'username': name};
       
       if (birthDate != null && birthDate.isNotEmpty) {
-        requestBody['birthDate'] = birthDate;
+        requestBody['birthDate'] = birthDate.replaceAll('-', '');
       }
       if (phoneNumber != null && phoneNumber.isNotEmpty) {
         requestBody['phoneNumber'] = phoneNumber;
       }
 
-      final response = await ApiService.login(name, birthDate ?? '');
+      final response = await ApiService.loginWithAuth(requestBody);
       
       if (response['success'] == true && response['student'] != null) {
         _currentStudent = Student.fromJson(response['student']);

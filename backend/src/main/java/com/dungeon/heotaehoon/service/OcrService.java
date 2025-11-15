@@ -32,7 +32,11 @@ public class OcrService {
             
             PDFRenderer pdfRenderer = new PDFRenderer(document);
             Tesseract tesseract = new Tesseract();
+            
+            tesseract.setDatapath("/usr/share/tesseract-ocr/4.00/tessdata");
             tesseract.setLanguage("kor+eng");
+            tesseract.setPageSegMode(1);
+            tesseract.setOcrEngineMode(1);
             
             StringBuilder fullText = new StringBuilder();
             
@@ -40,7 +44,7 @@ public class OcrService {
             
             for (int page = 0; page < document.getNumberOfPages(); page++) {
                 log.info("Processing page {}", page + 1);
-                BufferedImage image = pdfRenderer.renderImageWithDPI(page, 600);
+                BufferedImage image = pdfRenderer.renderImageWithDPI(page, 300);
                 String pageText = tesseract.doOCR(image);
                 fullText.append(pageText).append("\n");
             }
@@ -51,7 +55,7 @@ public class OcrService {
             
         } catch (Exception e) {
             log.error("OCR extraction failed", e);
-            throw e;
+            throw new RuntimeException("OCR 처리 중 오류가 발생했습니다: " + e.getMessage(), e);
         }
         
         return questions;
@@ -74,6 +78,8 @@ public class OcrService {
             QuestionData question = new QuestionData();
             question.setQuestionNumber(questionNumber);
             question.setQuestionText(questionContent);
+            question.setPoints(10);
+            question.setCorrectAnswer("A");
             
             if (isMultipleChoice(questionContent)) {
                 question.setQuestionType("multiple_choice");
@@ -89,7 +95,7 @@ public class OcrService {
     }
 
     private boolean isMultipleChoice(String content) {
-        Pattern pattern1 = Pattern.compile("1\\)\\s*<");
+        Pattern pattern1 = Pattern.compile("1\\)\\s*.");
         if (pattern1.matcher(content).find()) return true;
         
         Pattern pattern2 = Pattern.compile("①");
@@ -105,17 +111,17 @@ public class OcrService {
     }
 
     private void parseOptions(QuestionData question, String content) {
-        Pattern pattern1 = Pattern.compile("1\\)\\s*(<[^>]+>)\\s*2\\)\\s*(<[^>]+>)\\s*3\\)\\s*(<[^>]+>)\\s*4\\)\\s*(<[^>]+>)");
+        Pattern pattern1 = Pattern.compile("1\\)\\s*(.+?)\\s*2\\)\\s*(.+?)\\s*3\\)\\s*(.+?)\\s*4\\)\\s*(.+?)(?=\\s*\\d+\\.|$)", Pattern.DOTALL);
         Matcher matcher1 = pattern1.matcher(content);
         if (matcher1.find()) {
-            question.setOptionA(matcher1.group(1).trim());
-            question.setOptionB(matcher1.group(2).trim());
-            question.setOptionC(matcher1.group(3).trim());
-            question.setOptionD(matcher1.group(4).trim());
+            question.setOptionA(matcher1.group(1).trim().replaceAll("\\s+", " "));
+            question.setOptionB(matcher1.group(2).trim().replaceAll("\\s+", " "));
+            question.setOptionC(matcher1.group(3).trim().replaceAll("\\s+", " "));
+            question.setOptionD(matcher1.group(4).trim().replaceAll("\\s+", " "));
             return;
         }
         
-        Pattern circlePattern = Pattern.compile("①\\s*([^②③④⑤]+?)\\s*②\\s*([^②③④⑤]+?)\\s*③\\s*([^②③④⑤]+?)\\s*④\\s*([^②③④⑤]+?)(?=\\s*⑤|$)", Pattern.DOTALL);
+        Pattern circlePattern = Pattern.compile("①\\s*(.+?)\\s*②\\s*(.+?)\\s*③\\s*(.+?)\\s*④\\s*(.+?)(?=\\s*⑤|$)", Pattern.DOTALL);
         Matcher circleMatcher = circlePattern.matcher(content);
         if (circleMatcher.find()) {
             question.setOptionA(circleMatcher.group(1).trim().replaceAll("\\s+", " "));
@@ -125,17 +131,7 @@ public class OcrService {
             return;
         }
         
-        Pattern bracketPattern = Pattern.compile("1\\)\\s*([^2)]+?)\\s*2\\)\\s*([^3)]+?)\\s*3\\)\\s*([^4)]+?)\\s*4\\)\\s*([^\\d)]+?)(?=\\s*\\d+\\)|$)", Pattern.DOTALL);
-        Matcher bracketMatcher = bracketPattern.matcher(content);
-        if (bracketMatcher.find()) {
-            question.setOptionA(bracketMatcher.group(1).trim().replaceAll("\\s+", " "));
-            question.setOptionB(bracketMatcher.group(2).trim().replaceAll("\\s+", " "));
-            question.setOptionC(bracketMatcher.group(3).trim().replaceAll("\\s+", " "));
-            question.setOptionD(bracketMatcher.group(4).trim().replaceAll("\\s+", " "));
-            return;
-        }
-        
-        Pattern parenthesisPattern = Pattern.compile("\\(1\\)\\s*([^()]+?)\\s*\\(2\\)\\s*([^()]+?)\\s*\\(3\\)\\s*([^()]+?)\\s*\\(4\\)\\s*([^()]+?)(?=\\s*\\(\\d+\\)|$)", Pattern.DOTALL);
+        Pattern parenthesisPattern = Pattern.compile("\\(1\\)\\s*(.+?)\\s*\\(2\\)\\s*(.+?)\\s*\\(3\\)\\s*(.+?)\\s*\\(4\\)\\s*(.+?)(?=\\s*\\(\\d+\\)|$)", Pattern.DOTALL);
         Matcher parenthesisMatcher = parenthesisPattern.matcher(content);
         if (parenthesisMatcher.find()) {
             question.setOptionA(parenthesisMatcher.group(1).trim().replaceAll("\\s+", " "));

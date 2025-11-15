@@ -1,20 +1,12 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
-WORKDIR /workspace
+WORKDIR /app
 COPY backend/pom.xml .
 COPY backend/src ./src
 RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
-RUN apk add --no-cache \
-    tesseract-ocr \
-    tesseract-ocr-data-kor \
-    tesseract-ocr-data-eng \
-    fontconfig \
-    ttf-dejavu
-
-ENV TESSDATA_PREFIX=/usr/share/tessdata
-
+RUN apk add --no-cache tesseract-ocr tesseract-ocr-data-kor curl
 WORKDIR /app
-COPY --from=build /workspace/target/*.jar application.jar
+COPY --from=build /app/target/*.jar application.jar
 EXPOSE 8080
-CMD ["java", "-jar", "application.jar"]
+ENTRYPOINT ["java", "-jar", "application.jar"]
