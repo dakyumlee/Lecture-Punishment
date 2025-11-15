@@ -54,12 +54,16 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       String errorMsg = e.toString();
       if (errorMsg.contains('동명이인')) {
-        setState(() {
-          _showExtraFields = true;
-          _errorMessage = '동명이인이 있습니다. 생년월일 또는 휴대폰 번호를 입력해주세요.';
-        });
+        if (mounted) {
+          setState(() {
+            _showExtraFields = true;
+            _errorMessage = '동명이인이 있습니다. 생년월일 또는 휴대폰 번호를 입력해주세요.';
+          });
+        }
       } else {
-        setState(() => _errorMessage = '로그인 실패: $errorMsg');
+        if (mounted) {
+          setState(() => _errorMessage = '로그인 실패: $errorMsg');
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -157,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           fontFamily: 'JoseonGulim',
                         ),
                         decoration: InputDecoration(
-                          labelText: '휴대폰 번호 (예: 010-1234-5678)',
+                          labelText: '휴대폰 번호 (예: 01012345678)',
                           labelStyle: const TextStyle(
                             color: Color(0xFF736A63),
                             fontFamily: 'JoseonGulim',
