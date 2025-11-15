@@ -37,8 +37,6 @@ public class OcrService {
             Tesseract tesseract = new Tesseract();
             
             tesseract.setDatapath("/usr/share/tessdata");
-            log.info("Tesseract datapath set to: /usr/share/tessdata");
-            
             tesseract.setLanguage("kor+eng");
             
             StringBuilder fullText = new StringBuilder();
@@ -56,33 +54,25 @@ public class OcrService {
                     pageImages.add(base64Image);
                     
                     String pageText = tesseract.doOCR(image);
+                    fullText.append(pageText).append("\n");
                     
-                    String cleanedText = pageText
-                        .replaceAll("<[^>]+>", "")
-                        .replaceAll("\\(pre\\)", "")
-                        .replaceAll("\\{[^}]+\\}", "")
-                        .replaceAll("\\s+", " ")
-                        .trim();
-                    
-                    fullText.append(cleanedText).append("\n\n");
-                    
-                    log.info("Page {} processed: {} chars -> {} chars cleaned", 
-                        page + 1, pageText.length(), cleanedText.length());
+                    log.info("Page {} processed: {} chars", page + 1, pageText.length());
                 } catch (Exception e) {
                     log.error("Failed to process page {}", page + 1, e);
                 }
             }
             
-            log.info("Total extracted text length: {}", fullText.length());
+            String extractedText = fullText.toString();
+            log.info("Total extracted text length: {}", extractedText.length());
             
-            if (fullText.length() > 0) {
-                questions = parseQuestions(fullText.toString());
+            if (extractedText.length() > 0) {
+                questions = parseQuestions(extractedText);
                 
-                for (int i = 0; i < questions.size() && i < pageImages.size(); i++) {
-                    questions.get(i).setImageData(pageImages.get(i));
+                if (!questions.isEmpty() && !pageImages.isEmpty()) {
+                    questions.get(0).setImageData(pageImages.get(0));
                 }
                 
-                log.info("Parsed {} questions with images", questions.size());
+                log.info("Parsed {} questions", questions.size());
             } else {
                 log.warn("No text extracted from PDF");
             }
@@ -105,19 +95,26 @@ public class OcrService {
     private List<QuestionData> parseQuestions(String text) {
         List<QuestionData> questions = new ArrayList<>();
         
+        String cleanedText = text
+            .replaceAll("자바&Springboot.*?양성과정.*?(?=\\d+\\.)", "")
+            .replaceAll("2025\\.\\d+\\.\\d+\\..*?(?=\\d+\\.)", "")
+            .replaceAll("HTML/CSS.*?(?=\\d+\\.)", "")
+            .replaceAll("평가일시.*?(?=\\d+\\.)", "")
+            .replaceAll("배점.*?(?=\\d+\\.)", "");
+        
         Pattern questionPattern = Pattern.compile(
-            "(\\d+)\\s*번?[.)]?\\s+(.+?)(?=\\d+\\s*번?[.)]|$)",
+            "(\\d+)\\.\\s*([^\\d][^1234]+?)(?=\\d+\\)|$)",
             Pattern.DOTALL
         );
         
-        Matcher matcher = questionPattern.matcher(text);
+        Matcher matcher = questionPattern.matcher(cleanedText);
         
         while (matcher.find()) {
             try {
                 int questionNumber = Integer.parseInt(matcher.group(1).trim());
-                String questionContent = matcher.group(2).trim();
+                String content = matcher.group(2).trim();
                 
-                if (questionContent.length() < 5) {
+                if (content.length() < 10) {
                     continue;
                 }
                 
@@ -126,72 +123,49 @@ public class OcrService {
                 question.setPoints(10);
                 question.setCorrectAnswer("1");
                 
-                if (hasOptions(questionContent)) {
+                String[] parts = content.split("(?=1\\))");
+                
+                if (parts.length >= 2) {
                     question.setQuestionType("multiple_choice");
-                    parseQuestionWithOptions(question, questionContent);
+                    question.setQuestionText(parts[0].trim());
+                    
+                    String optionsText = parts[1];
+                    
+                    Pattern optionPattern = Pattern.compile("(\\d+)\\)\\s*(.+?)(?=\\d+\\)|$)", Pattern.DOTALL);
+                    Matcher optionMatcher = optionPattern.matcher(optionsText);
+                    
+                    String[] options = new String[4];
+                    
+                    while (optionMatcher.find()) {
+                        int optNum = Integer.parseInt(optionMatcher.group(1).trim());
+                        String optText = optionMatcher.group(2).trim()
+                            .replaceAll("\\s+", " ")
+                            .replaceAll("<", "&lt;")
+                            .replaceAll(">", "&gt;");
+                        
+                        if (optNum >= 1 && optNum <= 4) {
+                            options[optNum - 1] = optText;
+                        }
+                    }
+                    
+                    question.setOptionA(options[0] != null ? options[0] : "");
+                    question.setOptionB(options[1] != null ? options[1] : "");
+                    question.setOptionC(options[2] != null ? options[2] : "");
+                    question.setOptionD(options[3] != null ? options[3] : "");
                 } else {
                     question.setQuestionType("subjective");
-                    question.setQuestionText(questionContent);
+                    question.setQuestionText(content.trim());
                 }
                 
                 questions.add(question);
-                log.info("Parsed question {}: {} chars", questionNumber, questionContent.length());
+                log.info("Parsed Q{}: {}", questionNumber, question.getQuestionText().substring(0, Math.min(50, question.getQuestionText().length())));
+                
             } catch (Exception e) {
                 log.warn("Failed to parse question", e);
             }
         }
         
         return questions;
-    }
-
-    private boolean hasOptions(String content) {
-        return content.matches(".*[①②③④⑤].*") || 
-               content.matches(".*\\d+\\).*\\d+\\).*") ||
-               content.matches(".*\\(\\d+\\).*\\(\\d+\\).*");
-    }
-
-    private void parseQuestionWithOptions(QuestionData question, String content) {
-        String questionText = content;
-        String[] options = new String[4];
-        
-        Pattern circlePattern = Pattern.compile("(.*?)①\\s*([^②③④⑤]+?)\\s*②\\s*([^②③④⑤]+?)\\s*③\\s*([^②③④⑤]+?)\\s*④\\s*([^②③④⑤]+?).*", Pattern.DOTALL);
-        Matcher circleMatcher = circlePattern.matcher(content);
-        
-        if (circleMatcher.find()) {
-            questionText = circleMatcher.group(1).trim();
-            options[0] = circleMatcher.group(2).trim();
-            options[1] = circleMatcher.group(3).trim();
-            options[2] = circleMatcher.group(4).trim();
-            options[3] = circleMatcher.group(5).trim();
-        } else {
-            Pattern numberPattern = Pattern.compile("(.*?)1\\)\\s*([^2)]+?)\\s*2\\)\\s*([^3)]+?)\\s*3\\)\\s*([^4)]+?)\\s*4\\)\\s*([^5)]+?).*", Pattern.DOTALL);
-            Matcher numberMatcher = numberPattern.matcher(content);
-            
-            if (numberMatcher.find()) {
-                questionText = numberMatcher.group(1).trim();
-                options[0] = numberMatcher.group(2).trim();
-                options[1] = numberMatcher.group(3).trim();
-                options[2] = numberMatcher.group(4).trim();
-                options[3] = numberMatcher.group(5).trim();
-            } else {
-                Pattern parenPattern = Pattern.compile("(.*?)\\(1\\)\\s*([^()]+?)\\s*\\(2\\)\\s*([^()]+?)\\s*\\(3\\)\\s*([^()]+?)\\s*\\(4\\)\\s*([^()]+?).*", Pattern.DOTALL);
-                Matcher parenMatcher = parenPattern.matcher(content);
-                
-                if (parenMatcher.find()) {
-                    questionText = parenMatcher.group(1).trim();
-                    options[0] = parenMatcher.group(2).trim();
-                    options[1] = parenMatcher.group(3).trim();
-                    options[2] = parenMatcher.group(4).trim();
-                    options[3] = parenMatcher.group(5).trim();
-                }
-            }
-        }
-        
-        question.setQuestionText(questionText);
-        question.setOptionA(options[0] != null ? options[0].replaceAll("\\s+", " ") : "");
-        question.setOptionB(options[1] != null ? options[1].replaceAll("\\s+", " ") : "");
-        question.setOptionC(options[2] != null ? options[2].replaceAll("\\s+", " ") : "");
-        question.setOptionD(options[3] != null ? options[3].replaceAll("\\s+", " ") : "");
     }
 
     public static class QuestionData {
