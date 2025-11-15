@@ -118,6 +118,26 @@ class ApiService {
   static Future<bool> deleteStudent(String id) async {
     final response = await http.delete(Uri.parse('$baseUrl/admin/students/$id'));
     return response.statusCode == 200;
+
+  static Future<Map<String, dynamic>> createStudent({
+    required String username,
+    required String displayName,
+    String? groupId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/admin/students'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': username,
+        'displayName': displayName,
+        'groupId': groupId,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('학생 생성 실패: ${response.statusCode}');
+    }
+    return jsonDecode(response.body);
+  }
   }
 
   static Future<Map<String, dynamic>> getWorksheetWithQuestions(String id) async {
