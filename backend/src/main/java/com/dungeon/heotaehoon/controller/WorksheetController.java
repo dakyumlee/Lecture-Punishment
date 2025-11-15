@@ -14,7 +14,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/worksheets")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class WorksheetController {
 
     private final WorksheetService worksheetService;

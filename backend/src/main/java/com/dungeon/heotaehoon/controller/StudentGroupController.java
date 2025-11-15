@@ -13,7 +13,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/groups")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class StudentGroupController {
 
     private final StudentGroupService groupService;
