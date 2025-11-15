@@ -2,17 +2,14 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
 import '../theme/app_theme.dart';
-
 class RageDialogueWidget extends StatelessWidget {
   final String dialogue;
   final bool isCorrect;
-
   const RageDialogueWidget({
     super.key,
     required this.dialogue,
     required this.isCorrect,
   });
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -42,17 +39,13 @@ class RageDialogueWidget extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text(
                   dialogue,
                   style: TextStyle(
                     color: isCorrect ? Colors.green[200] : Colors.red[200],
                     fontSize: 24,
-                  ),
                   textAlign: TextAlign.center,
-                ),
               ],
             ),
-          ),
         ],
       ),
     );

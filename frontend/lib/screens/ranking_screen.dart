@@ -5,22 +5,17 @@ import '../theme/app_theme.dart';
 
 class RankingScreen extends StatefulWidget {
   const RankingScreen({super.key});
-
   @override
   State<RankingScreen> createState() => _RankingScreenState();
 }
-
 class _RankingScreenState extends State<RankingScreen> {
   final ApiService _apiService = ApiService();
   List<Student> _topStudents = [];
   bool _isLoading = true;
-
-  @override
   void initState() {
     super.initState();
     _loadRankings();
   }
-
   Future<void> _loadRankings() async {
     try {
       final students = await _apiService.getTopStudents();
@@ -36,9 +31,6 @@ class _RankingScreenState extends State<RankingScreen> {
         );
       }
     }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -60,7 +52,6 @@ class _RankingScreenState extends State<RankingScreen> {
                   final student = _topStudents[index];
                   final rank = index + 1;
                   final hasRageResistance = rank <= 10;
-
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
@@ -95,37 +86,24 @@ class _RankingScreenState extends State<RankingScreen> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
                                 'Lv.${student.level} | EXP ${student.exp}',
-                                style: const TextStyle(
                                   color: AppTheme.accentBrown,
                                   fontSize: 14,
-                                ),
-                              ),
                             ],
-                          ),
-                        ),
                         if (hasRageResistance)
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 4,
-                            ),
                             color: Colors.red[900],
                             child: const Text(
                               '분노 내성 +10%',
                               style: TextStyle(
                                 color: AppTheme.lightGray,
                                 fontSize: 12,
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   );
                 },
               ),
-      ),
     );
-  }
-}

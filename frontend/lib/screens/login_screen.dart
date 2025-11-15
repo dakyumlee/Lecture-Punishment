@@ -6,14 +6,11 @@ import '../providers/game_provider.dart';
 import 'home_screen.dart';
 import 'profile_complete_screen.dart';
 import 'admin_login_screen.dart';
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
-
 class _LoginScreenState extends State<LoginScreen> {
   final _nameController = TextEditingController();
   final _birthDateController = TextEditingController();
@@ -21,18 +18,15 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _showExtraFields = false;
   String? _errorMessage;
-
   Future<void> _login() async {
     if (_nameController.text.isEmpty) {
       setState(() => _errorMessage = '이름을 입력해주세요');
       return;
     }
-
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-
     try {
       final provider = Provider.of<GameProvider>(context, listen: false);
       await provider.studentLogin(
@@ -40,7 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
         birthDate: _birthDateController.text.isNotEmpty ? _birthDateController.text : null,
         phoneNumber: _phoneController.text.isNotEmpty ? _phoneController.text : null,
       );
-
       if (mounted && provider.currentStudent != null) {
         if (provider.currentStudent!.isProfileComplete == false) {
           Navigator.pushReplacement(
@@ -48,12 +41,9 @@ class _LoginScreenState extends State<LoginScreen> {
             MaterialPageRoute(builder: (context) => const ProfileCompleteScreen()),
           );
         } else {
-          Navigator.pushReplacement(
-            context,
             MaterialPageRoute(
               builder: (context) => HomeScreen(initialStudent: provider.currentStudent!),
             ),
-          );
         }
       }
     } catch (e) {
@@ -65,13 +55,9 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       } else {
         setState(() => _errorMessage = '로그인 실패: $errorMsg');
-      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
-    }
   }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
@@ -112,16 +98,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(color: Color(0xFF595048)),
-                        ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF595048)),
-                        ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(color: Color(0xFF736A63)),
-                        ),
-                      ),
                       onSubmitted: (_) => _showExtraFields ? null : _login(),
                     ),
                     if (_showExtraFields) ...[
@@ -130,8 +109,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _birthDateController,
                         style: const TextStyle(
                           color: Color(0xFFD9D4D2),
-                          fontFamily: 'JoseonGulim',
-                        ),
                         decoration: InputDecoration(
                           labelText: '생년월일 (예: 20000101)',
                           labelStyle: const TextStyle(
@@ -143,59 +120,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(color: Color(0xFF595048)),
-                          ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF595048)),
-                          ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(color: Color(0xFF736A63)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
                         controller: _phoneController,
-                        style: const TextStyle(
-                          color: Color(0xFFD9D4D2),
-                          fontFamily: 'JoseonGulim',
-                        ),
-                        decoration: InputDecoration(
                           labelText: '휴대폰 번호 (예: 010-1234-5678)',
-                          labelStyle: const TextStyle(
-                            color: Color(0xFF736A63),
-                            fontFamily: 'JoseonGulim',
-                          ),
-                          filled: true,
-                          fillColor: const Color(0xFF0D0D0D),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF595048)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF595048)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF736A63)),
-                          ),
-                        ),
                         onSubmitted: (_) => _login(),
-                      ),
                     ],
                     if (_errorMessage != null) ...[
-                      const SizedBox(height: 16),
                       Text(
                         _errorMessage!,
                         style: TextStyle(
                           color: _showExtraFields ? const Color(0xFFD9D4D2) : Colors.red,
-                          fontFamily: 'JoseonGulim',
-                        ),
                         textAlign: TextAlign.center,
-                      ),
-                    ],
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
@@ -206,9 +143,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           foregroundColor: const Color(0xFFD9D4D2),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
                         child: _isLoading
                             ? const SizedBox(
                                 height: 20,
@@ -223,39 +157,26 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontFamily: 'JoseonGulim',
-                                ),
                               ),
-                      ),
-                    ),
                   ],
-                ),
-              ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-                ),
                 child: const Text(
                   '관리자 로그인 →',
                   style: TextStyle(
                     color: Color(0xFF736A63),
                     fontFamily: 'JoseonGulim',
                   ),
-                ),
-              ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  @override
   void dispose() {
     _nameController.dispose();
     _birthDateController.dispose();
     _phoneController.dispose();
     super.dispose();
-  }
-}

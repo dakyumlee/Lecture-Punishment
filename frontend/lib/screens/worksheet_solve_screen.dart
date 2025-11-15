@@ -1,25 +1,21 @@
 import '../services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:html' as html;
-import '../services/api_service.dart';
 import 'worksheet_result_screen.dart';
 
 class WorksheetSolveScreen extends StatefulWidget {
   final String worksheetId;
   final String worksheetTitle;
   final String studentId;
-
   const WorksheetSolveScreen({
     super.key,
     required this.worksheetId,
     required this.worksheetTitle,
     required this.studentId,
   });
-
   @override
   State<WorksheetSolveScreen> createState() => _WorksheetSolveScreenState();
 }
-
 class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
   Map<String, dynamic>? _worksheet;
   List<dynamic> _questions = [];
@@ -27,13 +23,10 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
   Map<String, String?> _selectedAnswers = {};
   bool _isLoading = true;
   bool _isSubmitting = false;
-
-  @override
   void initState() {
     super.initState();
     _loadWorksheet();
   }
-
   Future<void> _loadWorksheet() async {
     try {
       final data = await ApiService.getWorksheetWithQuestions(widget.worksheetId);
@@ -52,13 +45,9 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: $e')));
       }
     }
-  }
-
   void _openPdf() {
     final pdfUrl = '${ApiService.baseUrl}/worksheets/${widget.worksheetId}/pdf';
     html.window.open(pdfUrl, '_blank');
-  }
-
   Future<void> _submitAnswers() async {
     bool allAnswered = true;
     for (var q in _questions) {
@@ -67,25 +56,14 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
         if (_selectedAnswers[questionId] == null) {
           allAnswered = false;
           break;
-        }
       } else {
         if (_answerControllers[questionId]?.text.isEmpty ?? true) {
-          allAnswered = false;
-          break;
-        }
-      }
-    }
-
     if (!allAnswered) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('모든 문제에 답을 입력해주세요!')),
       );
       return;
-    }
-
     setState(() => _isSubmitting = true);
-
-    try {
       final answers = _questions.map<Map<String, String>>((q) {
         final questionId = q['id'] as String;
         final answer = q['questionType'] == 'multiple_choice'
@@ -96,14 +74,10 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
           'answer': answer,
         };
       }).toList();
-
       final result = await ApiService.submitWorksheet(
         worksheetId: widget.worksheetId,
         studentId: widget.studentId,
         answers: answers,
-      );
-
-      if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -113,17 +87,9 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
             ),
           ),
         );
-      }
-    } catch (e) {
-      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('제출 실패: $e')));
-      }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
@@ -137,7 +103,6 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
             icon: const Icon(Icons.picture_as_pdf),
             onPressed: _openPdf,
             tooltip: 'PDF 보기',
-          ),
         ],
       ),
       body: _isLoading
@@ -176,13 +141,7 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
                           const Text(
                             'PDF 보기 →',
                             style: TextStyle(
-                              color: Color(0xFF736A63),
-                              fontFamily: 'JoseonGulim',
-                              fontSize: 12,
-                            ),
-                          ),
                         ],
-                      ),
                     ],
                   ),
                 ),
@@ -194,7 +153,6 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
                       final question = _questions[index];
                       final questionId = question['id'];
                       final isMultipleChoice = question['questionType'] == 'multiple_choice';
-
                       return Card(
                         color: const Color(0xFF595048),
                         margin: const EdgeInsets.only(bottom: 16),
@@ -218,32 +176,20 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
                                         fontFamily: 'JoseonGulim',
                                         fontWeight: FontWeight.bold,
                                       ),
-                                    ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
                                       color: isMultipleChoice ? const Color(0xFF736A63) : const Color(0xFFD9D4D2),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
                                       isMultipleChoice ? '객관식' : '주관식',
                                       style: TextStyle(
                                         color: isMultipleChoice ? const Color(0xFFD9D4D2) : const Color(0xFF00010D),
-                                        fontFamily: 'JoseonGulim',
                                         fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
                                   const Spacer(),
                                   Text(
                                     '${question['points']}점',
                                     style: const TextStyle(
                                       color: Color(0xFF736A63),
                                       fontFamily: 'JoseonGulim',
-                                    ),
-                                  ),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -254,7 +200,6 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
                                   fontFamily: 'JoseonGulim',
                                   fontSize: 16,
                                 ),
-                              ),
                               const SizedBox(height: 16),
                               if (isMultipleChoice) ...[
                                 if (question['optionA'] != null && question['optionA'].toString().isNotEmpty)
@@ -275,23 +220,12 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
                                     hintStyle: TextStyle(color: Color(0xFF736A63)),
                                     enabledBorder: OutlineInputBorder(
                                       borderSide: BorderSide(color: Color(0xFF736A63)),
-                                    ),
                                     focusedBorder: OutlineInputBorder(
                                       borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                                    ),
-                                  ),
-                                ),
                               ],
                             ],
-                          ),
-                        ),
                       );
                     },
-                  ),
-                ),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
                   child: ElevatedButton(
                     onPressed: _isSubmitting ? null : _submitAnswers,
                     style: ElevatedButton.styleFrom(
@@ -302,20 +236,11 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
                         ? const CircularProgressIndicator(color: Color(0xFF00010D))
                         : const Text(
                             '제출하기',
-                            style: TextStyle(
-                              fontFamily: 'JoseonGulim',
                               fontSize: 18,
                               color: Color(0xFF00010D),
                               fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
               ],
-            ),
     );
-  }
-
   Widget _buildMultipleChoiceOption(String questionId, String option, String text) {
     final isSelected = _selectedAnswers[questionId] == option;
     return GestureDetector(
@@ -329,7 +254,6 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
           border: Border.all(
             color: isSelected ? const Color(0xFFD9D4D2) : const Color(0xFF736A63),
             width: 2,
-          ),
         ),
         child: Row(
           children: [
@@ -347,10 +271,6 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
                     color: isSelected ? const Color(0xFFD9D4D2) : const Color(0xFF736A63),
                     fontFamily: 'JoseonGulim',
                     fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -358,20 +278,8 @@ class _WorksheetSolveScreenState extends State<WorksheetSolveScreen> {
                 style: TextStyle(
                   color: isSelected ? const Color(0xFF00010D) : const Color(0xFFD9D4D2),
                   fontFamily: 'JoseonGulim',
-                ),
-              ),
-            ),
           ],
-        ),
-      ),
-    );
-  }
-
-  @override
   void dispose() {
     for (var controller in _answerControllers.values) {
       controller.dispose();
-    }
     super.dispose();
-  }
-}

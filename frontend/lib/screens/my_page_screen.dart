@@ -5,24 +5,18 @@ import 'package:provider/provider.dart';
 import '../providers/game_provider.dart';
 import '../models/student.dart';
 import 'profile_edit_screen.dart';
-
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
-
   @override
   State<MyPageScreen> createState() => _MyPageScreenState();
 }
-
 class _MyPageScreenState extends State<MyPageScreen> {
   Map<String, dynamic>? _myPageData;
   bool _isLoading = true;
-
-  @override
   void initState() {
     super.initState();
     _loadMyPageData();
   }
-
   Future<void> _loadMyPageData() async {
     try {
       final provider = Provider.of<GameProvider>(context, listen: false);
@@ -39,8 +33,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
         );
       }
     }
-  }
-
   Future<void> _navigateToEditProfile(Student student) async {
     final result = await Navigator.push(
       context,
@@ -48,16 +40,10 @@ class _MyPageScreenState extends State<MyPageScreen> {
         builder: (context) => ProfileEditScreen(student: student),
       ),
     );
-
     if (result == true) {
       _loadMyPageData();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final student = Provider.of<GameProvider>(context).currentStudent;
-
     if (student == null) {
       return const Scaffold(
         backgroundColor: Color(0xFF00010D),
@@ -72,19 +58,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
           ),
         ),
       );
-    }
-
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF00010D),
-        body: Center(
           child: CircularProgressIndicator(
             color: Color(0xFFD9D4D2),
-          ),
-        ),
-      );
-    }
-
     final level = _myPageData?['level'] ?? student.level;
     final exp = _myPageData?['exp'] ?? student.exp;
     final points = _myPageData?['points'] ?? student.points;
@@ -92,7 +68,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
     final totalWrong = _myPageData?['totalWrong'] ?? 0;
     final totalAttempts = totalCorrect + totalWrong;
     final accuracy = totalAttempts > 0 ? (totalCorrect / totalAttempts * 100).toStringAsFixed(1) : '0.0';
-
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
       appBar: AppBar(
@@ -100,15 +75,10 @@ class _MyPageScreenState extends State<MyPageScreen> {
         title: const Text(
           '마이페이지',
           style: TextStyle(
-            color: Color(0xFFD9D4D2),
             fontFamily: 'JoseonGulim',
-          ),
-        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFFD9D4D2)),
           onPressed: () => Navigator.pop(context),
-        ),
-      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -130,7 +100,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
                           student.characterExpression ?? '😊',
                           style: const TextStyle(fontSize: 60),
                         ),
-                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -140,17 +109,10 @@ class _MyPageScreenState extends State<MyPageScreen> {
                         fontFamily: 'JoseonGulim',
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                      ),
-                    ),
                     const SizedBox(height: 8),
-                    Text(
                       '@${student.username}',
-                      style: const TextStyle(
                         color: Color(0xFF736A63),
-                        fontFamily: 'JoseonGulim',
                         fontSize: 16,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -162,20 +124,12 @@ class _MyPageScreenState extends State<MyPageScreen> {
                   _buildInfoRow('경험치', '$exp EXP'),
                   _buildInfoRow('포인트', '$points P'),
                 ],
-              ),
               const SizedBox(height: 16),
-              _buildInfoCard(
                 title: '학습 통계',
-                children: [
                   _buildInfoRow('정답', '$totalCorrect'),
                   _buildInfoRow('오답', '$totalWrong'),
                   _buildInfoRow('정확도', '$accuracy%'),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildInfoCard(
                 title: '프로필 정보',
-                children: [
                   if (student.birthDate != null)
                     _buildInfoRow('생년월일', student.birthDate!),
                   if (student.phoneNumber != null)
@@ -190,12 +144,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
                         style: TextStyle(
                           color: Color(0xFF736A63),
                           fontFamily: 'JoseonGulim',
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -206,24 +154,13 @@ class _MyPageScreenState extends State<MyPageScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
-                    ),
                   ),
                   child: const Text(
                     '프로필 편집',
                     style: TextStyle(
                       fontSize: 18,
                       fontFamily: 'JoseonGulim',
-                    ),
-                  ),
-                ),
-              ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildInfoCard({required String title, required List<Widget> children}) {
     return Container(
       width: double.infinity,
@@ -232,51 +169,23 @@ class _MyPageScreenState extends State<MyPageScreen> {
         color: const Color(0xFF0D0D0D),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFF595048)),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
             style: const TextStyle(
-              color: Color(0xFFD9D4D2),
-              fontFamily: 'JoseonGulim',
               fontSize: 20,
               fontWeight: FontWeight.bold,
-            ),
-          ),
           const SizedBox(height: 12),
           ...children,
         ],
-      ),
-    );
-  }
-
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
             label,
-            style: const TextStyle(
               color: Color(0xFF736A63),
-              fontFamily: 'JoseonGulim',
               fontSize: 16,
-            ),
-          ),
-          Text(
             value,
-            style: const TextStyle(
-              color: Color(0xFFD9D4D2),
-              fontFamily: 'JoseonGulim',
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

@@ -1,24 +1,18 @@
 import '../services/api_service.dart';
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
 
 class GradingScreen extends StatefulWidget {
   const GradingScreen({super.key});
-
   @override
   State<GradingScreen> createState() => _GradingScreenState();
 }
-
 class _GradingScreenState extends State<GradingScreen> {
   List<dynamic> _submissions = [];
   bool _isLoading = true;
-
-  @override
   void initState() {
     super.initState();
     _loadSubmissions();
   }
-
   Future<void> _loadSubmissions() async {
     setState(() => _isLoading = true);
     try {
@@ -35,30 +29,14 @@ class _GradingScreenState extends State<GradingScreen> {
         );
       }
     }
-  }
-
   Future<void> _openGradingDetail(String submissionId) async {
-    try {
       final detail = await ApiService.getSubmissionDetail(submissionId);
-      if (mounted) {
         await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => GradingDetailScreen(submission: detail),
           ),
-        );
         _loadSubmissions();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('오류: $e')),
-        );
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
@@ -94,7 +72,6 @@ class _GradingScreenState extends State<GradingScreen> {
                         subtitle: Text(
                           submission['worksheetTitle'] ?? '',
                           style: const TextStyle(color: Color(0xFF736A63)),
-                        ),
                         trailing: const Icon(Icons.chevron_right, color: Color(0xFFD9D4D2)),
                         onTap: () => _openGradingDetail(submission['id']),
                       ),
@@ -102,33 +79,17 @@ class _GradingScreenState extends State<GradingScreen> {
                   },
                 ),
     );
-  }
-}
-
 class GradingDetailScreen extends StatefulWidget {
   final Map<String, dynamic> submission;
-
   const GradingDetailScreen({super.key, required this.submission});
-
-  @override
   State<GradingDetailScreen> createState() => _GradingDetailScreenState();
-}
-
 class _GradingDetailScreenState extends State<GradingDetailScreen> {
   late List<dynamic> _answers;
   Map<String, int> _pointsControllers = {};
-
-  @override
-  void initState() {
-    super.initState();
     _answers = widget.submission['answers'] ?? [];
     for (var answer in _answers) {
       _pointsControllers[answer['id']] = answer['pointsEarned'] ?? 0;
-    }
-  }
-
   Future<void> _updateGrade(String answerId, int points, bool isCorrect) async {
-    try {
       final success = await ApiService.gradeAnswer(
         submissionId: widget.submission['id'],
         answerId: answerId,
@@ -137,32 +98,12 @@ class _GradingDetailScreenState extends State<GradingDetailScreen> {
       );
       
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('채점이 저장되었습니다')),
-        );
         Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('채점 실패: $e')),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF00010D),
-      appBar: AppBar(
         title: Text(
           '${widget.submission['studentName']} - 채점',
           style: const TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2)),
-        ),
-        backgroundColor: const Color(0xFF00010D),
-        iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
-      ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _answers.length,
@@ -172,7 +113,6 @@ class _GradingDetailScreenState extends State<GradingDetailScreen> {
           final questionText = answer['questionText'] ?? '';
           final studentAnswer = answer['answer'] ?? '';
           final maxPoints = answer['maxPoints'] ?? 10;
-
           return Card(
             color: const Color(0xFF595048),
             margin: const EdgeInsets.only(bottom: 16),
@@ -189,31 +129,24 @@ class _GradingDetailScreenState extends State<GradingDetailScreen> {
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
-                  ),
                   const SizedBox(height: 8),
-                  Text(
                     questionText,
                     style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
-                  ),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0D0D0D),
                       borderRadius: BorderRadius.circular(8),
-                    ),
                     child: Text(
                       '학생 답안: $studentAnswer',
                       style: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                    ),
-                  ),
                   const SizedBox(height: 16),
                   Row(
                     children: [
                       const Text(
                         '점수:',
                         style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
-                      ),
                       const SizedBox(width: 8),
                       SizedBox(
                         width: 80,
@@ -232,12 +165,9 @@ class _GradingDetailScreenState extends State<GradingDetailScreen> {
                           onChanged: (value) {
                             _pointsControllers[answerId] = int.tryParse(value) ?? 0;
                           },
-                        ),
-                      ),
                       Text(
                         ' / $maxPoints',
                         style: const TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
-                      ),
                       const SizedBox(width: 16),
                       ElevatedButton(
                         onPressed: () {
@@ -249,23 +179,14 @@ class _GradingDetailScreenState extends State<GradingDetailScreen> {
                           backgroundColor: const Color(0xFFD9D4D2),
                           foregroundColor: const Color(0xFF00010D),
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
                         child: const Text(
                           '저장',
                           style: TextStyle(
                             fontFamily: 'JoseonGulim',
                             fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
                     ],
-                  ),
                 ],
               ),
             ),
           );
         },
-      ),
-    );
-  }
-}

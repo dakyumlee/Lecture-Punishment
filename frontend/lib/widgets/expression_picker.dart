@@ -1,25 +1,21 @@
 import '../services/api_service.dart';
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
 
 class ExpressionPicker extends StatelessWidget {
   final String studentId;
   final String currentExpression;
   final Function(String) onExpressionChanged;
-
   const ExpressionPicker({
     super.key,
     required this.studentId,
     required this.currentExpression,
     required this.onExpressionChanged,
   });
-
   final List<String> expressions = const [
     '😊', '😎', '😂', '🤔', '😴', '😡', 
     '🥳', '😭', '🤯', '😱', '🤓', '😈',
     '💀', '🤡', '👻', '🤖', '👽', '🦄'
   ];
-
   Future<void> _selectExpression(BuildContext context, String expression) async {
     try {
       await ApiService.changeExpression(
@@ -34,14 +30,9 @@ class ExpressionPicker extends StatelessWidget {
         );
       }
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('표정 변경 실패: $e')),
-        );
-      }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -82,13 +73,9 @@ class ExpressionPicker extends StatelessWidget {
                   child: Text(
                     expression,
                     style: const TextStyle(fontSize: 32),
-                  ),
-                ),
               ),
             );
           },
-        ),
-      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
@@ -98,9 +85,6 @@ class ExpressionPicker extends StatelessWidget {
               color: Color(0xFF736A63),
               fontFamily: 'JoseonGulim',
             ),
-          ),
-        ),
       ],
     );
-  }
 }

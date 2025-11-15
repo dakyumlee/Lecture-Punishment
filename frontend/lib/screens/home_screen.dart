@@ -9,24 +9,18 @@ import 'my_page_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Student initialStudent;
-
   const HomeScreen({super.key, required this.initialStudent});
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
-
 class _HomeScreenState extends State<HomeScreen> {
   late Student student;
   bool _isLoading = false;
-
-  @override
   void initState() {
     super.initState();
     student = widget.initialStudent;
     _refreshStudent();
   }
-
   Future<void> _refreshStudent() async {
     try {
       setState(() => _isLoading = true);
@@ -38,9 +32,6 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
     }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
@@ -61,14 +52,10 @@ class _HomeScreenState extends State<HomeScreen> {
               _refreshStudent();
             },
           ),
-          IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xFFD9D4D2)),
             onPressed: _refreshStudent,
-          ),
-          IconButton(
             icon: const Icon(Icons.logout, color: Color(0xFFD9D4D2)),
             onPressed: () => Navigator.pop(context),
-          ),
         ],
       ),
       body: _isLoading
@@ -105,17 +92,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
-                          ),
                           const SizedBox(height: 8),
-                          Text(
                             '@${student.username}',
-                            style: const TextStyle(
                               color: Color(0xFF736A63),
-                              fontFamily: 'JoseonGulim',
                               fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
@@ -123,24 +103,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               _buildStatColumn('EXP', '${student.exp}'),
                               _buildStatColumn('포인트', '${student.points}'),
                             ],
-                          ),
-                          const SizedBox(height: 16),
                           LinearProgressIndicator(
                             value: student.exp / (student.level * 100),
                             backgroundColor: const Color(0xFF736A63),
                             valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFD9D4D2)),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
                             '다음 레벨까지 ${(student.level * 100) - student.exp} EXP',
-                            style: const TextStyle(
-                              color: Color(0xFF736A63),
-                              fontFamily: 'JoseonGulim',
                               fontSize: 12,
-                            ),
-                          ),
                         ],
-                      ),
                     ),
                     const SizedBox(height: 24),
                     _buildMenuButton(
@@ -152,58 +121,26 @@ class _HomeScreenState extends State<HomeScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => DungeonEntranceScreen(student: student),
-                          ),
                         );
                         _refreshStudent();
                       },
-                    ),
                     const SizedBox(height: 12),
-                    _buildMenuButton(
-                      context,
                       '📝 문제지 풀기',
                       'PDF 문제지 도전하기',
-                      () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
                             builder: (context) => WorksheetListScreen(studentId: student.id),
-                          ),
-                        );
-                        _refreshStudent();
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _buildMenuButton(
-                      context,
                       '🛒 상점',
                       '포인트로 아이템 구매',
-                      () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
                             builder: (context) => ShopScreen(student: student),
-                          ),
-                        );
-                        _refreshStudent();
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _buildMenuButton(
-                      context,
                       '🏆 랭킹',
                       '다른 학생들과 경쟁하기',
                       () => Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const RankingScreen()),
-                      ),
-                    ),
                   ],
                 ),
               ),
             ),
     );
-  }
-
   Widget _buildStatColumn(String label, String value) {
     return Column(
       children: [
@@ -214,20 +151,10 @@ class _HomeScreenState extends State<HomeScreen> {
             fontFamily: 'JoseonGulim',
             fontSize: 20,
             fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
           label,
-          style: const TextStyle(
             color: Color(0xFF736A63),
-            fontFamily: 'JoseonGulim',
             fontSize: 12,
-          ),
-        ),
       ],
-    );
-  }
-
   Widget _buildMenuButton(
     BuildContext context,
     String title,
@@ -242,7 +169,6 @@ class _HomeScreenState extends State<HomeScreen> {
           color: const Color(0xFF595048),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFF736A63), width: 1),
-        ),
         child: Row(
           children: [
             Expanded(
@@ -256,24 +182,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontFamily: 'JoseonGulim',
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                    ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
                     subtitle,
-                    style: const TextStyle(
                       color: Color(0xFF736A63),
-                      fontFamily: 'JoseonGulim',
                       fontSize: 14,
-                    ),
-                  ),
                 ],
-              ),
-            ),
             const Icon(Icons.arrow_forward_ios, color: Color(0xFFD9D4D2), size: 20),
           ],
-        ),
-      ),
-    );
-  }
-}

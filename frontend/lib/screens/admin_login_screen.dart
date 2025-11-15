@@ -4,29 +4,24 @@ import 'admin_dashboard_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
-
   @override
   State<AdminLoginScreen> createState() => _AdminLoginScreenState();
 }
-
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
-
   Future<void> _login() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-
     try {
       final result = await ApiService.adminLogin(
         _usernameController.text,
         _passwordController.text,
       );
-
       if (mounted && result['success'] == true) {
         Navigator.pushReplacement(
           context,
@@ -41,8 +36,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
@@ -66,7 +59,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
               const SizedBox(height: 48),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 400),
@@ -89,57 +81,21 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(color: Color(0xFF595048)),
-                        ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF595048)),
-                        ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(color: Color(0xFF736A63)),
-                        ),
-                      ),
                     ),
                     const SizedBox(height: 16),
-                    TextField(
                       controller: _passwordController,
-                      style: const TextStyle(
-                        color: Color(0xFFD9D4D2),
-                        fontFamily: 'JoseonGulim',
-                      ),
                       obscureText: true,
-                      decoration: InputDecoration(
                         labelText: '비밀번호',
-                        labelStyle: const TextStyle(
-                          color: Color(0xFF736A63),
-                          fontFamily: 'JoseonGulim',
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF0D0D0D),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF595048)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF595048)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF736A63)),
-                        ),
-                      ),
                       onSubmitted: (_) => _login(),
-                    ),
                     if (_errorMessage != null) ...[
                       const SizedBox(height: 16),
                       Text(
                         _errorMessage!,
                         style: const TextStyle(
                           color: Colors.red,
-                          fontFamily: 'JoseonGulim',
-                        ),
-                      ),
                     ],
                     const SizedBox(height: 24),
                     SizedBox(
@@ -153,7 +109,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                        ),
                         child: _isLoading
                             ? const SizedBox(
                                 height: 20,
@@ -168,13 +123,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                 style: TextStyle(
                                   fontFamily: 'JoseonGulim',
                                   fontSize: 18,
-                                ),
                               ),
-                      ),
-                    ),
                   ],
-                ),
-              ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -184,19 +134,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     color: Color(0xFF736A63),
                     fontFamily: 'JoseonGulim',
                   ),
-                ),
-              ),
             ],
-          ),
         ),
       ),
     );
-  }
-
-  @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-}

@@ -6,23 +6,18 @@ class WorksheetListScreen extends StatefulWidget {
   final String studentId;
   
   const WorksheetListScreen({super.key, required this.studentId});
-
   @override
   State<WorksheetListScreen> createState() => _WorksheetListScreenState();
 }
-
 class _WorksheetListScreenState extends State<WorksheetListScreen> {
   Map<String, List<dynamic>> _groupedWorksheets = {};
   List<String> _categories = ['전체'];
   String _selectedCategory = '전체';
   bool _isLoading = true;
-
-  @override
   void initState() {
     super.initState();
     _loadWorksheets();
   }
-
   Future<void> _loadWorksheets() async {
     setState(() => _isLoading = true);
     
@@ -44,19 +39,12 @@ class _WorksheetListScreenState extends State<WorksheetListScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('오류: $e')),
-        );
       }
     }
-  }
-
   List<dynamic> get _filteredWorksheets {
     if (_selectedCategory == '전체') {
       return _groupedWorksheets.values.expand((list) => list).toList();
-    }
     return _groupedWorksheets[_selectedCategory] ?? [];
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
@@ -67,7 +55,6 @@ class _WorksheetListScreenState extends State<WorksheetListScreen> {
           style: TextStyle(
             fontFamily: 'JoseonGulim',
             color: Color(0xFFD9D4D2),
-          ),
         ),
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
       ),
@@ -100,14 +87,9 @@ class _WorksheetListScreenState extends State<WorksheetListScreen> {
                             final worksheet = _filteredWorksheets[index];
                             return _buildWorksheetCard(worksheet);
                           },
-                        ),
                       ),
-          ),
         ],
-      ),
     );
-  }
-
   Widget _buildCategoryTabs() {
     return Container(
       height: 60,
@@ -144,29 +126,21 @@ class _WorksheetListScreenState extends State<WorksheetListScreen> {
                 style: const TextStyle(
                   fontFamily: 'JoseonGulim',
                   fontSize: 14,
-                ),
-              ),
             ),
           );
         },
-      ),
-    );
-  }
-
   Widget _buildWorksheetCard(dynamic worksheet) {
     final title = worksheet['title'] ?? '제목 없음';
     final category = worksheet['category'] ?? '미분류';
     final description = worksheet['description'] ?? '';
     final totalQuestions = worksheet['totalQuestions'] ?? 0;
     final id = worksheet['id'] ?? '';
-
     return Card(
       color: const Color(0xFF0D0D0D),
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: const BorderSide(color: Color(0xFF595048)),
-      ),
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -176,11 +150,7 @@ class _WorksheetListScreenState extends State<WorksheetListScreen> {
                 worksheetId: id,
                 worksheetTitle: title,
                 studentId: widget.studentId,
-              ),
-            ),
           ).then((_) => _loadWorksheets());
-        },
-        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -197,29 +167,16 @@ class _WorksheetListScreenState extends State<WorksheetListScreen> {
                         fontFamily: 'JoseonGulim',
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 4,
-                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF595048),
                       borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
                       category,
-                      style: const TextStyle(
-                        color: Color(0xFFD9D4D2),
-                        fontFamily: 'JoseonGulim',
                         fontSize: 12,
-                      ),
-                    ),
-                  ),
                 ],
-              ),
               if (description.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -228,19 +185,13 @@ class _WorksheetListScreenState extends State<WorksheetListScreen> {
                     color: Color(0xFF736A63),
                     fontFamily: 'JoseonGulim',
                     fontSize: 14,
-                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                ),
               ],
               const SizedBox(height: 12),
-              Row(
-                children: [
                   const Icon(
                     Icons.quiz,
-                    color: Color(0xFF736A63),
                     size: 18,
-                  ),
                   const SizedBox(width: 4),
                   Text(
                     '문제 $totalQuestions개',
@@ -248,20 +199,8 @@ class _WorksheetListScreenState extends State<WorksheetListScreen> {
                       color: Color(0xFF736A63),
                       fontFamily: 'JoseonGulim',
                       fontSize: 14,
-                    ),
-                  ),
                   const Spacer(),
-                  const Icon(
                     Icons.arrow_forward_ios,
                     color: Color(0xFF595048),
                     size: 16,
-                  ),
-                ],
-              ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}

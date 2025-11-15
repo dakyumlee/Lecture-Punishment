@@ -5,12 +5,9 @@ import 'package:provider/provider.dart';
 import '../providers/game_provider.dart';
 import '../models/student.dart';
 import 'home_screen.dart';
-
 class ResultScreen extends StatelessWidget {
   final Student student;
-
   const ResultScreen({super.key, required this.student});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,19 +41,8 @@ class ResultScreen extends StatelessWidget {
                   Text(
                     '정답: ${provider.correctCount}',
                     style: const TextStyle(
-                      color: Color(0xFFD9D4D2),
-                      fontFamily: 'JoseonGulim',
                       fontSize: 24,
-                    ),
-                  ),
-                  Text(
                     '오답: ${provider.wrongCount}',
-                    style: const TextStyle(
-                      color: Color(0xFFD9D4D2),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 24,
-                    ),
-                  ),
                   const SizedBox(height: 64),
                   ElevatedButton(
                     onPressed: () {
@@ -74,22 +60,17 @@ class ResultScreen extends StatelessWidget {
                         horizontal: 48,
                         vertical: 16,
                       ),
-                    ),
                     child: const Text(
                       '홈으로',
                       style: TextStyle(
                         fontFamily: 'JoseonGulim',
                         fontSize: 20,
                         color: Color(0xFFD9D4D2),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
           );
         },
-      ),
     );
   }
 }

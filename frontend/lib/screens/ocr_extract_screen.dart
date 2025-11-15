@@ -4,34 +4,28 @@ import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/env.dart';
-import '../services/api_service.dart';
 
 class OcrExtractScreen extends StatefulWidget {
   const OcrExtractScreen({super.key});
-
   @override
   State<OcrExtractScreen> createState() => _OcrExtractScreenState();
 }
-
 class _OcrExtractScreenState extends State<OcrExtractScreen> {
   bool _isProcessing = false;
   List<dynamic> _extractedQuestions = [];
   String? _fileName;
   List<bool> _selectedQuestions = [];
-
   Future<void> _pickAndExtract() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
       withData: true,
     );
-
     if (result != null && result.files.single.bytes != null) {
       setState(() {
         _isProcessing = true;
         _fileName = result.files.single.name;
       });
-
       try {
         var request = http.MultipartRequest(
           'POST',
@@ -43,10 +37,8 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
           result.files.single.bytes!,
           filename: result.files.single.name,
         ));
-        
         var streamedResponse = await request.send();
         var response = await http.Response.fromStream(streamedResponse);
-        
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           setState(() {
@@ -54,7 +46,6 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
             _selectedQuestions = List.filled(_extractedQuestions.length, true);
             _isProcessing = false;
           });
-
           if (_extractedQuestions.isEmpty) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -71,11 +62,9 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('OCR 실패: $e')),
           );
-        }
       }
     }
   }
-
   Future<void> _addToWorksheet() async {
     try {
       final worksheets = await ApiService.getWorksheets();
@@ -83,12 +72,8 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
       if (worksheets.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('문제지가 없습니다. 먼저 문제지를 생성하세요.')),
-        );
         return;
-      }
-
       if (!mounted) return;
-      
       final selectedWorksheet = await showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
@@ -112,24 +97,19 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                   subtitle: Text(
                     worksheet.description ?? '',
                     style: const TextStyle(color: Color(0xFF736A63)),
-                  ),
                   onTap: () => Navigator.pop(context, worksheet.id),
                 );
               },
             ),
-          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
-            ),
           ],
         ),
       );
-
       if (selectedWorksheet != null && mounted) {
         setState(() => _isProcessing = true);
-        
         int addedCount = 0;
         for (int i = 0; i < _extractedQuestions.length; i++) {
           if (_selectedQuestions[i]) {
@@ -146,36 +126,17 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
               'correctAnswer': '',
               'points': 10,
             };
-            
             final success = await ApiService.addQuestionToWorksheet(
               selectedWorksheet,
               questionData,
             );
-            
             if (success) addedCount++;
-          }
-        }
-        
-        setState(() => _isProcessing = false);
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('$addedCount개 문제를 추가했습니다!')),
-          );
           Navigator.pop(context, true);
-        }
-      }
     } catch (e) {
       setState(() => _isProcessing = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('추가 실패: $e')),
-        );
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
@@ -185,8 +146,6 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
           style: TextStyle(
             fontFamily: 'JoseonGulim',
             color: Color(0xFFD9D4D2),
-          ),
-        ),
         backgroundColor: const Color(0xFF00010D),
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
         actions: _extractedQuestions.isNotEmpty
@@ -213,7 +172,6 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                       fontFamily: 'JoseonGulim',
                       fontSize: 16,
                     ),
-                  ),
                   if (_fileName != null) ...[
                     const SizedBox(height: 8),
                     Text(
@@ -223,7 +181,6 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                         fontFamily: 'JoseonGulim',
                         fontSize: 14,
                       ),
-                    ),
                   ],
                 ],
               ),
@@ -236,8 +193,6 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                       const Icon(
                         Icons.document_scanner,
                         size: 80,
-                        color: Color(0xFF595048),
-                      ),
                       const SizedBox(height: 24),
                       const Text(
                         'PDF 파일을 업로드하여\n문제를 자동으로 추출하세요',
@@ -247,7 +202,6 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                           fontFamily: 'JoseonGulim',
                           fontSize: 18,
                         ),
-                      ),
                       const SizedBox(height: 32),
                       ElevatedButton.icon(
                         onPressed: _pickAndExtract,
@@ -258,18 +212,13 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                             fontFamily: 'JoseonGulim',
                             fontSize: 16,
                           ),
-                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFD9D4D2),
                           foregroundColor: const Color(0xFF00010D),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 32,
                             vertical: 16,
-                          ),
-                        ),
-                      ),
                     ],
-                  ),
                 )
               : Column(
                   children: [
@@ -288,7 +237,6 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
-                          ),
                           Row(
                             children: [
                               ElevatedButton.icon(
@@ -301,20 +249,13 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              ElevatedButton.icon(
                                 onPressed: _pickAndExtract,
                                 icon: const Icon(Icons.refresh, size: 18),
                                 label: const Text('다시 추출'),
-                                style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF736A63),
                                   foregroundColor: const Color(0xFFD9D4D2),
-                                ),
-                              ),
                             ],
-                          ),
                         ],
-                      ),
-                    ),
                     Expanded(
                       child: ListView.builder(
                         padding: const EdgeInsets.all(16),
@@ -323,13 +264,6 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                           final question = _extractedQuestions[index];
                           return _buildQuestionCard(question, index);
                         },
-                      ),
-                    ),
-                  ],
-                ),
-    );
-  }
-
   Future<void> _editQuestion(int index) async {
     final question = _extractedQuestions[index];
     final isMultipleChoice = question['questionType'] == 'multiple_choice';
@@ -339,25 +273,20 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
     final optionBController = TextEditingController(text: question['optionB'] ?? '');
     final optionCController = TextEditingController(text: question['optionC'] ?? '');
     final optionDController = TextEditingController(text: question['optionD'] ?? '');
-    
     String correctAnswer = question['correctAnswer'] ?? '';
     bool isObjective = isMultipleChoice;
-
     await showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF595048),
           title: Text(
             '${question['questionNumber']}번 문제 수정',
             style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
-          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
-                  children: [
                     const Text('문제 유형:', style: TextStyle(color: Color(0xFFD9D4D2))),
                     const SizedBox(width: 16),
                     ChoiceChip(
@@ -368,19 +297,10 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                           isObjective = false;
                         });
                       },
-                    ),
                     const SizedBox(width: 8),
-                    ChoiceChip(
                       label: const Text('객관식'),
                       selected: isObjective,
-                      onSelected: (selected) {
-                        setDialogState(() {
                           isObjective = true;
-                        });
-                      },
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: questionTextController,
@@ -391,81 +311,30 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                     labelStyle: TextStyle(color: Color(0xFF736A63)),
                     enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFF736A63)),
-                    ),
                     focusedBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                    ),
-                  ),
-                ),
                 if (isObjective) ...[
                   const SizedBox(height: 12),
                   TextField(
                     controller: optionAController,
-                    style: const TextStyle(color: Color(0xFFD9D4D2)),
                     decoration: const InputDecoration(
                       labelText: '① 보기',
                       labelStyle: TextStyle(color: Color(0xFF736A63)),
                       enabledBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: Color(0xFF736A63)),
-                      ),
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 8),
-                  TextField(
                     controller: optionBController,
-                    style: const TextStyle(color: Color(0xFFD9D4D2)),
-                    decoration: const InputDecoration(
                       labelText: '② 보기',
-                      labelStyle: TextStyle(color: Color(0xFF736A63)),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFF736A63)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
                     controller: optionCController,
-                    style: const TextStyle(color: Color(0xFFD9D4D2)),
-                    decoration: const InputDecoration(
                       labelText: '③ 보기',
-                      labelStyle: TextStyle(color: Color(0xFF736A63)),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFF736A63)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
                     controller: optionDController,
-                    style: const TextStyle(color: Color(0xFFD9D4D2)),
-                    decoration: const InputDecoration(
                       labelText: '④ 보기',
-                      labelStyle: TextStyle(color: Color(0xFF736A63)),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFF736A63)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                      ),
-                    ),
-                  ),
-                ],
-                  const SizedBox(height: 16),
                   const Divider(color: Color(0xFF736A63)),
-                  const SizedBox(height: 8),
                   const Text(
                     '정답 선택',
                     style: TextStyle(color: Color(0xFFD9D4D2), fontWeight: FontWeight.bold),
-                  ),
                   if (isObjective) ...[
                     Wrap(
                       spacing: 8,
@@ -478,65 +347,30 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                               correctAnswer = 'A';
                             });
                           },
-                        ),
-                        ChoiceChip(
                           label: const Text('②'),
                           selected: correctAnswer == 'B',
-                          onSelected: (selected) {
-                            setDialogState(() {
                               correctAnswer = 'B';
-                            });
-                          },
-                        ),
-                        ChoiceChip(
                           label: const Text('③'),
                           selected: correctAnswer == 'C',
-                          onSelected: (selected) {
-                            setDialogState(() {
                               correctAnswer = 'C';
-                            });
-                          },
-                        ),
-                        ChoiceChip(
                           label: const Text('④'),
                           selected: correctAnswer == 'D',
-                          onSelected: (selected) {
-                            setDialogState(() {
                               correctAnswer = 'D';
-                            });
-                          },
-                        ),
                       ],
-                    ),
                   ] else ...[
                     TextField(
                       controller: TextEditingController(text: correctAnswer),
                       onChanged: (value) {
                         correctAnswer = value;
-                      },
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
                         labelText: '정답 입력',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                         enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: Color(0xFF736A63)),
-                        ),
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
-            ),
-            TextButton(
               onPressed: () {
                 setState(() {
                   _extractedQuestions[index] = {
@@ -551,21 +385,12 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                   };
                 });
                 Navigator.pop(context);
-              },
               child: const Text('저장', style: TextStyle(color: Color(0xFFD9D4D2))),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildQuestionCard(dynamic question, int index) {
     final questionNumber = question['questionNumber'] ?? (index + 1);
     final questionType = question['questionType'] ?? 'subjective';
     final questionText = question['questionText'] ?? '';
     final isMultipleChoice = questionType == 'multiple_choice';
-
     return Card(
       color: const Color(0xFF595048),
       margin: const EdgeInsets.only(bottom: 16),
@@ -575,7 +400,6 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              children: [
                 Checkbox(
                   value: _selectedQuestions[index],
                   onChanged: (value) {
@@ -585,47 +409,26 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                   },
                   fillColor: WidgetStateProperty.all(const Color(0xFFD9D4D2)),
                   checkColor: const Color(0xFF00010D),
-                ),
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF00010D),
                     borderRadius: BorderRadius.circular(4),
-                  ),
                   child: Text(
                     '$questionNumber번',
-                    style: const TextStyle(
                       color: Color(0xFFD9D4D2),
-                      fontFamily: 'JoseonGulim',
                       fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
                     color: isMultipleChoice ? const Color(0xFF736A63) : const Color(0xFFD9D4D2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
                     isMultipleChoice ? '객관식' : '주관식',
                     style: TextStyle(
                       color: isMultipleChoice ? const Color(0xFFD9D4D2) : const Color(0xFF00010D),
-                      fontFamily: 'JoseonGulim',
                       fontSize: 12,
-                    ),
-                  ),
-                ),
                 const Spacer(),
-                IconButton(
                   icon: const Icon(Icons.edit, color: Color(0xFFD9D4D2), size: 20),
                   onPressed: () => _editQuestion(index),
                   tooltip: '문제 수정',
-                ),
-              ],
-            ),
             const SizedBox(height: 12),
             Text(
               questionText,
@@ -633,8 +436,6 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
                 color: Color(0xFFD9D4D2),
                 fontFamily: 'JoseonGulim',
                 fontSize: 14,
-              ),
-            ),
             if (isMultipleChoice) ...[
               const SizedBox(height: 12),
               if (question['optionA'] != null)
@@ -646,12 +447,6 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
               if (question['optionD'] != null)
                 _buildOption('④', question['optionD']),
             ],
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildOption(String marker, String text) {
     return Padding(
       padding: const EdgeInsets.only(top: 4),
@@ -661,8 +456,3 @@ class _OcrExtractScreenState extends State<OcrExtractScreen> {
           color: Color(0xFF736A63),
           fontFamily: 'JoseonGulim',
           fontSize: 13,
-        ),
-      ),
-    );
-  }
-}

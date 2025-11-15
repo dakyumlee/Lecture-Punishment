@@ -4,15 +4,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/env.dart';
-import '../services/api_service.dart';
 
 class WorksheetCreateScreen extends StatefulWidget {
   const WorksheetCreateScreen({super.key});
-
   @override
   State<WorksheetCreateScreen> createState() => _WorksheetCreateScreenState();
 }
-
 class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
@@ -25,23 +22,19 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
   List<bool> _selectedQuestions = [];
   String? _createdWorksheetId;
   List<int>? _pdfBytes;
-
   Future<void> _pickAndExtract() async {
     if (!_formKey.currentState!.validate()) return;
-
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
       withData: true,
     );
-
     if (result != null && result.files.single.bytes != null) {
       setState(() {
         _isProcessing = true;
         _fileName = result.files.single.name;
         _pdfBytes = result.files.single.bytes!;
       });
-
       try {
         var request = http.MultipartRequest(
           'POST',
@@ -53,10 +46,8 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
           result.files.single.bytes!,
           filename: result.files.single.name,
         ));
-        
         var streamedResponse = await request.send();
         var response = await http.Response.fromStream(streamedResponse);
-        
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           setState(() {
@@ -64,7 +55,6 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
             _selectedQuestions = List.filled(_extractedQuestions.length, true);
             _isProcessing = false;
           });
-
           if (_extractedQuestions.isEmpty) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -81,11 +71,9 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('OCR 실패: $e')),
           );
-        }
       }
     }
   }
-
   Future<void> _createWorksheetAndAddQuestions() async {
     bool hasUnanswered = false;
     for (int i = 0; i < _extractedQuestions.length; i++) {
@@ -94,19 +82,12 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
         if (q['correctAnswer'] == null || q['correctAnswer'].toString().trim().isEmpty) {
           hasUnanswered = true;
           break;
-        }
-      }
-    }
-
     if (hasUnanswered) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('선택된 모든 문제의 정답을 입력하세요!')),
       );
       return;
-    }
-
     setState(() => _isProcessing = true);
-
     try {
       final worksheetData = await ApiService.uploadPdfWorksheet(
         title: _titleController.text,
@@ -114,10 +95,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
         category: _categoryController.text,
         fileBytes: _pdfBytes!,
         fileName: _fileName!,
-      );
-
       _createdWorksheetId = worksheetData['id'];
-
       int addedCount = 0;
       for (int i = 0; i < _extractedQuestions.length; i++) {
         if (_selectedQuestions[i]) {
@@ -136,34 +114,18 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
             'allowPartial': question['questionType'] == 'subjective',
             'similarityThreshold': question['similarityThreshold'] ?? 0.85,
           };
-          
           final success = await ApiService.addQuestionToWorksheet(
             _createdWorksheetId!,
             questionData,
-          );
-          
           if (success) addedCount++;
-        }
-      }
       
       setState(() => _isProcessing = false);
-      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('문제지 생성 완료! $addedCount개 문제 추가됨')),
-        );
         Navigator.pop(context, true);
-      }
     } catch (e) {
-      setState(() => _isProcessing = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('생성 실패: $e')),
-        );
-      }
-    }
-  }
-
   Future<void> _editQuestion(int index) async {
     final question = _extractedQuestions[index];
     final isMultipleChoice = question['questionType'] == 'multiple_choice';
@@ -176,12 +138,9 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
     final correctAnswerController = TextEditingController(text: question['correctAnswer'] ?? '');
     final thresholdController = TextEditingController(
       text: (question['similarityThreshold'] ?? 0.85).toString()
-    );
-    
     String correctAnswer = question['correctAnswer'] ?? '';
     bool isObjective = isMultipleChoice;
     double threshold = question['similarityThreshold'] ?? 0.85;
-
     await showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -209,15 +168,9 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       },
                     ),
                     const SizedBox(width: 8),
-                    ChoiceChip(
                       label: const Text('객관식'),
                       selected: isObjective,
-                      onSelected: (selected) {
-                        setDialogState(() {
                           isObjective = true;
-                        });
-                      },
-                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -230,12 +183,9 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                     labelStyle: TextStyle(color: Color(0xFF736A63)),
                     enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFF736A63)),
-                    ),
                     focusedBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                    ),
                   ),
-                ),
                 if (isObjective) ...[
                   const SizedBox(height: 12),
                   TextField(
@@ -249,64 +199,20 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 8),
-                  TextField(
                     controller: optionBController,
-                    style: const TextStyle(color: Color(0xFFD9D4D2)),
-                    decoration: const InputDecoration(
                       labelText: '② 보기',
-                      labelStyle: TextStyle(color: Color(0xFF736A63)),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFF736A63)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
                     controller: optionCController,
-                    style: const TextStyle(color: Color(0xFFD9D4D2)),
-                    decoration: const InputDecoration(
                       labelText: '③ 보기',
-                      labelStyle: TextStyle(color: Color(0xFF736A63)),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFF736A63)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
                     controller: optionDController,
-                    style: const TextStyle(color: Color(0xFFD9D4D2)),
-                    decoration: const InputDecoration(
                       labelText: '④ 보기',
-                      labelStyle: TextStyle(color: Color(0xFF736A63)),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFF736A63)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                      ),
-                    ),
-                  ),
                 ],
-                const SizedBox(height: 16),
                 const Divider(color: Color(0xFF736A63)),
                 const SizedBox(height: 8),
                 const Text(
                   '정답 설정',
                   style: TextStyle(color: Color(0xFFD9D4D2), fontWeight: FontWeight.bold, fontSize: 16),
-                ),
                 const SizedBox(height: 12),
-                if (isObjective) ...[
                   Wrap(
                     spacing: 8,
                     children: [
@@ -318,85 +224,34 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                             correctAnswer = 'A';
                           });
                         },
-                      ),
-                      ChoiceChip(
                         label: const Text('②'),
                         selected: correctAnswer == 'B',
-                        onSelected: (selected) {
-                          setDialogState(() {
                             correctAnswer = 'B';
-                          });
-                        },
-                      ),
-                      ChoiceChip(
                         label: const Text('③'),
                         selected: correctAnswer == 'C',
-                        onSelected: (selected) {
-                          setDialogState(() {
                             correctAnswer = 'C';
-                          });
-                        },
-                      ),
-                      ChoiceChip(
                         label: const Text('④'),
                         selected: correctAnswer == 'D',
-                        onSelected: (selected) {
-                          setDialogState(() {
                             correctAnswer = 'D';
-                          });
-                        },
-                      ),
                     ],
-                  ),
                 ] else ...[
-                  TextField(
                     controller: correctAnswerController,
                     onChanged: (value) {
                       correctAnswer = value;
                     },
-                    style: const TextStyle(color: Color(0xFFD9D4D2)),
-                    decoration: const InputDecoration(
                       labelText: '정답 입력',
-                      labelStyle: TextStyle(color: Color(0xFF736A63)),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFF736A63)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
                     controller: thresholdController,
                     keyboardType: TextInputType.number,
-                    onChanged: (value) {
                       threshold = double.tryParse(value) ?? 0.85;
-                    },
-                    style: const TextStyle(color: Color(0xFFD9D4D2)),
-                    decoration: const InputDecoration(
                       labelText: '유사도 임계값 (0.0 ~ 1.0)',
                       helperText: '정답과 비교 시 허용 오차 (0.85 권장)',
                       helperStyle: TextStyle(color: Color(0xFF736A63), fontSize: 12),
-                      labelStyle: TextStyle(color: Color(0xFF736A63)),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFF736A63)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
-          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
-            ),
-            TextButton(
               onPressed: () {
                 setState(() {
                   _extractedQuestions[index] = {
@@ -414,14 +269,9 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                 Navigator.pop(context);
               },
               child: const Text('저장', style: TextStyle(color: Color(0xFFD9D4D2))),
-            ),
           ],
         ),
       ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
@@ -431,11 +281,8 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
           style: TextStyle(
             fontFamily: 'JoseonGulim',
             color: Color(0xFFD9D4D2),
-          ),
-        ),
         backgroundColor: const Color(0xFF00010D),
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
-      ),
       body: _isProcessing
           ? Center(
               child: Column(
@@ -449,17 +296,11 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       color: Color(0xFF736A63),
                       fontFamily: 'JoseonGulim',
                       fontSize: 16,
-                    ),
-                  ),
-                ],
               ),
             )
           : _extractedQuestions.isEmpty
               ? _buildInitialForm()
               : _buildQuestionList(),
-    );
-  }
-
   Widget _buildInitialForm() {
     return Form(
       key: _formKey,
@@ -479,44 +320,16 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: const BorderSide(color: Color(0xFF595048)),
-                ),
-              ),
               validator: (value) => value?.isEmpty ?? true ? '제목을 입력하세요' : null,
-            ),
             const SizedBox(height: 16),
-            TextFormField(
               controller: _descriptionController,
-              style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
               maxLines: 3,
-              decoration: InputDecoration(
                 labelText: '설명',
-                labelStyle: const TextStyle(color: Color(0xFF736A63)),
-                filled: true,
-                fillColor: const Color(0xFF0D0D0D),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF595048)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
               controller: _categoryController,
-              style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
-              decoration: InputDecoration(
                 labelText: '카테고리',
                 hintText: '예: HTML/CSS, JavaScript, React',
                 hintStyle: const TextStyle(color: Color(0xFF736A63)),
-                labelStyle: const TextStyle(color: Color(0xFF736A63)),
-                filled: true,
-                fillColor: const Color(0xFF0D0D0D),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF595048)),
-                ),
-              ),
               validator: (value) => value?.isEmpty ?? true ? '카테고리를 입력하세요' : null,
-            ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: _pickAndExtract,
@@ -524,22 +337,11 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
               label: const Text(
                 'PDF 업로드 및 OCR 추출',
                 style: TextStyle(fontSize: 18, fontFamily: 'JoseonGulim'),
-              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF595048),
                 foregroundColor: const Color(0xFFD9D4D2),
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildQuestionList() {
     return Column(
       children: [
@@ -557,8 +359,6 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                   fontFamily: 'JoseonGulim',
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                ),
-              ),
               ElevatedButton.icon(
                 onPressed: _createWorksheetAndAddQuestions,
                 icon: const Icon(Icons.check_circle, size: 18),
@@ -566,11 +366,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFD9D4D2),
                   foregroundColor: const Color(0xFF00010D),
-                ),
-              ),
             ],
-          ),
-        ),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -579,12 +375,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
               final question = _extractedQuestions[index];
               return _buildQuestionCard(question, index);
             },
-          ),
-        ),
       ],
-    );
-  }
-
   Widget _buildQuestionCard(dynamic question, int index) {
     final questionNumber = question['questionNumber'] ?? (index + 1);
     final questionType = question['questionType'] ?? 'subjective';
@@ -592,17 +383,13 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
     final isMultipleChoice = questionType == 'multiple_choice';
     final hasCorrectAnswer = question['correctAnswer'] != null && 
                             question['correctAnswer'].toString().trim().isNotEmpty;
-
     return Card(
       color: const Color(0xFF595048),
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
             Row(
-              children: [
                 Checkbox(
                   value: _selectedQuestions[index],
                   onChanged: (value) {
@@ -612,64 +399,39 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                   },
                   fillColor: WidgetStateProperty.all(const Color(0xFFD9D4D2)),
                   checkColor: const Color(0xFF00010D),
-                ),
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF00010D),
                     borderRadius: BorderRadius.circular(4),
-                  ),
                   child: Text(
                     '$questionNumber번',
-                    style: const TextStyle(
                       color: Color(0xFFD9D4D2),
-                      fontFamily: 'JoseonGulim',
                       fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
                     color: isMultipleChoice ? const Color(0xFF736A63) : const Color(0xFFD9D4D2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
                     isMultipleChoice ? '객관식' : '주관식',
                     style: TextStyle(
                       color: isMultipleChoice ? const Color(0xFFD9D4D2) : const Color(0xFF00010D),
-                      fontFamily: 'JoseonGulim',
                       fontSize: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
                 if (!hasCorrectAnswer)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.red.shade900,
                       borderRadius: BorderRadius.circular(4),
-                    ),
                     child: const Text(
                       '정답 미입력',
                       style: TextStyle(
                         color: Colors.white,
                         fontFamily: 'JoseonGulim',
                         fontSize: 11,
-                      ),
-                    ),
-                  ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.edit, color: Color(0xFFD9D4D2), size: 20),
                   onPressed: () => _editQuestion(index),
                   tooltip: '문제 수정',
-                ),
-              ],
-            ),
             const SizedBox(height: 12),
             Text(
               questionText,
@@ -677,8 +439,6 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                 color: Color(0xFFD9D4D2),
                 fontFamily: 'JoseonGulim',
                 fontSize: 14,
-              ),
-            ),
             if (isMultipleChoice) ...[
               const SizedBox(height: 12),
               if (question['optionA'] != null)
@@ -689,33 +449,15 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                 _buildOption('③', question['optionC']),
               if (question['optionD'] != null)
                 _buildOption('④', question['optionD']),
-            ],
             if (hasCorrectAnswer) ...[
-              const SizedBox(height: 12),
               const Divider(color: Color(0xFF736A63)),
               const SizedBox(height: 8),
               Row(
-                children: [
                   const Icon(Icons.check_circle, color: Colors.green, size: 16),
                   const SizedBox(width: 8),
-                  Text(
                     '정답: ${question['correctAnswer']}',
-                    style: const TextStyle(
                       color: Colors.green,
-                      fontFamily: 'JoseonGulim',
                       fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildOption(String marker, String text) {
     return Padding(
       padding: const EdgeInsets.only(top: 4),
@@ -725,16 +467,8 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
           color: Color(0xFF736A63),
           fontFamily: 'JoseonGulim',
           fontSize: 13,
-        ),
-      ),
-    );
-  }
-
-  @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
     _categoryController.dispose();
     super.dispose();
-  }
-}
