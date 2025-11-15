@@ -24,7 +24,6 @@ public class ExcelExportService {
     private final SubmissionAnswerRepository submissionAnswerRepository;
     private final StudentRepository studentRepository;
     private final WorksheetQuestionRepository questionRepository;
-    private final PdfWorksheetRepository worksheetRepository;
     
     @Value("${openai.api.key:}")
     private String openaiApiKey;
@@ -198,13 +197,59 @@ public class ExcelExportService {
     }
 
     public byte[] generateAllStudentsScoreExcel() throws IOException {
-        return generateGroupScoreExcel(null, createDummyGroup());
-    }
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("전체학생");
 
-    private StudentGroup createDummyGroup() {
-        StudentGroup group = new StudentGroup();
-        group.setGroupName("전체학생");
-        return group;
+        CellStyle headerStyle = createHeaderStyle(workbook);
+        CellStyle dataStyle = createDataStyle(workbook);
+
+        int rowNum = 0;
+        Row headerRow = sheet.createRow(rowNum++);
+        String[] headers = {"그룹", "학생명", "아이디", "제출일시", "총점", "정답수", "오답수", "정답률"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        List<Student> students = studentRepository.findAll();
+
+        for (Student student : students) {
+            List<StudentSubmission> submissions = submissionRepository.findByStudent(student);
+            for (StudentSubmission submission : submissions) {
+                Row row = sheet.createRow(rowNum++);
+                
+                List<SubmissionAnswer> answers = submissionAnswerRepository.findBySubmission(submission);
+                long correctCount = answers.stream().filter(SubmissionAnswer::getIsCorrect).count();
+                long totalCount = answers.size();
+                double accuracy = totalCount > 0 ? (correctCount * 100.0 / totalCount) : 0.0;
+
+                row.createCell(0).setCellValue(student.getGroup() != null ? student.getGroup().getGroupName() : "미배정");
+                row.createCell(1).setCellValue(student.getDisplayName());
+                row.createCell(2).setCellValue(student.getUsername());
+                row.createCell(3).setCellValue(submission.getSubmittedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                row.createCell(4).setCellValue(submission.getTotalScore() != null ? submission.getTotalScore() : 0);
+                row.createCell(5).setCellValue(correctCount);
+                row.createCell(6).setCellValue(totalCount - correctCount);
+                row.createCell(7).setCellValue(String.format("%.1f%%", accuracy));
+
+                for (int i = 0; i < 8; i++) {
+                    if (row.getCell(i) != null) {
+                        row.getCell(i).setCellStyle(dataStyle);
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < 8; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+
+        return outputStream.toByteArray();
     }
 
     public byte[] generateWorksheetResultExcel(String worksheetId) throws IOException {
