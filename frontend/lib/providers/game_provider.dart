@@ -23,6 +23,11 @@ class GameProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   int get currentScore => _correctCount;
 
+  void setCurrentStudent(dynamic studentData) {
+    _currentStudent = Student.fromJson(studentData);
+    notifyListeners();
+  }
+
   Future<void> studentLogin(String name, {String? birthDate, String? phoneNumber}) async {
     _isLoading = true;
     notifyListeners();
@@ -184,8 +189,3 @@ class GameProvider with ChangeNotifier {
     notifyListeners();
   }
 }
-
-  void setCurrentStudent(dynamic studentData) {
-    _currentStudent = Student.fromJson(studentData);
-    notifyListeners();
-  }
