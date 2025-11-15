@@ -13,5 +13,7 @@ public interface BossRepository extends JpaRepository<Boss, String> {
     
     Optional<Boss> findByLesson(Lesson lesson);
     
+    List<Boss> findByLessonId(String lessonId);
+    
     List<Boss> findByIsDefeated(Boolean isDefeated);
 }

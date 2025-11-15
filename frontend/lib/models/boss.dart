@@ -3,23 +3,33 @@ class Boss {
   final String name;
   final int hpTotal;
   final int hpCurrent;
-  final String difficulty;
+  final bool isDefeated;
 
   Boss({
     required this.id,
     required this.name,
     required this.hpTotal,
     required this.hpCurrent,
-    required this.difficulty,
+    required this.isDefeated,
   });
 
   factory Boss.fromJson(Map<String, dynamic> json) {
     return Boss(
-      id: json['id'],
-      name: json['name'],
-      hpTotal: json['hpTotal'],
-      hpCurrent: json['hpCurrent'],
-      difficulty: json['difficulty'],
+      id: json['id'] ?? '',
+      name: json['name'] ?? '알 수 없는 보스',
+      hpTotal: json['hpTotal'] ?? 1000,
+      hpCurrent: json['hpCurrent'] ?? 1000,
+      isDefeated: json['isDefeated'] ?? false,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'hpTotal': hpTotal,
+      'hpCurrent': hpCurrent,
+      'isDefeated': isDefeated,
+    };
   }
 }

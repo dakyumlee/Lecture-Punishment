@@ -1,90 +1,67 @@
-import '../services/api_service.dart';
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class ExpressionPicker extends StatelessWidget {
   final String studentId;
   final String currentExpression;
   final Function(String) onExpressionChanged;
+
   const ExpressionPicker({
     super.key,
     required this.studentId,
     required this.currentExpression,
     required this.onExpressionChanged,
   });
-  final List<String> expressions = const [
-    '😊', '😎', '😂', '🤔', '😴', '😡', 
-    '🥳', '😭', '🤯', '😱', '🤓', '😈',
-    '💀', '🤡', '👻', '🤖', '👽', '🦄'
-  ];
-  Future<void> _selectExpression(BuildContext context, String expression) async {
+
+  Future<void> _changeExpression(BuildContext context, String expression) async {
     try {
-      await ApiService.changeExpression(
-        studentId: studentId,
-        expression: expression,
-      );
+      await ApiService.changeExpression(studentId, expression);
       onExpressionChanged(expression);
       if (context.mounted) {
-        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('표정이 변경되었습니다: $expression')),
+          const SnackBar(content: Text('표정이 변경되었습니다')),
         );
       }
     } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('표정 변경 실패: $e')),
+        );
+      }
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: const Color(0xFF595048),
-      title: const Text(
-        '표정 선택',
-        style: TextStyle(
-          color: Color(0xFFD9D4D2),
-          fontFamily: 'JoseonGulim',
-        ),
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: GridView.builder(
-          shrinkWrap: true,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 6,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: expressions.length,
-          itemBuilder: (context, index) {
-            final expression = expressions[index];
-            final isSelected = expression == currentExpression;
-            
-            return GestureDetector(
-              onTap: () => _selectExpression(context, expression),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFD9D4D2) : const Color(0xFF0D0D0D),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isSelected ? const Color(0xFF00010D) : const Color(0xFF736A63),
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    expression,
-                    style: const TextStyle(fontSize: 32),
+    final expressions = ['😊', '😭', '😎', '😈', '😐', '🤔', '😤', '😱'];
+
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      children: expressions.map((expression) {
+        final isSelected = expression == currentExpression;
+        return GestureDetector(
+          onTap: () => _changeExpression(context, expression),
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFF595048) : const Color(0xFF0D0D0D),
+              border: Border.all(
+                color: isSelected ? const Color(0xFFD9D4D2) : const Color(0xFF595048),
+                width: 2,
               ),
-            );
-          },
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text(
-            '취소',
-            style: TextStyle(
-              color: Color(0xFF736A63),
-              fontFamily: 'JoseonGulim',
+              borderRadius: BorderRadius.circular(8),
             ),
-      ],
+            child: Center(
+              child: Text(
+                expression,
+                style: const TextStyle(fontSize: 32),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
+  }
 }

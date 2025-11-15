@@ -36,7 +36,7 @@ class ApiService {
   }
 
   static Future<List<Quiz>> getQuizzes(String bossId) async {
-    final response = await http.get(Uri.parse('$baseUrl/quizzes/$bossId'));
+    final response = await http.get(Uri.parse('$baseUrl/quizzes/boss/$bossId'));
     final data = jsonDecode(response.body) as List;
     return data.map((json) => Quiz.fromJson(json)).toList();
   }
@@ -287,18 +287,18 @@ class ApiService {
   }
 
   static Future<List<dynamic>> getAllSubmissions() async {
-    final response = await http.get(Uri.parse('$baseUrl/submissions'));
+    final response = await http.get(Uri.parse('$baseUrl/grading/submissions'));
     return jsonDecode(response.body) as List;
   }
 
   static Future<Map<String, dynamic>> getSubmissionDetail(String submissionId) async {
-    final response = await http.get(Uri.parse('$baseUrl/submissions/$submissionId'));
+    final response = await http.get(Uri.parse('$baseUrl/grading/submissions/$submissionId'));
     return jsonDecode(response.body);
   }
 
   static Future<bool> gradeAnswer(String answerId, bool isCorrect, int score) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/submissions/answers/$answerId/grade'),
+      Uri.parse('$baseUrl/grading/answers/$answerId/grade'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'isCorrect': isCorrect, 'score': score}),
     );
@@ -321,5 +321,49 @@ class ApiService {
       body: jsonEncode(questionData),
     );
     return response.statusCode == 200;
+  }
+
+  static Future<Map<String, dynamic>> submitQuizAnswer({
+    required String quizId,
+    required String studentId,
+    required String selectedAnswer,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/game/quiz/$quizId/answer'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'studentId': studentId,
+        'selectedAnswer': selectedAnswer,
+      }),
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, String>> getRandomRage() async {
+    final response = await http.get(Uri.parse('$baseUrl/game/rage/random'));
+    return Map<String, String>.from(jsonDecode(response.body));
+  }
+
+  static Future<Student> getStudentByUsername(String username) async {
+    final response = await http.get(Uri.parse('$baseUrl/game/student/$username'));
+    return Student.fromJson(jsonDecode(response.body));
+  }
+
+  static Future<List<dynamic>> getRanking() async {
+    final response = await http.get(Uri.parse('$baseUrl/ranking'));
+    return jsonDecode(response.body) as List;
+  }
+
+  static Future<Map<String, dynamic>> createWorksheet(String title, String description, List<Map<String, dynamic>> questions) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/worksheets'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'title': title,
+        'description': description,
+        'questions': questions,
+      }),
+    );
+    return jsonDecode(response.body);
   }
 }

@@ -6,13 +6,17 @@ class GroupManageScreen extends StatefulWidget {
   @override
   State<GroupManageScreen> createState() => _GroupManageScreenState();
 }
+
 class _GroupManageScreenState extends State<GroupManageScreen> {
   List<dynamic> _groups = [];
   bool _isLoading = true;
+
+  @override
   void initState() {
     super.initState();
     _loadGroups();
   }
+
   Future<void> _loadGroups() async {
     setState(() => _isLoading = true);
     try {
@@ -29,6 +33,8 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
         );
       }
     }
+  }
+
   Future<void> _showCreateDialog() async {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
@@ -36,6 +42,7 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
     final courseController = TextEditingController();
     final periodController = TextEditingController();
     final descController = TextEditingController();
+
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -60,26 +67,56 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                   validator: (v) => v?.isEmpty ?? true ? '그룹명을 입력하세요' : null,
                 ),
                 const SizedBox(height: 8),
+                TextFormField(
                   controller: yearController,
+                  style: const TextStyle(color: Color(0xFFD9D4D2)),
                   keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
                     labelText: '년도',
+                    labelStyle: TextStyle(color: Color(0xFF736A63)),
+                  ),
                   validator: (v) => v?.isEmpty ?? true ? '년도를 입력하세요' : null,
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
                   controller: courseController,
+                  style: const TextStyle(color: Color(0xFFD9D4D2)),
+                  decoration: const InputDecoration(
                     labelText: '과정',
+                    labelStyle: TextStyle(color: Color(0xFF736A63)),
+                  ),
                   validator: (v) => v?.isEmpty ?? true ? '과정을 입력하세요' : null,
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
                   controller: periodController,
+                  style: const TextStyle(color: Color(0xFFD9D4D2)),
+                  decoration: const InputDecoration(
                     labelText: '기간',
+                    labelStyle: TextStyle(color: Color(0xFF736A63)),
+                  ),
                   validator: (v) => v?.isEmpty ?? true ? '기간을 입력하세요' : null,
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
                   controller: descController,
+                  style: const TextStyle(color: Color(0xFFD9D4D2)),
                   maxLines: 2,
+                  decoration: const InputDecoration(
                     labelText: '설명 (선택)',
+                    labelStyle: TextStyle(color: Color(0xFF736A63)),
+                  ),
+                ),
               ],
             ),
           ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+          ),
+          TextButton(
             onPressed: () async {
               if (formKey.currentState!.validate()) {
                 try {
@@ -94,24 +131,47 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                   _loadGroups();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('그룹이 생성되었습니다')),
+                  );
                 } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('생성 실패: $e')),
+                  );
                 }
               }
             },
             child: const Text('생성', style: TextStyle(color: Color(0xFFD9D4D2))),
+          ),
         ],
       ),
     );
+  }
+
   Future<void> _deleteGroup(String groupId, String groupName) async {
     final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF595048),
+        title: const Text(
           '그룹 삭제',
+          style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+        ),
         content: Text(
           '$groupName 그룹을 삭제하시겠습니까?',
           style: const TextStyle(color: Color(0xFFD9D4D2)),
+        ),
+        actions: [
+          TextButton(
             onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+          ),
+          TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('삭제', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
     if (confirm == true) {
       try {
         await ApiService.deleteGroup(groupId);
@@ -122,11 +182,21 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
           );
         }
       } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('삭제 실패: $e')),
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _showGroupDetail(dynamic group) async {
+    try {
       final students = await ApiService.getGroupStudents(group['id']);
       
       if (!mounted) return;
+      
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -137,6 +207,7 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                 child: Text(
                   group['groupName'],
                   style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.download, color: Color(0xFFD9D4D2)),
@@ -147,28 +218,45 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                       const SnackBar(content: Text('Excel 다운로드 시작')),
                     );
                   } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('다운로드 실패: $e')),
+                    );
                   }
                 },
                 tooltip: 'Excel 다운로드',
+              ),
             ],
+          ),
           content: SizedBox(
             width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 if (group['year'] != null)
                   Text(
                     '년도: ${group['year']}',
                     style: const TextStyle(color: Color(0xFF736A63)),
+                  ),
                 if (group['course'] != null)
+                  Text(
                     '과정: ${group['course']}',
+                    style: const TextStyle(color: Color(0xFF736A63)),
+                  ),
                 if (group['period'] != null)
+                  Text(
                     '기간: ${group['period']}',
+                    style: const TextStyle(color: Color(0xFF736A63)),
+                  ),
                 const SizedBox(height: 16),
                 const Text(
                   '학생 목록',
                   style: TextStyle(
                     color: Color(0xFFD9D4D2),
+                    fontFamily: 'JoseonGulim',
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const Divider(color: Color(0xFF736A63)),
                 Flexible(
                   child: students.isEmpty
@@ -195,6 +283,7 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                               subtitle: Text(
                                 '@${student['username']}',
                                 style: const TextStyle(color: Color(0xFF736A63)),
+                              ),
                               trailing: IconButton(
                                 icon: const Icon(Icons.remove_circle, color: Colors.red, size: 20),
                                 onPressed: () async {
@@ -207,43 +296,76 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                                     _showGroupDetail(group);
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(content: Text('학생 제거 완료')),
+                                    );
                                   } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(content: Text('제거 실패: $e')),
+                                    );
                                   }
                                 },
+                              ),
                             );
                           },
                         ),
+                ),
+              ],
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('닫기', style: TextStyle(color: Color(0xFFD9D4D2))),
+            ),
           ],
+        ),
       );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('로드 실패: $e')),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
       appBar: AppBar(
+        title: const Text(
           '그룹 관리',
           style: TextStyle(
             fontFamily: 'JoseonGulim',
             color: Color(0xFFD9D4D2),
+          ),
+        ),
         backgroundColor: const Color(0xFF00010D),
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
+        actions: [
           IconButton(
             icon: const Icon(Icons.add_circle),
             onPressed: _showCreateDialog,
             tooltip: '그룹 생성',
+          ),
+          IconButton(
             icon: const Icon(Icons.download_rounded),
+            onPressed: () async {
               try {
                 await ApiService.downloadAllStudentsExcel();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('전체 학생 Excel 다운로드 시작')),
                 );
               } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('다운로드 실패: $e')),
+                );
+              }
+            },
             tooltip: '전체 학생 Excel',
+          ),
+        ],
+      ),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFFD9D4D2)),
@@ -265,6 +387,8 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                           color: Color(0xFF736A63),
                           fontFamily: 'JoseonGulim',
                           fontSize: 18,
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: _showCreateDialog,
@@ -273,7 +397,10 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF595048),
                           foregroundColor: const Color(0xFFD9D4D2),
+                        ),
+                      ),
                     ],
+                  ),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
@@ -290,20 +417,40 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                             color: Color(0xFFD9D4D2),
                             fontFamily: 'JoseonGulim',
                             fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (group['year'] != null && group['course'] != null)
                               Text(
                                 '${group['year']} - ${group['course']}',
+                                style: const TextStyle(color: Color(0xFF736A63)),
+                              ),
                             if (group['period'] != null)
+                              Text(
                                 group['period'],
+                                style: const TextStyle(color: Color(0xFF736A63)),
+                              ),
                           ],
+                        ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
+                          children: [
                             IconButton(
                               icon: const Icon(Icons.info, color: Color(0xFFD9D4D2)),
                               onPressed: () => _showGroupDetail(group),
+                            ),
+                            IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               onPressed: () => _deleteGroup(group['id'], group['groupName']),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
                   },
+                ),
+    );
+  }
+}

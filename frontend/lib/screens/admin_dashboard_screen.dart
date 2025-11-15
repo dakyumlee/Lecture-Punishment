@@ -7,16 +7,21 @@ import 'grading_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+  
   @override
   State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
 }
+
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Map<String, dynamic>? _stats;
   bool _isLoading = true;
+
+  @override
   void initState() {
     super.initState();
     _loadStats();
   }
+
   Future<void> _loadStats() async {
     try {
       final stats = await ApiService.getAdminStats();
@@ -27,6 +32,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
     }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
@@ -59,8 +67,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
+                    Row(
+                      children: [
                         Expanded(child: _buildStatCard('정답률', '${_stats!['successRate']}', Icons.check_circle)),
+                        const SizedBox(width: 12),
                         Expanded(child: _buildStatCard('총 문제', '${_stats!['totalQuizzes']}개', Icons.quiz)),
+                      ],
+                    ),
                   ],
                   const SizedBox(height: 32),
                   const Text(
@@ -70,6 +83,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       fontFamily: 'JoseonGulim',
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   _buildActionButton(
@@ -82,49 +96,128 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       );
                       if (result == true) _loadStats();
                     },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionButton(
                     '📋 수업 목록',
                     '등록된 수업 확인 및 삭제',
+                    () async {
                       await _showLessons();
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
                     '문제지 관리',
+                    style: TextStyle(
+                      color: Color(0xFFD9D4D2),
+                      fontFamily: 'JoseonGulim',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionButton(
                     '📝 문제지 생성',
                     '새로운 문제지 만들기',
+                    () async {
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const WorksheetCreateScreen(),
                         ),
+                      );
                       if (result != null) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('문제지가 생성되었습니다!')),
                         );
                       }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionButton(
                     '📑 문제지 관리',
                     '문제지 확인, 문제 추가 및 삭제',
                     () {
                       Navigator.push(
+                        context,
+                        MaterialPageRoute(
                           builder: (context) => const WorksheetManageScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
                     '그룹 관리',
+                    style: TextStyle(
+                      color: Color(0xFFD9D4D2),
+                      fontFamily: 'JoseonGulim',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionButton(
                     '👥 그룹 관리',
                     '년도/과정/기간별 그룹 생성 및 관리',
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
                           builder: (context) => const GroupManageScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
                     '채점 관리',
+                    style: TextStyle(
+                      color: Color(0xFFD9D4D2),
+                      fontFamily: 'JoseonGulim',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionButton(
                     '✏️ 제출 답안 채점',
                     '학생들이 제출한 답안 확인 및 채점',
-                          builder: (context) => const GradingScreen(),
+                    () async {
+                      await _showSubmissions();
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
                     '학생 관리',
+                    style: TextStyle(
+                      color: Color(0xFFD9D4D2),
+                      fontFamily: 'JoseonGulim',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionButton(
                     '👥 학생 목록',
                     '등록된 학생 확인 및 삭제',
+                    () async {
                       await _showStudents();
+                    },
+                  ),
                 ],
               ),
             ),
     );
+  }
+
   Widget _buildStatCard(String label, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF595048),
         borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         children: [
           Icon(icon, color: const Color(0xFFD9D4D2), size: 32),
@@ -136,9 +229,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               fontFamily: 'JoseonGulim',
               fontSize: 24,
               fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
             label,
+            style: const TextStyle(
               color: Color(0xFF736A63),
+              fontFamily: 'JoseonGulim',
               fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButton(String title, String subtitle, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
@@ -148,42 +254,79 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           color: const Color(0xFF595048),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFF736A63), width: 1),
+        ),
         child: Row(
           children: [
             Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
                     title,
                     style: const TextStyle(
+                      color: Color(0xFFD9D4D2),
+                      fontFamily: 'JoseonGulim',
                       fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 4),
+                  Text(
                     subtitle,
+                    style: const TextStyle(
                       color: Color(0xFF736A63),
+                      fontFamily: 'JoseonGulim',
                       fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const Icon(Icons.arrow_forward_ios, color: Color(0xFFD9D4D2), size: 16),
           ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCreateLessonDialog() {
     final titleController = TextEditingController();
     final subjectController = TextEditingController();
+
     return AlertDialog(
       backgroundColor: const Color(0xFF595048),
       title: const Text(
         '수업 생성',
         style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        children: [
           TextField(
             controller: titleController,
             style: const TextStyle(color: Color(0xFFD9D4D2)),
             decoration: const InputDecoration(
               labelText: '수업 제목',
               labelStyle: TextStyle(color: Color(0xFF736A63)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
             controller: subjectController,
+            style: const TextStyle(color: Color(0xFFD9D4D2)),
+            decoration: const InputDecoration(
               labelText: '과목',
+              labelStyle: TextStyle(color: Color(0xFF736A63)),
+            ),
+          ),
+        ],
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+        ),
+        TextButton(
           onPressed: () async {
             try {
               await ApiService.createLesson(
@@ -200,15 +343,85 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             }
           },
           child: const Text('생성', style: TextStyle(color: Color(0xFFD9D4D2))),
+        ),
       ],
-  Future<void> _showLessons() async {
-      final lessons = await ApiService.getAdminLessons();
+    );
+  }
+
+  Future<void> _showSubmissions() async {
+    try {
+      final submissions = await ApiService.getAllSubmissions();
+      
       if (mounted) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: const Color(0xFF595048),
-            title: const Text('수업 목록', style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim')),
+            title: const Text(
+              '제출 답안 목록',
+              style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: submissions.isEmpty
+                  ? const Text('제출된 답안이 없습니다', style: TextStyle(color: Color(0xFF736A63)))
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: submissions.length,
+                      itemBuilder: (context, index) {
+                        final submission = submissions[index];
+                        return ListTile(
+                          title: Text(
+                            submission['worksheetTitle'] ?? '문제지',
+                            style: const TextStyle(color: Color(0xFFD9D4D2)),
+                          ),
+                          subtitle: Text(
+                            '학생: ${submission['studentName'] ?? ''} | 점수: ${submission['score'] ?? 0}점',
+                            style: const TextStyle(color: Color(0xFF736A63)),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios, color: Color(0xFFD9D4D2)),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => GradingScreen(submission: submission),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('닫기', style: TextStyle(color: Color(0xFFD9D4D2))),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: $e')));
+      }
+    }
+  }
+
+  Future<void> _showLessons() async {
+    try {
+      final lessons = await ApiService.getAdminLessons();
+      
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF595048),
+            title: const Text(
+              '수업 목록',
+              style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+            ),
             content: SizedBox(
               width: double.maxFinite,
               child: lessons.isEmpty
@@ -219,8 +432,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       itemBuilder: (context, index) {
                         final lesson = lessons[index];
                         return ListTile(
-                          title: Text(lesson['title'], style: const TextStyle(color: Color(0xFFD9D4D2))),
-                          subtitle: Text(lesson['subject'], style: const TextStyle(color: Color(0xFF736A63))),
+                          title: Text(
+                            lesson['title'],
+                            style: const TextStyle(color: Color(0xFFD9D4D2)),
+                          ),
+                          subtitle: Text(
+                            lesson['subject'],
+                            style: const TextStyle(color: Color(0xFF736A63)),
+                          ),
                           trailing: IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () async {
@@ -228,23 +447,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 context: context,
                                 builder: (context) => AlertDialog(
                                   backgroundColor: const Color(0xFF595048),
-                                  title: const Text('삭제 확인', style: TextStyle(color: Color(0xFFD9D4D2))),
-                                  content: Text('${lesson['title']} 수업을 삭제하시겠습니까?',
-                                      style: const TextStyle(color: Color(0xFFD9D4D2))),
+                                  title: const Text(
+                                    '삭제 확인',
+                                    style: TextStyle(color: Color(0xFFD9D4D2)),
+                                  ),
+                                  content: Text(
+                                    '${lesson['title']} 수업을 삭제하시겠습니까?',
+                                    style: const TextStyle(color: Color(0xFFD9D4D2)),
+                                  ),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context, false),
                                       child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
                                     ),
+                                    TextButton(
                                       onPressed: () => Navigator.pop(context, true),
                                       child: const Text('삭제', style: TextStyle(color: Colors.red)),
+                                    ),
                                   ],
                                 ),
                               );
-                              
+
                               if (confirm == true) {
                                 final success = await ApiService.deleteLesson(lesson['id']);
-                                if (success) {
+                                if (success && mounted) {
                                   Navigator.pop(context);
                                   _showLessons();
                                   _loadStats();
@@ -255,26 +481,114 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               }
                             },
                           ),
+                        );
                       },
+                    ),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('닫기', style: TextStyle(color: Color(0xFFD9D4D2))),
+              ),
             ],
+          ),
         );
       }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: $e')));
+      }
+    }
+  }
+
   Future<void> _showStudents() async {
+    try {
       final students = await ApiService.getAdminStudents();
-            title: const Text('학생 목록', style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim')),
+      
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF595048),
+            title: const Text(
+              '학생 목록',
+              style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
               child: students.isEmpty
                   ? const Text('등록된 학생이 없습니다', style: TextStyle(color: Color(0xFF736A63)))
+                  : ListView.builder(
+                      shrinkWrap: true,
                       itemCount: students.length,
+                      itemBuilder: (context, index) {
                         final student = students[index];
-                          title: Text(student['displayName'], style: const TextStyle(color: Color(0xFFD9D4D2))),
-                          subtitle: Text('Lv.${student['level']} | ${student['username']}', 
-                            style: const TextStyle(color: Color(0xFF736A63))),
-                                  content: Text('${student['displayName']} 학생을 삭제하시겠습니까?',
+                        return ListTile(
+                          title: Text(
+                            student['displayName'],
+                            style: const TextStyle(color: Color(0xFFD9D4D2)),
+                          ),
+                          subtitle: Text(
+                            'Lv.${student['level']} | ${student['username']}',
+                            style: const TextStyle(color: Color(0xFF736A63)),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: const Color(0xFF595048),
+                                  title: const Text(
+                                    '삭제 확인',
+                                    style: TextStyle(color: Color(0xFFD9D4D2)),
+                                  ),
+                                  content: Text(
+                                    '${student['displayName']} 학생을 삭제하시겠습니까?',
+                                    style: const TextStyle(color: Color(0xFFD9D4D2)),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: const Text('삭제', style: TextStyle(color: Colors.red)),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm == true) {
                                 final success = await ApiService.deleteStudent(student['id']);
+                                if (success && mounted) {
+                                  Navigator.pop(context);
                                   _showStudents();
+                                  ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('학생이 삭제되었습니다')),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('닫기', style: TextStyle(color: Color(0xFFD9D4D2))),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: $e')));
+      }
+    }
+  }
+}

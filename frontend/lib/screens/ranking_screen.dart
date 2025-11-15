@@ -1,109 +1,143 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../models/student.dart';
-import '../theme/app_theme.dart';
 
 class RankingScreen extends StatefulWidget {
   const RankingScreen({super.key});
   @override
   State<RankingScreen> createState() => _RankingScreenState();
 }
+
 class _RankingScreenState extends State<RankingScreen> {
-  final ApiService _apiService = ApiService();
-  List<Student> _topStudents = [];
+  List<dynamic> _rankings = [];
   bool _isLoading = true;
+
+  @override
   void initState() {
     super.initState();
     _loadRankings();
   }
+
   Future<void> _loadRankings() async {
     try {
-      final students = await _apiService.getTopStudents();
+      final data = await ApiService.getRanking();
       setState(() {
-        _topStudents = students;
+        _rankings = data;
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('랭킹 로드 실패: $e')),
-        );
-      }
     }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF00010D),
       appBar: AppBar(
-        title: const Text('클래스 랭킹'),
-        backgroundColor: AppTheme.secondaryDark,
+        title: const Text('랭킹', style: TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2))),
+        backgroundColor: const Color(0xFF595048),
+        iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
       ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        color: AppTheme.primaryDark,
-        child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: AppTheme.lightGray),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _topStudents.length,
-                itemBuilder: (context, index) {
-                  final student = _topStudents[index];
-                  final rank = index + 1;
-                  final hasRageResistance = rank <= 10;
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    color: AppTheme.secondaryDark,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          color: rank <= 3 ? Colors.amber : AppTheme.accentBrown,
-                          alignment: Alignment.center,
-                          child: Text(
-                            '$rank',
-                            style: const TextStyle(
-                              color: AppTheme.lightGray,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                student.displayName,
-                                style: const TextStyle(
-                                  color: AppTheme.lightGray,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFD9D4D2)))
+          : _rankings.isEmpty
+              ? const Center(
+                  child: Text(
+                    '랭킹 데이터가 없습니다',
+                    style: TextStyle(
+                      color: Color(0xFF736A63),
+                      fontFamily: 'JoseonGulim',
+                      fontSize: 18,
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _rankings.length,
+                  itemBuilder: (context, index) {
+                    final student = _rankings[index];
+                    final rank = index + 1;
+                    final hasRageResistance = rank <= 10;
+                    return Card(
+                      color: const Color(0xFF595048),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: rank <= 3 ? const Color(0xFFD9D4D2) : const Color(0xFF0D0D0D),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '$rank',
+                                  style: TextStyle(
+                                    color: rank <= 3 ? const Color(0xFF00010D) : const Color(0xFFD9D4D2),
+                                    fontFamily: 'JoseonGulim',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                                'Lv.${student.level} | EXP ${student.exp}',
-                                  color: AppTheme.accentBrown,
-                                  fontSize: 14,
-                            ],
-                        if (hasRageResistance)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            color: Colors.red[900],
-                            child: const Text(
-                              '분노 내성 +10%',
-                              style: TextStyle(
-                                color: AppTheme.lightGray,
-                                fontSize: 12,
-                      ],
-                    ),
-                  );
-                },
-              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        student['displayName'] ?? 'Unknown',
+                                        style: const TextStyle(
+                                          color: Color(0xFFD9D4D2),
+                                          fontFamily: 'JoseonGulim',
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (hasRageResistance) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF0D0D0D),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: const Text(
+                                            '분노 내성 +10%',
+                                            style: TextStyle(
+                                              color: Color(0xFFD9D4D2),
+                                              fontFamily: 'JoseonGulim',
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Lv.${student['level']} • ${student['exp']} EXP',
+                                    style: const TextStyle(
+                                      color: Color(0xFF736A63),
+                                      fontFamily: 'JoseonGulim',
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
     );
+  }
+}

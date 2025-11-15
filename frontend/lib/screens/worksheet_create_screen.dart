@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../models/worksheet.dart';
 
 class WorksheetCreateScreen extends StatefulWidget {
   const WorksheetCreateScreen({super.key});
@@ -23,14 +22,11 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
     setState(() => _isLoading = true);
     
     try {
-      final worksheet = Worksheet(
-        id: '',
-        title: _titleController.text,
-        description: _descriptionController.text,
-        createdAt: DateTime.now(),
+      await ApiService.createWorksheet(
+        _titleController.text,
+        _descriptionController.text,
+        _questions,
       );
-      
-      await ApiService.createWorksheet(worksheet, _questions);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

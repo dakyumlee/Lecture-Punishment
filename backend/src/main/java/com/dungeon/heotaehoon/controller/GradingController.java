@@ -26,6 +26,29 @@ public class GradingController {
     private final WorksheetQuestionRepository questionRepository;
     private final AiEvaluationService aiEvaluationService;
 
+    @GetMapping("/submissions")
+    public ResponseEntity<List<StudentSubmission>> getAllSubmissions() {
+        return ResponseEntity.ok(submissionRepository.findAll());
+    }
+
+    @GetMapping("/submissions/{submissionId}")
+    public ResponseEntity<?> getSubmissionDetail(@PathVariable String submissionId) {
+        try {
+            StudentSubmission submission = submissionRepository.findById(submissionId)
+                    .orElseThrow(() -> new RuntimeException("제출을 찾을 수 없습니다"));
+
+            List<SubmissionAnswer> answers = answerRepository.findBySubmission_Id(submissionId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("submission", submission);
+            result.put("answers", answers);
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping("/submission/{submissionId}")
     public ResponseEntity<?> getSubmissionForGrading(@PathVariable String submissionId) {
         try {
@@ -39,6 +62,30 @@ public class GradingController {
             result.put("answers", answers);
 
             return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/answers/{answerId}/grade")
+    public ResponseEntity<?> gradeAnswer(
+            @PathVariable String answerId,
+            @RequestBody Map<String, Object> gradeData) {
+        try {
+            SubmissionAnswer answer = answerRepository.findById(answerId)
+                    .orElseThrow(() -> new RuntimeException("답안을 찾을 수 없습니다"));
+
+            Boolean isCorrect = (Boolean) gradeData.get("isCorrect");
+            Integer score = (Integer) gradeData.get("score");
+
+            answer.setIsCorrect(isCorrect);
+            answer.setPointsEarned(score);
+
+            answerRepository.save(answer);
+
+            updateSubmissionScore(answer.getSubmission().getId());
+
+            return ResponseEntity.ok(answer);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }

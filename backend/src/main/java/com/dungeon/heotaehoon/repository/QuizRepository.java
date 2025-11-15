@@ -11,4 +11,6 @@ import java.util.List;
 public interface QuizRepository extends JpaRepository<Quiz, String> {
     List<Quiz> findTop5ByLessonOrderByCreatedAtDesc(Lesson lesson);
     List<Quiz> findByLessonOrderByCreatedAtAsc(Lesson lesson);
+    List<Quiz> findByBossId(String bossId);
+    List<Quiz> findByLessonId(String lessonId);
 }

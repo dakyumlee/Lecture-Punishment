@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController
@@ -16,6 +18,7 @@ public class AdminController {
 
     private final StudentRepository studentRepository;
     private final LessonRepository lessonRepository;
+    private final InstructorRepository instructorRepository;
     private final StudentService studentService;
 
     @GetMapping("/students")
@@ -32,6 +35,43 @@ public class AdminController {
         
         Student student = studentService.createStudent(username, displayName, groupId);
         return ResponseEntity.ok(student);
+    }
+
+    @DeleteMapping("/students/{id}")
+    public ResponseEntity<Void> deleteStudent(@PathVariable String id) {
+        studentRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/lessons")
+    public ResponseEntity<List<Lesson>> getAllLessons() {
+        return ResponseEntity.ok(lessonRepository.findAll());
+    }
+
+    @PostMapping("/lessons")
+    public ResponseEntity<Lesson> createLesson(@RequestBody Map<String, Object> request) {
+        String title = (String) request.get("title");
+        String description = (String) request.get("description");
+        String subject = (String) request.get("subject");
+        
+        Instructor defaultInstructor = instructorRepository.findAll().stream().findFirst().orElse(null);
+        
+        Lesson lesson = Lesson.builder()
+                .title(title)
+                .subject(subject != null ? subject : "기본")
+                .instructor(defaultInstructor)
+                .lessonDate(LocalDate.now())
+                .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        return ResponseEntity.ok(lessonRepository.save(lesson));
+    }
+
+    @DeleteMapping("/lessons/{id}")
+    public ResponseEntity<Void> deleteLesson(@PathVariable String id) {
+        lessonRepository.deleteById(id);
+        return ResponseEntity.ok().build();
     }
     
     @GetMapping("/stats")

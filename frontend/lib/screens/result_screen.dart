@@ -5,13 +5,19 @@ import '../models/student.dart';
 import 'home_screen.dart';
 
 class ResultScreen extends StatelessWidget {
-  final Student student;
+  final int score;
+  final int totalQuestions;
 
-  const ResultScreen({super.key, required this.student});
+  const ResultScreen({
+    super.key,
+    required this.score,
+    required this.totalQuestions,
+  });
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<GameProvider>(context);
+    final student = provider.currentStudent;
 
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
@@ -33,7 +39,7 @@ class ResultScreen extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               Text(
-                '정답: ${provider.correctCount}',
+                '정답: ${provider.correctCount} / $totalQuestions',
                 style: const TextStyle(
                   fontSize: 24,
                   color: Color(0xFFD9D4D2),
@@ -52,13 +58,17 @@ class ResultScreen extends StatelessWidget {
               const SizedBox(height: 64),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HomeScreen(initialStudent: student),
-                    ),
-                    (route) => false,
-                  );
+                  if (student != null) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HomeScreen(initialStudent: student),
+                      ),
+                      (route) => false,
+                    );
+                  } else {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF595048),
