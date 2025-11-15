@@ -15,6 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/ocr")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.OPTIONS})
 public class OcrController {
 
     private final OcrService ocrService;
@@ -57,7 +58,7 @@ public class OcrController {
             error.put("success", false);
             error.put("error", e.getMessage());
             error.put("details", e.getClass().getName());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.status(500).body(error);
         }
     }
 }

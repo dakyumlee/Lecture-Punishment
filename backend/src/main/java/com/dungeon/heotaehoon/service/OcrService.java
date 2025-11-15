@@ -9,10 +9,13 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,9 +38,9 @@ public class OcrService {
             
             try {
                 tesseract.setDatapath("/usr/share/tesseract-ocr/4.00/tessdata");
-                log.info("Tesseract datapath set to: /usr/share/tesseract-ocr/4.00/tessdata");
+                log.info("Tesseract datapath set successfully");
             } catch (Exception e) {
-                log.warn("Failed to set datapath, trying default");
+                log.warn("Failed to set datapath, using default");
             }
             
             tesseract.setLanguage("kor+eng");
@@ -45,18 +48,24 @@ public class OcrService {
             tesseract.setOcrEngineMode(1);
             
             StringBuilder fullText = new StringBuilder();
+            List<String> pageImages = new ArrayList<>();
             
             log.info("PDF has {} pages", document.getNumberOfPages());
             
-            int maxPages = Math.min(document.getNumberOfPages(), 10);
-            
-            for (int page = 0; page < maxPages; page++) {
+            for (int page = 0; page < document.getNumberOfPages(); page++) {
                 try {
-                    log.info("Processing page {}/{}", page + 1, maxPages);
-                    BufferedImage image = pdfRenderer.renderImageWithDPI(page, 200);
+                    log.info("Processing page {}/{}", page + 1, document.getNumberOfPages());
+                    
+                    BufferedImage image = pdfRenderer.renderImageWithDPI(page, 600);
+                    
+                    String base64Image = imageToBase64(image);
+                    pageImages.add(base64Image);
+                    
                     String pageText = tesseract.doOCR(image);
                     fullText.append(pageText).append("\n");
-                    log.info("Page {} processed successfully, extracted {} characters", page + 1, pageText.length());
+                    
+                    log.info("Page {} processed: {} chars, image size: {}KB", 
+                        page + 1, pageText.length(), base64Image.length() / 1024);
                 } catch (Exception e) {
                     log.error("Failed to process page {}", page + 1, e);
                 }
@@ -66,7 +75,12 @@ public class OcrService {
             
             if (fullText.length() > 0) {
                 questions = parseQuestions(fullText.toString());
-                log.info("Parsed {} questions", questions.size());
+                
+                for (int i = 0; i < questions.size() && i < pageImages.size(); i++) {
+                    questions.get(i).setImageData(pageImages.get(i));
+                }
+                
+                log.info("Parsed {} questions with images", questions.size());
             } else {
                 log.warn("No text extracted from PDF");
             }
@@ -77,6 +91,13 @@ public class OcrService {
         }
         
         return questions;
+    }
+
+    private String imageToBase64(BufferedImage image) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", baos);
+        byte[] imageBytes = baos.toByteArray();
+        return Base64.getEncoder().encodeToString(imageBytes);
     }
 
     private List<QuestionData> parseQuestions(String text) {
@@ -173,6 +194,7 @@ public class OcrService {
         private String optionD;
         private String correctAnswer;
         private Integer points;
+        private String imageData;
 
         public Integer getQuestionNumber() { return questionNumber; }
         public void setQuestionNumber(Integer questionNumber) { this.questionNumber = questionNumber; }
@@ -192,5 +214,7 @@ public class OcrService {
         public void setCorrectAnswer(String correctAnswer) { this.correctAnswer = correctAnswer; }
         public Integer getPoints() { return points; }
         public void setPoints(Integer points) { this.points = points; }
+        public String getImageData() { return imageData; }
+        public void setImageData(String imageData) { this.imageData = imageData; }
     }
 }
