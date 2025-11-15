@@ -15,7 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/ocr")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.OPTIONS})
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class OcrController {
 
     private final OcrService ocrService;
