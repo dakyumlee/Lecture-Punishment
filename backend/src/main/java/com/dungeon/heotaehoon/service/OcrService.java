@@ -36,16 +36,15 @@ public class OcrService {
             PDFRenderer pdfRenderer = new PDFRenderer(document);
             Tesseract tesseract = new Tesseract();
             
-            try {
-                tesseract.setDatapath("/usr/share/tesseract-ocr/4.00/tessdata");
-                log.info("Tesseract datapath set successfully");
-            } catch (Exception e) {
-                log.warn("Failed to set datapath, using default");
+            String tessdataPath = System.getenv("TESSDATA_PREFIX");
+            if (tessdataPath != null) {
+                tesseract.setDatapath(tessdataPath);
+                log.info("Using TESSDATA_PREFIX: {}", tessdataPath);
+            } else {
+                log.warn("TESSDATA_PREFIX not set, using default");
             }
             
             tesseract.setLanguage("kor+eng");
-            tesseract.setPageSegMode(1);
-            tesseract.setOcrEngineMode(1);
             
             StringBuilder fullText = new StringBuilder();
             List<String> pageImages = new ArrayList<>();
