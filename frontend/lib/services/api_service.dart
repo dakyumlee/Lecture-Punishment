@@ -248,7 +248,6 @@ class ApiService {
     );
     return jsonDecode(response.body);
   }
-}
 
   static Future<Map<String, dynamic>> completeProfile({
     required String studentId,

@@ -11,6 +11,7 @@ class Student {
   final String? characterExpression;
   final String? birthDate;
   final String? phoneNumber;
+  final String? studentIdNumber;
 
   Student({
     required this.id,
@@ -25,6 +26,7 @@ class Student {
     this.characterExpression,
     this.birthDate,
     this.phoneNumber,
+    this.studentIdNumber,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
@@ -41,6 +43,7 @@ class Student {
       characterExpression: json['characterExpression'],
       birthDate: json['birthDate'],
       phoneNumber: json['phoneNumber'],
+      studentIdNumber: json['studentIdNumber'],
     );
   }
 }
