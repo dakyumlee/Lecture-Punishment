@@ -249,3 +249,53 @@ class ApiService {
     return jsonDecode(response.body);
   }
 }
+
+  static Future<Map<String, dynamic>> completeProfile({
+    required String studentId,
+    String? birthDate,
+    String? phoneNumber,
+  }) async {
+    final Map<String, String> body = {'studentId': studentId};
+    if (birthDate != null && birthDate.isNotEmpty) {
+      body['birthDate'] = birthDate;
+    }
+    if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      body['phoneNumber'] = phoneNumber;
+    }
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/profile/complete'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> getMyPageData(String studentId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/students/$studentId/mypage'),
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> updateProfile({
+    required String studentId,
+    String? displayName,
+    String? birthDate,
+    String? phoneNumber,
+    String? studentIdNumber,
+  }) async {
+    final Map<String, String> body = {};
+    if (displayName != null) body['displayName'] = displayName;
+    if (birthDate != null) body['birthDate'] = birthDate;
+    if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
+    if (studentIdNumber != null) body['studentIdNumber'] = studentIdNumber;
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/students/$studentId/profile'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    return jsonDecode(response.body);
+  }
+}

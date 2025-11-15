@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/game_provider.dart';
 import '../models/student.dart';
+import 'profile_edit_screen.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -35,6 +36,19 @@ class _MyPageScreenState extends State<MyPageScreen> {
           SnackBar(content: Text('데이터 로드 실패: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _navigateToEditProfile(Student student) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileEditScreen(student: student),
+      ),
+    );
+
+    if (result == true) {
+      _loadMyPageData();
     }
   }
 
@@ -72,8 +86,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
     final level = _myPageData?['level'] ?? student.level;
     final exp = _myPageData?['exp'] ?? student.exp;
     final points = _myPageData?['points'] ?? student.points;
-    final totalCorrect = _myPageData?['totalCorrect'] ?? student.totalCorrect;
-    final totalWrong = _myPageData?['totalWrong'] ?? student.totalWrong;
+    final totalCorrect = _myPageData?['totalCorrect'] ?? 0;
+    final totalWrong = _myPageData?['totalWrong'] ?? 0;
     final totalAttempts = totalCorrect + totalWrong;
     final accuracy = totalAttempts > 0 ? (totalCorrect / totalAttempts * 100).toStringAsFixed(1) : '0.0';
 
@@ -164,7 +178,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
                     _buildInfoRow('생년월일', student.birthDate!),
                   if (student.phoneNumber != null)
                     _buildInfoRow('휴대폰', student.phoneNumber!),
-                  if (student.birthDate == null && student.phoneNumber == null)
+                  if (student.studentIdNumber != null)
+                    _buildInfoRow('학번', student.studentIdNumber!),
+                  if (student.birthDate == null && student.phoneNumber == null && student.studentIdNumber == null)
                     const Padding(
                       padding: EdgeInsets.all(8.0),
                       child: Text(
@@ -181,9 +197,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: 프로필 편집 화면으로 이동
-                  },
+                  onPressed: () => _navigateToEditProfile(student),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF595048),
                     foregroundColor: const Color(0xFFD9D4D2),
