@@ -9,13 +9,12 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,15 +41,14 @@ public class OcrService {
             
             for (int page = 0; page < document.getNumberOfPages(); page++) {
                 log.info("Processing page {}", page + 1);
-                BufferedImage image = pdfRenderer.renderImageWithDPI(page, 600);
+                BufferedImage image = pdfRenderer.renderImageWithDPI(page, 300);
                 String pageText = tesseract.doOCR(image);
                 fullText.append(pageText).append("\n");
             }
             
             log.info("Extracted text length: {}", fullText.length());
             questions = parseQuestions(fullText.toString());
-            questions = mergeDuplicateQuestions(questions);
-            log.info("Parsed {} questions after merging", questions.size());
+            log.info("Parsed {} questions", questions.size());
             
         } catch (Exception e) {
             log.error("OCR extraction failed", e);
@@ -64,14 +62,14 @@ public class OcrService {
         List<QuestionData> questions = new ArrayList<>();
         
         Pattern questionPattern = Pattern.compile(
-            "(\\d+)\\s*\\.\\s*(.+?)(?=\\n\\s*\\d+\\s*\\.|$)",
+            "(\\d+)\\s*[번.)]?\\s*(.+?)(?=\\n\\s*\\d+\\s*[번.)]|$)",
             Pattern.DOTALL
         );
         
         Matcher matcher = questionPattern.matcher(text);
         
         while (matcher.find()) {
-            int questionNumber = Integer.parseInt(matcher.group(1));
+            int questionNumber = Integer.parseInt(matcher.group(1).trim());
             String questionContent = matcher.group(2).trim();
             
             QuestionData question = new QuestionData();
@@ -88,36 +86,6 @@ public class OcrService {
         }
         
         return questions;
-    }
-
-    private List<QuestionData> mergeDuplicateQuestions(List<QuestionData> questions) {
-        Map<Integer, QuestionData> mergedMap = new HashMap<>();
-        
-        for (QuestionData question : questions) {
-            Integer qNum = question.getQuestionNumber();
-            
-            if (mergedMap.containsKey(qNum)) {
-                QuestionData existing = mergedMap.get(qNum);
-                
-                if (existing.getQuestionType().equals("subjective") && 
-                    isMultipleChoice(question.getQuestionText())) {
-                    existing.setQuestionType("multiple_choice");
-                    parseMultipleChoice(existing, question.getQuestionText());
-                } else if (question.getQuestionType().equals("multiple_choice")) {
-                    existing.setQuestionType("multiple_choice");
-                    if (existing.getOptionA() == null) existing.setOptionA(question.getOptionA());
-                    if (existing.getOptionB() == null) existing.setOptionB(question.getOptionB());
-                    if (existing.getOptionC() == null) existing.setOptionC(question.getOptionC());
-                    if (existing.getOptionD() == null) existing.setOptionD(question.getOptionD());
-                } else {
-                    existing.setQuestionText(existing.getQuestionText() + " " + question.getQuestionText());
-                }
-            } else {
-                mergedMap.put(qNum, question);
-            }
-        }
-        
-        return new ArrayList<>(mergedMap.values());
     }
 
     private boolean isMultipleChoice(String content) {
@@ -177,7 +145,7 @@ public class OcrService {
         
         if (firstMarker != null) {
             String[] parts = content.split(Pattern.quote(firstMarker), 2);
-            if (parts.length > 0 && question.getQuestionText() == null) {
+            if (parts.length > 0) {
                 question.setQuestionText(parts[0].trim());
             }
             
@@ -186,9 +154,7 @@ public class OcrService {
                 parseOptions(question, optionsText);
             }
         } else {
-            if (question.getQuestionText() == null) {
-                question.setQuestionText(content);
-            }
+            question.setQuestionText(content);
         }
     }
 
@@ -213,10 +179,10 @@ public class OcrService {
                 .trim();
             
             switch (optionIndex) {
-                case 0: if (question.getOptionA() == null) question.setOptionA(optionText); break;
-                case 1: if (question.getOptionB() == null) question.setOptionB(optionText); break;
-                case 2: if (question.getOptionC() == null) question.setOptionC(optionText); break;
-                case 3: if (question.getOptionD() == null) question.setOptionD(optionText); break;
+                case 0: question.setOptionA(optionText); break;
+                case 1: question.setOptionB(optionText); break;
+                case 2: question.setOptionC(optionText); break;
+                case 3: question.setOptionD(optionText); break;
             }
             optionIndex++;
         }
