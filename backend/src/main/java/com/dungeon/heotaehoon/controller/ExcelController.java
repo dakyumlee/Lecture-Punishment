@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/excel")
@@ -25,10 +27,11 @@ public class ExcelController {
             StudentGroup group = groupService.getGroupById(groupId);
             byte[] excelBytes = excelExportService.generateGroupScoreExcel(groupId, group);
             
-            String filename = group.getGroupName() + "_성적표.xlsx";
+            String filename = URLEncoder.encode(group.getGroupName() + "_성적표.xlsx", StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
             
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + filename)
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                     .body(excelBytes);
         } catch (IOException e) {
@@ -41,10 +44,11 @@ public class ExcelController {
         try {
             byte[] excelBytes = excelExportService.generateAllStudentsScoreExcel();
             
-            String filename = "전체학생_성적표.xlsx";
+            String filename = URLEncoder.encode("전체학생_성적표.xlsx", StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
             
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + filename)
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                     .body(excelBytes);
         } catch (IOException e) {
@@ -57,10 +61,11 @@ public class ExcelController {
         try {
             byte[] excelBytes = excelExportService.generateWorksheetResultExcel(worksheetId);
             
-            String filename = "문제지_결과.xlsx";
+            String filename = URLEncoder.encode("문제지_결과.xlsx", StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
             
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + filename)
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                     .body(excelBytes);
         } catch (IOException e) {
