@@ -116,8 +116,10 @@ class ApiService {
   }
 
   static Future<bool> deleteStudent(String id) async {
+  static Future<bool> deleteStudent(String id) async {
     final response = await http.delete(Uri.parse('$baseUrl/admin/students/$id'));
     return response.statusCode == 200;
+  }
 
   static Future<Map<String, dynamic>> createStudent({
     required String username,
