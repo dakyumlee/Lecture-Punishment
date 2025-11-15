@@ -64,6 +64,7 @@ public class OcrService {
             
             String extractedText = fullText.toString();
             log.info("Total extracted text length: {}", extractedText.length());
+            log.debug("Extracted text: {}", extractedText);
             
             if (extractedText.length() > 0) {
                 questions = parseQuestions(extractedText);
@@ -96,14 +97,12 @@ public class OcrService {
         List<QuestionData> questions = new ArrayList<>();
         
         String cleanedText = text
-            .replaceAll("자바&Springboot.*?양성과정.*?(?=\\d+\\.)", "")
-            .replaceAll("2025\\.\\d+\\.\\d+\\..*?(?=\\d+\\.)", "")
-            .replaceAll("HTML/CSS.*?(?=\\d+\\.)", "")
-            .replaceAll("평가일시.*?(?=\\d+\\.)", "")
-            .replaceAll("배점.*?(?=\\d+\\.)", "");
+            .replaceAll("(?s)자바&Springboot.*?(?=\\d+\\.)", "")
+            .replaceAll("(?s)평가일시.*?(?=\\d+\\.)", "")
+            .replaceAll("(?s)배점.*?(?=\\d+\\.)", "");
         
         Pattern questionPattern = Pattern.compile(
-            "(\\d+)\\.\\s*([^\\d][^1234]+?)(?=\\d+\\)|$)",
+            "(\\d+)\\.\\s*(.+?)(?=(?:\\d+\\.|$))",
             Pattern.DOTALL
         );
         
@@ -112,9 +111,9 @@ public class OcrService {
         while (matcher.find()) {
             try {
                 int questionNumber = Integer.parseInt(matcher.group(1).trim());
-                String content = matcher.group(2).trim();
+                String fullContent = matcher.group(2).trim();
                 
-                if (content.length() < 10) {
+                if (fullContent.length() < 10) {
                     continue;
                 }
                 
@@ -123,42 +122,71 @@ public class OcrService {
                 question.setPoints(10);
                 question.setCorrectAnswer("1");
                 
-                String[] parts = content.split("(?=1\\))");
+                log.info("Processing Q{}: {}", questionNumber, fullContent.substring(0, Math.min(100, fullContent.length())));
                 
-                if (parts.length >= 2) {
+                if (fullContent.contains("1)") || fullContent.contains("①")) {
                     question.setQuestionType("multiple_choice");
-                    question.setQuestionText(parts[0].trim());
                     
-                    String optionsText = parts[1];
+                    String questionText;
+                    String optionsText;
                     
-                    Pattern optionPattern = Pattern.compile("(\\d+)\\)\\s*(.+?)(?=\\d+\\)|$)", Pattern.DOTALL);
-                    Matcher optionMatcher = optionPattern.matcher(optionsText);
-                    
-                    String[] options = new String[4];
-                    
-                    while (optionMatcher.find()) {
-                        int optNum = Integer.parseInt(optionMatcher.group(1).trim());
-                        String optText = optionMatcher.group(2).trim()
-                            .replaceAll("\\s+", " ")
-                            .replaceAll("<", "&lt;")
-                            .replaceAll(">", "&gt;");
-                        
-                        if (optNum >= 1 && optNum <= 4) {
-                            options[optNum - 1] = optText;
-                        }
+                    int optionStart = fullContent.indexOf("1)");
+                    if (optionStart == -1) {
+                        optionStart = fullContent.indexOf("①");
                     }
                     
-                    question.setOptionA(options[0] != null ? options[0] : "");
-                    question.setOptionB(options[1] != null ? options[1] : "");
-                    question.setOptionC(options[2] != null ? options[2] : "");
-                    question.setOptionD(options[3] != null ? options[3] : "");
+                    if (optionStart > 0) {
+                        questionText = fullContent.substring(0, optionStart).trim();
+                        optionsText = fullContent.substring(optionStart).trim();
+                        
+                        question.setQuestionText(questionText);
+                        
+                        String[] options = new String[4];
+                        
+                        if (optionsText.contains("①")) {
+                            Pattern circlePattern = Pattern.compile("①\\s*(.+?)\\s*②\\s*(.+?)\\s*③\\s*(.+?)\\s*④\\s*(.+?)(?=⑤|$)", Pattern.DOTALL);
+                            Matcher circleMatcher = circlePattern.matcher(optionsText);
+                            
+                            if (circleMatcher.find()) {
+                                options[0] = circleMatcher.group(1).trim().replaceAll("\\s+", " ");
+                                options[1] = circleMatcher.group(2).trim().replaceAll("\\s+", " ");
+                                options[2] = circleMatcher.group(3).trim().replaceAll("\\s+", " ");
+                                options[3] = circleMatcher.group(4).trim().replaceAll("\\s+", " ");
+                            }
+                        } else {
+                            Pattern numberPattern = Pattern.compile("(\\d+)\\)\\s*([^\\d)]+?)(?=\\d+\\)|$)", Pattern.DOTALL);
+                            Matcher numberMatcher = numberPattern.matcher(optionsText);
+                            
+                            while (numberMatcher.find()) {
+                                int optNum = Integer.parseInt(numberMatcher.group(1).trim());
+                                String optText = numberMatcher.group(2).trim().replaceAll("\\s+", " ");
+                                
+                                if (optNum >= 1 && optNum <= 4) {
+                                    options[optNum - 1] = optText;
+                                }
+                            }
+                        }
+                        
+                        question.setOptionA(options[0] != null ? options[0] : "");
+                        question.setOptionB(options[1] != null ? options[1] : "");
+                        question.setOptionC(options[2] != null ? options[2] : "");
+                        question.setOptionD(options[3] != null ? options[3] : "");
+                        
+                        log.info("Q{} - Options: A={}, B={}, C={}, D={}", 
+                            questionNumber, 
+                            options[0] != null ? options[0].substring(0, Math.min(20, options[0].length())) : "null",
+                            options[1] != null ? options[1].substring(0, Math.min(20, options[1].length())) : "null",
+                            options[2] != null ? options[2].substring(0, Math.min(20, options[2].length())) : "null",
+                            options[3] != null ? options[3].substring(0, Math.min(20, options[3].length())) : "null");
+                    } else {
+                        question.setQuestionText(fullContent);
+                    }
                 } else {
                     question.setQuestionType("subjective");
-                    question.setQuestionText(content.trim());
+                    question.setQuestionText(fullContent);
                 }
                 
                 questions.add(question);
-                log.info("Parsed Q{}: {}", questionNumber, question.getQuestionText().substring(0, Math.min(50, question.getQuestionText().length())));
                 
             } catch (Exception e) {
                 log.warn("Failed to parse question", e);
