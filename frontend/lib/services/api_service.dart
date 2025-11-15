@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:html' as html;
 import 'package:http/http.dart' as http;
 import '../models/instructor.dart';
 import '../models/quiz.dart';
@@ -145,6 +146,38 @@ class ApiService {
     );
   }
 
+  static Future<Map<String, dynamic>> uploadPdfWorksheet({
+    required String title,
+    required String description,
+    required String category,
+    required List<int> fileBytes,
+    required String fileName,
+  }) async {
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/worksheets'),
+    );
+    
+    request.fields['title'] = title;
+    request.fields['description'] = description;
+    request.fields['category'] = category;
+    
+    request.files.add(http.MultipartFile.fromBytes(
+      'file',
+      fileBytes,
+      filename: fileName,
+    ));
+
+    var response = await request.send();
+    var responseBody = await response.stream.bytesToString();
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(responseBody);
+    } else {
+      throw Exception('업로드 실패: ${response.statusCode}');
+    }
+  }
+
   static Future<List<dynamic>> getAllWorksheets() async {
     final response = await http.get(Uri.parse('$baseUrl/worksheets/all'));
     return jsonDecode(response.body) as List;
@@ -160,11 +193,25 @@ class ApiService {
     return jsonDecode(response.body) as List;
   }
 
-  static Future<void> createGroup({required String name, String? description}) async {
+  static Future<void> createGroup({
+    required String name, 
+    String? description,
+    int? year,
+    String? course,
+    String? period,
+  }) async {
+    final Map<String, dynamic> body = {
+      'groupName': name,
+    };
+    if (description != null) body['description'] = description;
+    if (year != null) body['year'] = year;
+    if (course != null) body['course'] = course;
+    if (period != null) body['period'] = period;
+
     await http.post(
       Uri.parse('$baseUrl/groups'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'description': description}),
+      body: jsonEncode(body),
     );
   }
 
@@ -173,12 +220,32 @@ class ApiService {
     return response.statusCode == 200;
   }
 
-  static Future<void> downloadAllStudentsExcel() async {
-    await http.get(Uri.parse('$baseUrl/excel/students/all'));
+  static Future<void> downloadGroupExcel(String groupId, String groupName) async {
+    final response = await http.get(Uri.parse('$baseUrl/excel/groups/$groupId'));
+    if (response.statusCode == 200) {
+      final bytes = response.bodyBytes;
+      final blob = html.Blob([bytes]);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.document.createElement('a') as html.AnchorElement
+        ..href = url
+        ..download = '${groupName}_성적표.xlsx'
+        ..click();
+      html.Url.revokeObjectUrl(url);
+    }
   }
 
-  static Future<void> downloadGroupExcel(String groupId, String groupName) async {
-    await http.get(Uri.parse('$baseUrl/excel/groups/$groupId'));
+  static Future<void> downloadAllStudentsExcel() async {
+    final response = await http.get(Uri.parse('$baseUrl/excel/students/all'));
+    if (response.statusCode == 200) {
+      final bytes = response.bodyBytes;
+      final blob = html.Blob([bytes]);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.document.createElement('a') as html.AnchorElement
+        ..href = url
+        ..download = '전체학생_성적표.xlsx'
+        ..click();
+      html.Url.revokeObjectUrl(url);
+    }
   }
 
   static Future<List<dynamic>> getGroupStudents(String groupId) async {
