@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -107,7 +108,7 @@ public class WorksheetService {
                     .optionD(optionD)
                     .points(points != null ? points : 10)
                     .allowPartial(false)
-                    .similarityThreshold(0.85)
+                    .similarityThreshold(BigDecimal.valueOf(0.85))
                     .createdAt(LocalDateTime.now())
                     .build();
             
