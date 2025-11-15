@@ -184,3 +184,8 @@ class GameProvider with ChangeNotifier {
     notifyListeners();
   }
 }
+
+  void setCurrentStudent(dynamic studentData) {
+    _currentStudent = Student.fromJson(studentData);
+    notifyListeners();
+  }

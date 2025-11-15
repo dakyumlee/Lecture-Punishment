@@ -395,3 +395,15 @@ class ApiService {
     return jsonDecode(response.body);
   }
 }
+
+  static Future<Map<String, dynamic>> setPassword(String studentId, String password) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/set-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'studentId': studentId,
+        'password': password,
+      }),
+    );
+    return jsonDecode(response.body);
+  }

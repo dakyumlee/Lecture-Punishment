@@ -9,12 +9,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -28,82 +26,76 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> studentLogin(@RequestBody Map<String, String> request) {
         String username = request.get("username");
-        String birthDateStr = request.get("birthDate");
-        String phoneNumber = request.get("phoneNumber");
+        String password = request.get("password");
 
-        List<Student> studentsWithSameName = studentRepository.findAllByUsername(username);
+        Optional<Student> studentOpt = studentRepository.findByUsername(username);
 
-        if (studentsWithSameName.isEmpty()) {
+        if (studentOpt.isEmpty()) {
             Student newStudent = Student.builder()
                     .username(username)
                     .displayName(username)
                     .createdAt(LocalDateTime.now())
+                    .isProfileComplete(false)
                     .build();
             Student saved = studentRepository.save(newStudent);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("student", saved);
-            response.put("needsProfile", true);
-            response.put("message", "프로필 완성이 필요합니다");
+            response.put("needsPassword", true);
+            response.put("message", "비밀번호를 설정해주세요");
             return ResponseEntity.ok(response);
         }
 
-        if (studentsWithSameName.size() == 1) {
-            Student student = studentsWithSameName.get(0);
-            
-            if (!student.getIsProfileComplete()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", true);
-                response.put("student", student);
-                response.put("needsProfile", true);
-                response.put("message", "프로필 완성이 필요합니다");
-                return ResponseEntity.ok(response);
-            }
+        Student student = studentOpt.get();
 
+        if (student.getPassword() == null || student.getPassword().isEmpty()) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("student", student);
-            response.put("needsProfile", false);
-            response.put("message", "로그인 성공");
+            response.put("needsPassword", true);
+            response.put("message", "비밀번호를 설정해주세요");
             return ResponseEntity.ok(response);
         }
 
-        if (birthDateStr == null && phoneNumber == null) {
+        if (password == null || password.isEmpty()) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "동명이인");
-            response.put("hasDuplicates", true);
+            response.put("message", "비밀번호를 입력해주세요");
             return ResponseEntity.badRequest().body(response);
         }
 
-        Student foundStudent = null;
-
-        if (birthDateStr != null && !birthDateStr.isEmpty()) {
-            try {
-                LocalDate birthDate = LocalDate.parse(birthDateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
-                foundStudent = studentRepository.findByUsernameAndBirthDate(username, birthDate).orElse(null);
-            } catch (Exception e) {
-            }
-        }
-
-        if (foundStudent == null && phoneNumber != null && !phoneNumber.isEmpty()) {
-            foundStudent = studentRepository.findByUsernameAndPhoneNumber(username, phoneNumber).orElse(null);
-        }
-
-        if (foundStudent == null) {
+        if (!passwordEncoder.matches(password, student.getPassword())) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "일치하는 학생 정보를 찾을 수 없습니다");
+            response.put("message", "비밀번호가 일치하지 않습니다");
             return ResponseEntity.badRequest().body(response);
         }
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
-        response.put("student", foundStudent);
-        response.put("needsProfile", !foundStudent.getIsProfileComplete());
+        response.put("student", student);
+        response.put("needsPassword", false);
+        response.put("needsProfile", !student.getIsProfileComplete());
         response.put("message", "로그인 성공");
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/set-password")
+    public ResponseEntity<?> setPassword(@RequestBody Map<String, String> request) {
+        String studentId = request.get("studentId");
+        String password = request.get("password");
+
+        Student student = studentRepository.findById(studentId).orElse(null);
+        if (student == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "학생을 찾을 수 없습니다"));
+        }
+
+        student.setPassword(passwordEncoder.encode(password));
+        student.setIsProfileComplete(true);
+        studentRepository.save(student);
+
+        return ResponseEntity.ok(Map.of("success", true, "student", student, "message", "비밀번호 설정 완료"));
     }
 
     @PostMapping("/admin/login")
@@ -164,34 +156,5 @@ public class AuthController {
         response.put("message", "회원가입 성공");
 
         return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/profile/complete")
-    public ResponseEntity<?> completeProfile(@RequestBody Map<String, String> request) {
-        String studentId = request.get("studentId");
-        String birthDateStr = request.get("birthDate");
-        String phoneNumber = request.get("phoneNumber");
-
-        Student student = studentRepository.findById(studentId).orElse(null);
-        if (student == null) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "학생을 찾을 수 없습니다"));
-        }
-
-        if (birthDateStr != null && !birthDateStr.isEmpty()) {
-            try {
-                LocalDate birthDate = LocalDate.parse(birthDateStr);
-                student.setBirthDate(birthDate);
-            } catch (Exception e) {
-            }
-        }
-
-        if (phoneNumber != null && !phoneNumber.isEmpty()) {
-            student.setPhoneNumber(phoneNumber);
-        }
-
-        student.setIsProfileComplete(true);
-        studentRepository.save(student);
-
-        return ResponseEntity.ok(Map.of("success", true, "student", student, "message", "프로필 완성"));
     }
 }

@@ -3,24 +3,40 @@ import '../services/api_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/game_provider.dart';
 import 'home_screen.dart';
-import 'password_setup_screen.dart';
-import 'admin_login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class PasswordSetupScreen extends StatefulWidget {
+  final String studentId;
+  final String username;
+
+  const PasswordSetupScreen({
+    super.key,
+    required this.studentId,
+    required this.username,
+  });
+
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<PasswordSetupScreen> createState() => _PasswordSetupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _nameController = TextEditingController();
+class _PasswordSetupScreenState extends State<PasswordSetupScreen> {
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
 
-  Future<void> _login() async {
-    if (_nameController.text.isEmpty) {
-      setState(() => _errorMessage = '이름을 입력해주세요');
+  Future<void> _setPassword() async {
+    if (_passwordController.text.isEmpty) {
+      setState(() => _errorMessage = '비밀번호를 입력해주세요');
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      setState(() => _errorMessage = '비밀번호가 일치하지 않습니다');
+      return;
+    }
+
+    if (_passwordController.text.length < 4) {
+      setState(() => _errorMessage = '비밀번호는 최소 4자 이상이어야 합니다');
       return;
     }
 
@@ -30,40 +46,24 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final response = await ApiService.login(_nameController.text, _passwordController.text);
+      final response = await ApiService.setPassword(widget.studentId, _passwordController.text);
       
-      if (response['success'] == true) {
-        if (response['needsPassword'] == true) {
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PasswordSetupScreen(
-                  studentId: response['student']['id'],
-                  username: _nameController.text,
-                ),
-              ),
-            );
-          }
-        } else {
-          final provider = Provider.of<GameProvider>(context, listen: false);
-          provider.setCurrentStudent(response['student']);
-          
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => HomeScreen(initialStudent: provider.currentStudent!),
-              ),
-            );
-          }
-        }
+      if (response['success'] == true && mounted) {
+        final provider = Provider.of<GameProvider>(context, listen: false);
+        provider.setCurrentStudent(response['student']);
+        
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(initialStudent: provider.currentStudent!),
+          ),
+        );
       } else {
-        setState(() => _errorMessage = response['message'] ?? '로그인 실패');
+        setState(() => _errorMessage = response['message'] ?? '비밀번호 설정 실패');
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = '로그인 실패: $e');
+        setState(() => _errorMessage = '비밀번호 설정 실패: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -81,12 +81,21 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                '허태훈의 분노 던전',
+                '비밀번호 설정',
                 style: TextStyle(
                   color: Color(0xFFD9D4D2),
                   fontFamily: 'JoseonGulim',
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '${widget.username}님, 환영합니다!',
+                style: const TextStyle(
+                  color: Color(0xFF736A63),
+                  fontFamily: 'JoseonGulim',
+                  fontSize: 18,
                 ),
               ),
               const SizedBox(height: 48),
@@ -95,13 +104,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   children: [
                     TextField(
-                      controller: _nameController,
+                      controller: _passwordController,
+                      obscureText: true,
                       style: const TextStyle(
                         color: Color(0xFFD9D4D2),
                         fontFamily: 'JoseonGulim',
                       ),
                       decoration: InputDecoration(
-                        labelText: '이름',
+                        labelText: '비밀번호 (최소 4자)',
                         labelStyle: const TextStyle(
                           color: Color(0xFF736A63),
                           fontFamily: 'JoseonGulim',
@@ -124,14 +134,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     TextField(
-                      controller: _passwordController,
+                      controller: _confirmPasswordController,
                       obscureText: true,
                       style: const TextStyle(
                         color: Color(0xFFD9D4D2),
                         fontFamily: 'JoseonGulim',
                       ),
                       decoration: InputDecoration(
-                        labelText: '비밀번호',
+                        labelText: '비밀번호 확인',
                         labelStyle: const TextStyle(
                           color: Color(0xFF736A63),
                           fontFamily: 'JoseonGulim',
@@ -151,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderSide: const BorderSide(color: Color(0xFF736A63)),
                         ),
                       ),
-                      onSubmitted: (_) => _login(),
+                      onSubmitted: (_) => _setPassword(),
                     ),
                     if (_errorMessage != null) ...[
                       const SizedBox(height: 16),
@@ -168,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _login,
+                        onPressed: _isLoading ? null : _setPassword,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF595048),
                           foregroundColor: const Color(0xFFD9D4D2),
@@ -187,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               )
                             : const Text(
-                                '로그인',
+                                '완료',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontFamily: 'JoseonGulim',
@@ -196,20 +206,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-                ),
-                child: const Text(
-                  '관리자 로그인 →',
-                  style: TextStyle(
-                    color: Color(0xFF736A63),
-                    fontFamily: 'JoseonGulim',
-                  ),
                 ),
               ),
             ],
@@ -221,8 +217,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 }
