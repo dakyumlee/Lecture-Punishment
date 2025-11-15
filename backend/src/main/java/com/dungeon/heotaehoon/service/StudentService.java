@@ -1,7 +1,9 @@
 package com.dungeon.heotaehoon.service;
 
 import com.dungeon.heotaehoon.entity.Student;
+import com.dungeon.heotaehoon.entity.StudentGroup;
 import com.dungeon.heotaehoon.repository.StudentRepository;
+import com.dungeon.heotaehoon.repository.StudentGroupRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,11 +13,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class StudentService {
     private final StudentRepository studentRepository;
+    private final StudentGroupRepository groupRepository;
 
     public Student getStudentById(String id) {
         return studentRepository.findById(id)
@@ -25,6 +29,28 @@ public class StudentService {
     public Student getStudentByUsername(String username) {
         return studentRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("학생을 찾을 수 없습니다"));
+    }
+
+    @Transactional
+    public Student createStudent(String username, String displayName, String groupId) {
+        Student student = new Student();
+        student.setId(UUID.randomUUID().toString());
+        student.setUsername(username);
+        student.setDisplayName(displayName);
+        student.setLevel(1);
+        student.setExp(0);
+        student.setPoints(0);
+        student.setTotalCorrect(0);
+        student.setTotalWrong(0);
+        student.setIsProfileComplete(false);
+        
+        if (groupId != null && !groupId.isEmpty()) {
+            StudentGroup group = groupRepository.findById(groupId)
+                    .orElseThrow(() -> new RuntimeException("그룹을 찾을 수 없습니다"));
+            student.setGroup(group);
+        }
+        
+        return studentRepository.save(student);
     }
 
     @Transactional
