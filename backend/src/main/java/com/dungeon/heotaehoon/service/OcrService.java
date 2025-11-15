@@ -36,13 +36,8 @@ public class OcrService {
             PDFRenderer pdfRenderer = new PDFRenderer(document);
             Tesseract tesseract = new Tesseract();
             
-            String tessdataPath = System.getenv("TESSDATA_PREFIX");
-            if (tessdataPath != null) {
-                tesseract.setDatapath(tessdataPath);
-                log.info("Using TESSDATA_PREFIX: {}", tessdataPath);
-            } else {
-                log.warn("TESSDATA_PREFIX not set, using default");
-            }
+            tesseract.setDatapath("/usr/share/tessdata");
+            log.info("Tesseract datapath set to: /usr/share/tessdata");
             
             tesseract.setLanguage("kor+eng");
             

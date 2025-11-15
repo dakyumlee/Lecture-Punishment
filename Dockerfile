@@ -5,12 +5,17 @@ COPY backend/src ./src
 RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
+
 RUN apk add --no-cache \
     tesseract-ocr \
-    tesseract-ocr-data-kor \
-    tesseract-ocr-data-eng
+    wget
 
-ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata
+RUN mkdir -p /usr/share/tessdata && \
+    cd /usr/share/tessdata && \
+    wget https://github.com/tesseract-ocr/tessdata/raw/main/kor.traineddata && \
+    wget https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
+
+ENV TESSDATA_PREFIX=/usr/share/tessdata
 
 WORKDIR /app
 COPY --from=build /app/target/*.jar application.jar
