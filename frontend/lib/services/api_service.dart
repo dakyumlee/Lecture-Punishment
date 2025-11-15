@@ -115,7 +115,11 @@ class ApiService {
     return jsonDecode(response.body) as List;
   }
 
-  static Future<bool> deleteStudent(String id) async {
+  static Future<List<dynamic>> getAllStudents() async {
+    final response = await http.get(Uri.parse('$baseUrl/admin/students'));
+    return jsonDecode(response.body) as List;
+  }
+
   static Future<bool> deleteStudent(String id) async {
     final response = await http.delete(Uri.parse('$baseUrl/admin/students/$id'));
     return response.statusCode == 200;
@@ -140,7 +144,6 @@ class ApiService {
     }
     return jsonDecode(response.body);
   }
-  }
 
   static Future<Map<String, dynamic>> getWorksheetWithQuestions(String id) async {
     final response = await http.get(Uri.parse('$baseUrl/worksheets/$id/questions'));
@@ -150,7 +153,7 @@ class ApiService {
   static Future<Map<String, dynamic>> submitWorksheet({
     required String worksheetId,
     required String studentId,
-    required List<Map<String, dynamic>> answers,
+    required Map<String, String> answers,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/worksheets/$worksheetId/submit'),
@@ -160,14 +163,6 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<void> createWorksheet({required String title, String? description}) async {
-    await http.post(
-      Uri.parse('$baseUrl/worksheets'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'title': title, 'description': description}),
-    );
-  }
-
   static Future<Map<String, dynamic>> uploadPdfWorksheet({
     required String title,
     required String description,
@@ -175,38 +170,25 @@ class ApiService {
     required List<int> fileBytes,
     required String fileName,
   }) async {
-    var request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/worksheets'),
-    );
-    
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/worksheets/pdf'));
     request.fields['title'] = title;
     request.fields['description'] = description;
     request.fields['category'] = category;
-    
-    request.files.add(http.MultipartFile.fromBytes(
-      'file',
-      fileBytes,
-      filename: fileName,
-    ));
-
-    var response = await request.send();
-    var responseBody = await response.stream.bytesToString();
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(responseBody);
-    } else {
+    request.files.add(http.MultipartFile.fromBytes('file', fileBytes, filename: fileName));
+    var streamedResponse = await request.send();
+    var response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode != 200) {
       throw Exception('업로드 실패: ${response.statusCode}');
     }
+    return jsonDecode(utf8.decode(response.bodyBytes));
   }
 
-  static Future<List<dynamic>> getAllWorksheets() async {
-    final response = await http.get(Uri.parse('$baseUrl/worksheets/all'));
-    return jsonDecode(response.body) as List;
-  }
-
-  static Future<bool> deleteWorksheet(String id) async {
-    final response = await http.delete(Uri.parse('$baseUrl/worksheets/$id'));
+  static Future<bool> addQuestionToWorksheet(String worksheetId, Map<String, dynamic> questionData) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/worksheets/$worksheetId/questions'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(questionData),
+    );
     return response.statusCode == 200;
   }
 
@@ -215,59 +197,29 @@ class ApiService {
     return jsonDecode(response.body) as List;
   }
 
-  static Future<void> createGroup({
-    required String name, 
-    String? description,
+  static Future<Map<String, dynamic>> createGroup({
+    required String name,
     int? year,
-    String? course,
-    String? period,
+    required String course,
+    required String period,
+    String? description,
   }) async {
-    final Map<String, dynamic> body = {
-      'groupName': name,
-    };
-    if (description != null) body['description'] = description;
-    if (year != null) body['year'] = year;
-    if (course != null) body['course'] = course;
-    if (period != null) body['period'] = period;
-
-    await http.post(
+    final response = await http.post(
       Uri.parse('$baseUrl/groups'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
+      body: jsonEncode({
+        'groupName': name,
+        'year': year,
+        'course': course,
+        'period': period,
+        'description': description,
+      }),
     );
+    return jsonDecode(response.body);
   }
 
-  static Future<bool> deleteGroup(String id) async {
-    final response = await http.delete(Uri.parse('$baseUrl/groups/$id'));
-    return response.statusCode == 200;
-  }
-
-  static Future<void> downloadGroupExcel(String groupId, String groupName) async {
-    final response = await http.get(Uri.parse('$baseUrl/excel/groups/$groupId'));
-    if (response.statusCode == 200) {
-      final bytes = response.bodyBytes;
-      final blob = html.Blob([bytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.document.createElement('a') as html.AnchorElement
-        ..href = url
-        ..download = '${groupName}_성적표.xlsx'
-        ..click();
-      html.Url.revokeObjectUrl(url);
-    }
-  }
-
-  static Future<void> downloadAllStudentsExcel() async {
-    final response = await http.get(Uri.parse('$baseUrl/excel/students/all'));
-    if (response.statusCode == 200) {
-      final bytes = response.bodyBytes;
-      final blob = html.Blob([bytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.document.createElement('a') as html.AnchorElement
-        ..href = url
-        ..download = '전체학생_성적표.xlsx'
-        ..click();
-      html.Url.revokeObjectUrl(url);
-    }
+  static Future<void> deleteGroup(String groupId) async {
+    await http.delete(Uri.parse('$baseUrl/groups/$groupId'));
   }
 
   static Future<List<dynamic>> getGroupStudents(String groupId) async {
@@ -275,115 +227,29 @@ class ApiService {
     return jsonDecode(response.body) as List;
   }
 
-  static Future<bool> removeStudentFromGroup({required String groupId, required String studentId}) async {
-    final response = await http.delete(Uri.parse('$baseUrl/groups/$groupId/students/$studentId'));
-    return response.statusCode == 200;
+  static Future<void> removeStudentFromGroup({required String groupId, required String studentId}) async {
+    await http.delete(Uri.parse('$baseUrl/groups/$groupId/students/$studentId'));
   }
 
-  static Future<bool> assignStudentToGroup({required String groupId, required String studentId}) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/groups/$groupId/students'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'studentId': studentId}),
-    );
-    return response.statusCode == 200;
+  static Future<void> downloadGroupExcel(String groupId, String groupName) async {
+    final response = await http.get(Uri.parse('$baseUrl/excel/groups/$groupId'));
+    final bytes = response.bodyBytes;
+    final blob = html.Blob([bytes]);
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    final anchor = html.AnchorElement(href: url)
+      ..setAttribute('download', '$groupName.xlsx')
+      ..click();
+    html.Url.revokeObjectUrl(url);
   }
 
-  static Future<List<dynamic>> getAllSubmissions() async {
-    final response = await http.get(Uri.parse('$baseUrl/submissions'));
-    return jsonDecode(response.body) as List;
-  }
-
-  static Future<Map<String, dynamic>> getSubmissionDetail(String id) async {
-    final response = await http.get(Uri.parse('$baseUrl/submissions/$id'));
-    return jsonDecode(response.body);
-  }
-
-  static Future<bool> gradeAnswer({
-    required String submissionId,
-    required String answerId,
-    required bool isCorrect,
-    required int score,
-  }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/submissions/$submissionId/grade'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'answerId': answerId, 'isCorrect': isCorrect, 'score': score}),
-    );
-    return response.statusCode == 200;
-  }
-
-  static Future<bool> addQuestionToWorksheet(String worksheetId, Map<String, dynamic> question) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/worksheets/$worksheetId/questions'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(question),
-    );
-    return response.statusCode == 200;
-  }
-
-  static Future<void> addQuestion(String worksheetId, Map<String, dynamic> question) async {
-    await addQuestionToWorksheet(worksheetId, question);
-  }
-
-  static Future<Map<String, dynamic>> changeExpression({
-    required String studentId,
-    required String expression,
-  }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/students/$studentId/expression'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'expression': expression}),
-    );
-    return jsonDecode(response.body);
-  }
-
-  static Future<Map<String, dynamic>> completeProfile({
-    required String studentId,
-    String? birthDate,
-    String? phoneNumber,
-  }) async {
-    final Map<String, String> body = {'studentId': studentId};
-    if (birthDate != null && birthDate.isNotEmpty) {
-      body['birthDate'] = birthDate;
-    }
-    if (phoneNumber != null && phoneNumber.isNotEmpty) {
-      body['phoneNumber'] = phoneNumber;
-    }
-
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/profile/complete'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
-    return jsonDecode(response.body);
-  }
-
-  static Future<Map<String, dynamic>> getMyPageData(String studentId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/students/$studentId/mypage'),
-    );
-    return jsonDecode(response.body);
-  }
-
-  static Future<Map<String, dynamic>> updateProfile({
-    required String studentId,
-    String? displayName,
-    String? birthDate,
-    String? phoneNumber,
-    String? studentIdNumber,
-  }) async {
-    final Map<String, String> body = {};
-    if (displayName != null) body['displayName'] = displayName;
-    if (birthDate != null) body['birthDate'] = birthDate;
-    if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
-    if (studentIdNumber != null) body['studentIdNumber'] = studentIdNumber;
-
-    final response = await http.put(
-      Uri.parse('$baseUrl/students/$studentId/profile'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
-    return jsonDecode(response.body);
+  static Future<void> downloadAllStudentsExcel() async {
+    final response = await http.get(Uri.parse('$baseUrl/excel/students/all'));
+    final bytes = response.bodyBytes;
+    final blob = html.Blob([bytes]);
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    final anchor = html.AnchorElement(href: url)
+      ..setAttribute('download', '전체학생_성적표.xlsx')
+      ..click();
+    html.Url.revokeObjectUrl(url);
   }
 }
