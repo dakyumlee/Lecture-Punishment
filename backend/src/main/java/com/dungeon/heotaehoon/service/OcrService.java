@@ -9,7 +9,6 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,7 +40,7 @@ public class OcrService {
             
             for (int page = 0; page < document.getNumberOfPages(); page++) {
                 log.info("Processing page {}", page + 1);
-                BufferedImage image = pdfRenderer.renderImageWithDPI(page, 300);
+                BufferedImage image = pdfRenderer.renderImageWithDPI(page, 600);
                 String pageText = tesseract.doOCR(image);
                 fullText.append(pageText).append("\n");
             }
@@ -74,12 +73,13 @@ public class OcrService {
             
             QuestionData question = new QuestionData();
             question.setQuestionNumber(questionNumber);
+            question.setQuestionText(questionContent);
             
             if (isMultipleChoice(questionContent)) {
-                parseMultipleChoice(question, questionContent);
+                question.setQuestionType("multiple_choice");
+                parseOptions(question, questionContent);
             } else {
                 question.setQuestionType("subjective");
-                question.setQuestionText(questionContent);
             }
             
             questions.add(question);
@@ -89,102 +89,59 @@ public class OcrService {
     }
 
     private boolean isMultipleChoice(String content) {
-        String[] circleNumbers = {"①", "②", "③", "④", "⑤"};
-        int circleCount = 0;
-        for (String circle : circleNumbers) {
-            if (content.contains(circle)) circleCount++;
-        }
-        if (circleCount >= 4) return true;
+        Pattern pattern1 = Pattern.compile("1\\)\\s*<");
+        if (pattern1.matcher(content).find()) return true;
         
-        Pattern bracketPattern = Pattern.compile("\\d+\\)\\s+[^\\d)]{2,}");
-        Matcher bracketMatcher = bracketPattern.matcher(content);
-        int bracketCount = 0;
-        while (bracketMatcher.find()) {
-            bracketCount++;
-        }
-        if (bracketCount >= 4) return true;
+        Pattern pattern2 = Pattern.compile("①");
+        if (pattern2.matcher(content).find()) return true;
         
-        Pattern parenthesisPattern = Pattern.compile("\\(\\d+\\)\\s+[^()]{2,}");
-        Matcher parenthesisMatcher = parenthesisPattern.matcher(content);
-        int parenthesisCount = 0;
-        while (parenthesisMatcher.find()) {
-            parenthesisCount++;
-        }
-        if (parenthesisCount >= 4) return true;
+        Pattern pattern3 = Pattern.compile("\\d+\\)\\s+[^\\d)]{2,}.*?\\d+\\)");
+        if (pattern3.matcher(content).find()) return true;
+        
+        Pattern pattern4 = Pattern.compile("\\(\\d+\\)\\s+[^()]{2,}.*?\\(\\d+\\)");
+        if (pattern4.matcher(content).find()) return true;
         
         return false;
     }
 
-    private void parseMultipleChoice(QuestionData question, String content) {
-        question.setQuestionType("multiple_choice");
-        
-        String[] circleNumbers = {"①", "②", "③", "④"};
-        String firstMarker = null;
-        for (String circle : circleNumbers) {
-            if (content.contains(circle)) {
-                firstMarker = circle;
-                break;
-            }
+    private void parseOptions(QuestionData question, String content) {
+        Pattern pattern1 = Pattern.compile("1\\)\\s*(<[^>]+>)\\s*2\\)\\s*(<[^>]+>)\\s*3\\)\\s*(<[^>]+>)\\s*4\\)\\s*(<[^>]+>)");
+        Matcher matcher1 = pattern1.matcher(content);
+        if (matcher1.find()) {
+            question.setOptionA(matcher1.group(1).trim());
+            question.setOptionB(matcher1.group(2).trim());
+            question.setOptionC(matcher1.group(3).trim());
+            question.setOptionD(matcher1.group(4).trim());
+            return;
         }
         
-        if (firstMarker == null) {
-            Pattern bracketPattern = Pattern.compile("\\d+\\)");
-            Matcher bracketMatcher = bracketPattern.matcher(content);
-            if (bracketMatcher.find()) {
-                firstMarker = bracketMatcher.group();
-            }
+        Pattern circlePattern = Pattern.compile("①\\s*([^②③④⑤]+?)\\s*②\\s*([^②③④⑤]+?)\\s*③\\s*([^②③④⑤]+?)\\s*④\\s*([^②③④⑤]+?)(?=\\s*⑤|$)", Pattern.DOTALL);
+        Matcher circleMatcher = circlePattern.matcher(content);
+        if (circleMatcher.find()) {
+            question.setOptionA(circleMatcher.group(1).trim().replaceAll("\\s+", " "));
+            question.setOptionB(circleMatcher.group(2).trim().replaceAll("\\s+", " "));
+            question.setOptionC(circleMatcher.group(3).trim().replaceAll("\\s+", " "));
+            question.setOptionD(circleMatcher.group(4).trim().replaceAll("\\s+", " "));
+            return;
         }
         
-        if (firstMarker == null) {
-            Pattern parenthesisPattern = Pattern.compile("\\(\\d+\\)");
-            Matcher parenthesisMatcher = parenthesisPattern.matcher(content);
-            if (parenthesisMatcher.find()) {
-                firstMarker = parenthesisMatcher.group();
-            }
+        Pattern bracketPattern = Pattern.compile("1\\)\\s*([^2)]+?)\\s*2\\)\\s*([^3)]+?)\\s*3\\)\\s*([^4)]+?)\\s*4\\)\\s*([^\\d)]+?)(?=\\s*\\d+\\)|$)", Pattern.DOTALL);
+        Matcher bracketMatcher = bracketPattern.matcher(content);
+        if (bracketMatcher.find()) {
+            question.setOptionA(bracketMatcher.group(1).trim().replaceAll("\\s+", " "));
+            question.setOptionB(bracketMatcher.group(2).trim().replaceAll("\\s+", " "));
+            question.setOptionC(bracketMatcher.group(3).trim().replaceAll("\\s+", " "));
+            question.setOptionD(bracketMatcher.group(4).trim().replaceAll("\\s+", " "));
+            return;
         }
         
-        if (firstMarker != null) {
-            String[] parts = content.split(Pattern.quote(firstMarker), 2);
-            if (parts.length > 0) {
-                question.setQuestionText(parts[0].trim());
-            }
-            
-            if (parts.length > 1) {
-                String optionsText = firstMarker + parts[1];
-                parseOptions(question, optionsText);
-            }
-        } else {
-            question.setQuestionText(content);
-        }
-    }
-
-    private void parseOptions(QuestionData question, String optionsText) {
-        Pattern circlePattern = Pattern.compile("([①②③④⑤])\\s*([^①②③④⑤]+?)(?=[①②③④⑤]|$)", Pattern.DOTALL);
-        Pattern bracketPattern = Pattern.compile("(\\d+)\\)\\s*([^\\d)]+?)(?=\\d+\\)|$)", Pattern.DOTALL);
-        Pattern parenthesisPattern = Pattern.compile("\\((\\d+)\\)\\s*([^()]+?)(?=\\(\\d+\\)|$)", Pattern.DOTALL);
-        
-        Matcher matcher = circlePattern.matcher(optionsText);
-        if (!matcher.find()) {
-            matcher = bracketPattern.matcher(optionsText);
-            if (!matcher.find()) {
-                matcher = parenthesisPattern.matcher(optionsText);
-            }
-        }
-        
-        matcher.reset();
-        int optionIndex = 0;
-        while (matcher.find() && optionIndex < 4) {
-            String optionText = matcher.group(2).trim()
-                .replaceAll("\\s+", " ")
-                .trim();
-            
-            switch (optionIndex) {
-                case 0: question.setOptionA(optionText); break;
-                case 1: question.setOptionB(optionText); break;
-                case 2: question.setOptionC(optionText); break;
-                case 3: question.setOptionD(optionText); break;
-            }
-            optionIndex++;
+        Pattern parenthesisPattern = Pattern.compile("\\(1\\)\\s*([^()]+?)\\s*\\(2\\)\\s*([^()]+?)\\s*\\(3\\)\\s*([^()]+?)\\s*\\(4\\)\\s*([^()]+?)(?=\\s*\\(\\d+\\)|$)", Pattern.DOTALL);
+        Matcher parenthesisMatcher = parenthesisPattern.matcher(content);
+        if (parenthesisMatcher.find()) {
+            question.setOptionA(parenthesisMatcher.group(1).trim().replaceAll("\\s+", " "));
+            question.setOptionB(parenthesisMatcher.group(2).trim().replaceAll("\\s+", " "));
+            question.setOptionC(parenthesisMatcher.group(3).trim().replaceAll("\\s+", " "));
+            question.setOptionD(parenthesisMatcher.group(4).trim().replaceAll("\\s+", " "));
         }
     }
 
