@@ -196,13 +196,9 @@ class ApiService {
     required List<Map<String, String>> answers,
   }) async {
     final response = await http.post(
-      Uri.parse("$baseUrl/worksheet-submissions"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "worksheetId": worksheetId,
-        "studentId": studentId,
-        "answers": answers,
-      }),
+      Uri.parse('$baseUrl/worksheet-submissions'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'studentId': studentId, 'answers': answers}),
     );
     return jsonDecode(response.body);
   }
