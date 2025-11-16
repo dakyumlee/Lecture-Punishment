@@ -9,6 +9,7 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.pdfbox.cos.COSName;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -41,44 +42,19 @@ public class OcrService {
             tesseract.setLanguage("kor+eng");
             
             StringBuilder fullText = new StringBuilder();
-            List<String> pageImages = new ArrayList<>();
-            Map<Integer, List<String>> embeddedImages = new HashMap<>();
-            
-            log.info("PDF has {} pages", document.getNumberOfPages());
             
             for (int page = 0; page < document.getNumberOfPages(); page++) {
                 try {
-                    log.info("Processing page {}/{}", page + 1, document.getNumberOfPages());
-                    
-                    BufferedImage image = pdfRenderer.renderImageWithDPI(page, 600);
-                    
-                    String base64Image = imageToBase64(image);
-                    pageImages.add(base64Image);
-                    
-                    List<String> extractedImages = extractImagesFromPage(document, page);
-                    if (!extractedImages.isEmpty()) {
-                        embeddedImages.put(page, extractedImages);
-                        log.info("Found {} embedded images on page {}", extractedImages.size(), page + 1);
-                    }
-                    
+                    BufferedImage image = pdfRenderer.renderImageWithDPI(page, 300);
                     String pageText = tesseract.doOCR(image);
                     fullText.append(pageText).append("\n");
-                    
-                    log.info("Page {} processed: {} chars", page + 1, pageText.length());
                 } catch (Exception e) {
                     log.error("Failed to process page {}", page + 1, e);
                 }
             }
             
             String extractedText = fullText.toString();
-            log.info("Total extracted text length: {}", extractedText.length());
-            
-            if (extractedText.length() > 0) {
-                questions = parseQuestions(extractedText, pageImages, embeddedImages);
-                log.info("Parsed {} questions", questions.size());
-            } else {
-                log.warn("No text extracted from PDF");
-            }
+            questions = parseQuestions(extractedText);
             
         } catch (Exception e) {
             log.error("OCR extraction failed", e);
@@ -88,115 +64,49 @@ public class OcrService {
         return questions;
     }
 
-    private List<String> extractImagesFromPage(PDDocument document, int pageIndex) throws IOException {
-        List<String> images = new ArrayList<>();
-        PDPage page = document.getPage(pageIndex);
-        PDResources resources = page.getResources();
-        
-        for (Map.Entry<org.apache.pdfbox.cos.COSName, org.apache.pdfbox.pdmodel.graphics.PDXObject> entry : resources.getXObjectNames()) {
-            org.apache.pdfbox.pdmodel.graphics.PDXObject xobject = resources.getXObject(entry.getKey());
-            
-            if (xobject instanceof PDImageXObject) {
-                PDImageXObject imageObject = (PDImageXObject) xobject;
-                BufferedImage image = imageObject.getImage();
-                
-                if (image.getWidth() > 100 && image.getHeight() > 100) {
-                    String base64 = imageToBase64(image);
-                    images.add(base64);
-                }
-            }
-        }
-        
-        return images;
-    }
-
-    private String imageToBase64(BufferedImage image) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(image, "png", baos);
-        byte[] imageBytes = baos.toByteArray();
-        return Base64.getEncoder().encodeToString(imageBytes);
-    }
-
-    private List<QuestionData> parseQuestions(String text, List<String> pageImages, Map<Integer, List<String>> embeddedImages) {
+    private List<QuestionData> parseQuestions(String text) {
         List<QuestionData> questions = new ArrayList<>();
-        
-        String cleanedText = text
-            .replaceAll("(?s)자바&Springboot.*?(?=\\d+\\.)", "")
-            .replaceAll("(?s)평가일시.*?(?=\\d+\\.)", "")
-            .replaceAll("(?s)배점.*?(?=\\d+\\.)", "");
         
         Pattern questionPattern = Pattern.compile(
             "(\\d+)\\.\\s*(.+?)(?=(?:\\d+\\.|$))",
             Pattern.DOTALL
         );
         
-        Matcher matcher = questionPattern.matcher(cleanedText);
+        Matcher matcher = questionPattern.matcher(text);
         
         while (matcher.find()) {
             try {
                 int questionNumber = Integer.parseInt(matcher.group(1).trim());
                 String fullContent = matcher.group(2).trim();
                 
-                if (fullContent.length() < 10) {
-                    continue;
-                }
+                if (fullContent.length() < 10) continue;
                 
                 QuestionData question = new QuestionData();
                 question.setQuestionNumber(questionNumber);
+                question.setQuestionType("multiple_choice");
                 question.setPoints(10);
                 question.setCorrectAnswer("1");
                 
-                int pageIndex = Math.min(questionNumber - 1, pageImages.size() - 1);
-                if (pageIndex >= 0 && pageIndex < pageImages.size()) {
-                    question.setImageData(pageImages.get(pageIndex));
-                }
-                
-                if (embeddedImages.containsKey(pageIndex)) {
-                    question.setEmbeddedImages(embeddedImages.get(pageIndex));
-                }
-                
-                log.info("Processing Q{}: {}", questionNumber, fullContent.substring(0, Math.min(100, fullContent.length())));
-                
                 if (fullContent.contains("1)") || fullContent.contains("①")) {
-                    question.setQuestionType("multiple_choice");
-                    
-                    String questionText;
-                    String optionsText;
-                    
                     int optionStart = fullContent.indexOf("1)");
-                    if (optionStart == -1) {
-                        optionStart = fullContent.indexOf("①");
-                    }
+                    if (optionStart == -1) optionStart = fullContent.indexOf("①");
                     
                     if (optionStart > 0) {
-                        questionText = fullContent.substring(0, optionStart).trim();
-                        optionsText = fullContent.substring(optionStart).trim();
+                        String questionText = fullContent.substring(0, optionStart).trim();
+                        String optionsText = fullContent.substring(optionStart).trim();
                         
                         question.setQuestionText(questionText);
                         
                         String[] options = new String[4];
+                        Pattern numberPattern = Pattern.compile("(\\d+)\\)\\s*([^\\d)]+?)(?=\\d+\\)|$)", Pattern.DOTALL);
+                        Matcher numberMatcher = numberPattern.matcher(optionsText);
                         
-                        if (optionsText.contains("①")) {
-                            Pattern circlePattern = Pattern.compile("①\\s*(.+?)\\s*②\\s*(.+?)\\s*③\\s*(.+?)\\s*④\\s*(.+?)(?=⑤|$)", Pattern.DOTALL);
-                            Matcher circleMatcher = circlePattern.matcher(optionsText);
+                        while (numberMatcher.find()) {
+                            int optNum = Integer.parseInt(numberMatcher.group(1).trim());
+                            String optText = numberMatcher.group(2).trim();
                             
-                            if (circleMatcher.find()) {
-                                options[0] = circleMatcher.group(1).trim().replaceAll("\\s+", " ");
-                                options[1] = circleMatcher.group(2).trim().replaceAll("\\s+", " ");
-                                options[2] = circleMatcher.group(3).trim().replaceAll("\\s+", " ");
-                                options[3] = circleMatcher.group(4).trim().replaceAll("\\s+", " ");
-                            }
-                        } else {
-                            Pattern numberPattern = Pattern.compile("(\\d+)\\)\\s*([^\\d)]+?)(?=\\d+\\)|$)", Pattern.DOTALL);
-                            Matcher numberMatcher = numberPattern.matcher(optionsText);
-                            
-                            while (numberMatcher.find()) {
-                                int optNum = Integer.parseInt(numberMatcher.group(1).trim());
-                                String optText = numberMatcher.group(2).trim().replaceAll("\\s+", " ");
-                                
-                                if (optNum >= 1 && optNum <= 4) {
-                                    options[optNum - 1] = optText;
-                                }
+                            if (optNum >= 1 && optNum <= 4) {
+                                options[optNum - 1] = optText;
                             }
                         }
                         
@@ -204,13 +114,8 @@ public class OcrService {
                         question.setOptionB(options[1] != null ? options[1] : "");
                         question.setOptionC(options[2] != null ? options[2] : "");
                         question.setOptionD(options[3] != null ? options[3] : "");
-                        
-                        log.info("Q{} - Options parsed successfully", questionNumber);
-                    } else {
-                        question.setQuestionText(fullContent);
                     }
                 } else {
-                    question.setQuestionType("subjective");
                     question.setQuestionText(fullContent);
                 }
                 
@@ -234,8 +139,6 @@ public class OcrService {
         private String optionD;
         private String correctAnswer;
         private Integer points;
-        private String imageData;
-        private List<String> embeddedImages;
 
         public Integer getQuestionNumber() { return questionNumber; }
         public void setQuestionNumber(Integer questionNumber) { this.questionNumber = questionNumber; }
@@ -255,9 +158,5 @@ public class OcrService {
         public void setCorrectAnswer(String correctAnswer) { this.correctAnswer = correctAnswer; }
         public Integer getPoints() { return points; }
         public void setPoints(Integer points) { this.points = points; }
-        public String getImageData() { return imageData; }
-        public void setImageData(String imageData) { this.imageData = imageData; }
-        public List<String> getEmbeddedImages() { return embeddedImages; }
-        public void setEmbeddedImages(List<String> embeddedImages) { this.embeddedImages = embeddedImages; }
     }
 }
