@@ -54,7 +54,7 @@ class DungeonScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => QuizScreen(lessonId: 'default'),
+                                builder: (context) => QuizScreen(),
                               ),
                             );
                           },
