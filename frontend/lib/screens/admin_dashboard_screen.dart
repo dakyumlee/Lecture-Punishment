@@ -1,6 +1,5 @@
 import '../services/api_service.dart';
 import 'package:flutter/material.dart';
-import 'worksheet_create_screen.dart';
 import 'worksheet_manage_screen.dart';
 import 'group_manage_screen.dart';
 import 'grading_screen.dart';
@@ -117,26 +116,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                   const SizedBox(height: 12),
                   _buildActionButton(
-                    '📝 문제지 생성',
-                    '새로운 문제지 만들기',
-                    () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const WorksheetCreateScreen(),
-                        ),
-                      );
-                      if (result != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('문제지가 생성되었습니다!')),
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildActionButton(
-                    '📑 문제지 관리',
-                    '문제지 확인, 문제 추가 및 삭제',
+                    '📝 문제지 생성 및 관리',
+                    'PDF OCR, 직접 작성, 문제 추가 및 삭제',
                     () {
                       Navigator.push(
                         context,
