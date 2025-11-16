@@ -22,17 +22,39 @@ public class StudentSubmission {
 
     @ManyToOne
     @JoinColumn(name = "worksheet_id", nullable = false)
-    private PdfWorksheet worksheet;
+    private Worksheet worksheet;
 
-    @Builder.Default
-    private Integer totalScore = 0;
+    @Column(name = "score")
+    private Integer score;
 
-    @Builder.Default
-    private Integer maxScore = 0;
+    @Column(name = "correct_count")
+    private Integer correctCount;
 
-    @Builder.Default
-    private LocalDateTime submittedAt = LocalDateTime.now();
+    @Column(name = "total_questions")
+    private Integer totalQuestions;
 
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (submittedAt == null) {
+            submittedAt = LocalDateTime.now();
+        }
+        if (score == null) {
+            score = 0;
+        }
+        if (correctCount == null) {
+            correctCount = 0;
+        }
+        if (totalQuestions == null) {
+            totalQuestions = 0;
+        }
+    }
 }
