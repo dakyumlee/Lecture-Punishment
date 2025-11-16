@@ -11,11 +11,9 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
   final _formKey = GlobalKey<FormState>();
   
   String _selectedMethod = 'pdf';
-  String _selectedCategory = 'HTML/CSS';
   String? _selectedGroup;
   
   List<dynamic> _groups = [];
-  List<String> _categories = ['HTML/CSS', 'JavaScript', 'Java', 'Spring', 'Database', '자료구조', '알고리즘', '기타'];
   
   List<Map<String, dynamic>> _ocrExtractedQuestions = [];
   List<Map<String, dynamic>> _confirmedQuestions = [];
@@ -23,6 +21,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
   
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _categoryController = TextEditingController();
   
   Map<String, TextEditingController> _questionControllers = {};
   
@@ -40,6 +39,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
     _questionControllers.values.forEach((controller) => controller.dispose());
     _titleController.dispose();
     _descriptionController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 
@@ -321,10 +321,10 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                child: TextFormField(
+                  controller: _categoryController,
                   decoration: InputDecoration(
-                    labelText: '카테고리',
+                    labelText: '카테고리 (예: HTML, JavaScript, Java)',
                     labelStyle: TextStyle(color: Color(0xFF736A63)),
                     filled: true,
                     fillColor: Color(0xFF0D0D0D),
@@ -333,19 +333,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       borderSide: BorderSide.none,
                     ),
                   ),
-                  dropdownColor: Color(0xFF595048),
                   style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
-                  items: _categories.map((category) {
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Text(category),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCategory = value!;
-                    });
-                  },
                 ),
               ),
               SizedBox(width: 15),
