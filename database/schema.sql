@@ -148,32 +148,15 @@ CREATE TABLE mental_recovery_missions (
     completed_at TIMESTAMP
 );
 
-CREATE INDEX idx_students_username ON students(username);
-CREATE INDEX idx_quiz_attempts_student ON quiz_attempts(student_id);
-CREATE INDEX idx_quiz_attempts_quiz ON quiz_attempts(quiz_id);
-CREATE INDEX idx_exp_logs_student ON exp_logs(student_id);
-CREATE INDEX idx_exp_logs_instructor ON exp_logs(instructor_id);
-CREATE INDEX idx_lessons_date ON lessons(lesson_date);
-CREATE INDEX idx_class_rankings_lesson ON class_rankings(lesson_id);
-CREATE INDEX idx_rage_dialogues_instructor ON rage_dialogues(instructor_id);
-
-CREATE OR REPLACE FUNCTION update_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER students_updated_at
-    BEFORE UPDATE ON students
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at();
-
-CREATE TRIGGER instructors_updated_at
-    BEFORE UPDATE ON instructors
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at();
+CREATE TABLE worksheets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    category VARCHAR(100),
+    group_id UUID,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE pdf_worksheets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -192,7 +175,7 @@ CREATE TABLE pdf_worksheets (
 
 CREATE TABLE worksheet_questions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    worksheet_id UUID REFERENCES pdf_worksheets(id) ON DELETE CASCADE,
+    worksheet_id UUID REFERENCES worksheets(id) ON DELETE CASCADE,
     question_number INTEGER NOT NULL,
     question_type VARCHAR(20) NOT NULL,
     question_text TEXT NOT NULL,
@@ -202,21 +185,29 @@ CREATE TABLE worksheet_questions (
     option_c TEXT,
     option_d TEXT,
     points INTEGER DEFAULT 10,
+    explanation TEXT,
+    image_url VARCHAR(500),
     allow_partial BOOLEAN DEFAULT false,
     similarity_threshold DECIMAL(3,2) DEFAULT 0.85,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE student_submissions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     student_id UUID REFERENCES students(id),
-    worksheet_id UUID REFERENCES pdf_worksheets(id),
+    worksheet_id UUID REFERENCES worksheets(id) ON DELETE CASCADE,
+    score INTEGER DEFAULT 0,
+    correct_count INTEGER DEFAULT 0,
+    total_questions INTEGER DEFAULT 0,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     total_score INTEGER DEFAULT 0,
     max_score INTEGER DEFAULT 0,
     percentage DECIMAL(5,2) DEFAULT 0,
     is_graded BOOLEAN DEFAULT false,
-    graded_at TIMESTAMP
+    graded_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE submission_answers (
@@ -240,18 +231,6 @@ CREATE TABLE worksheet_categories (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_pdf_worksheets_instructor ON pdf_worksheets(instructor_id);
-CREATE INDEX idx_pdf_worksheets_category ON pdf_worksheets(category);
-CREATE INDEX idx_worksheet_questions_worksheet ON worksheet_questions(worksheet_id);
-CREATE INDEX idx_student_submissions_student ON student_submissions(student_id);
-CREATE INDEX idx_student_submissions_worksheet ON student_submissions(worksheet_id);
-CREATE INDEX idx_submission_answers_submission ON submission_answers(submission_id);
-
-CREATE TRIGGER pdf_worksheets_updated_at
-    BEFORE UPDATE ON pdf_worksheets
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at();
-
 CREATE TABLE shop_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     item_type VARCHAR(50) NOT NULL,
@@ -265,8 +244,50 @@ CREATE TABLE shop_items (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX idx_students_username ON students(username);
+CREATE INDEX idx_quiz_attempts_student ON quiz_attempts(student_id);
+CREATE INDEX idx_quiz_attempts_quiz ON quiz_attempts(quiz_id);
+CREATE INDEX idx_exp_logs_student ON exp_logs(student_id);
+CREATE INDEX idx_exp_logs_instructor ON exp_logs(instructor_id);
+CREATE INDEX idx_lessons_date ON lessons(lesson_date);
+CREATE INDEX idx_class_rankings_lesson ON class_rankings(lesson_id);
+CREATE INDEX idx_rage_dialogues_instructor ON rage_dialogues(instructor_id);
+CREATE INDEX idx_pdf_worksheets_instructor ON pdf_worksheets(instructor_id);
+CREATE INDEX idx_pdf_worksheets_category ON pdf_worksheets(category);
+CREATE INDEX idx_worksheet_questions_worksheet ON worksheet_questions(worksheet_id);
+CREATE INDEX idx_student_submissions_student ON student_submissions(student_id);
+CREATE INDEX idx_student_submissions_worksheet ON student_submissions(worksheet_id);
+CREATE INDEX idx_submission_answers_submission ON submission_answers(submission_id);
 CREATE INDEX idx_shop_items_type ON shop_items(item_type);
 CREATE INDEX idx_shop_items_available ON shop_items(is_available);
+
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER students_updated_at
+    BEFORE UPDATE ON students
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER instructors_updated_at
+    BEFORE UPDATE ON instructors
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER pdf_worksheets_updated_at
+    BEFORE UPDATE ON pdf_worksheets
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER worksheets_updated_at
+    BEFORE UPDATE ON worksheets
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
 
 INSERT INTO shop_items (item_type, name, description, price, rarity, metadata) VALUES
 ('outfit', '기본 교복', '평범한 교복', 0, 'common', '{"color": "#0D0D0D", "style": "default"}'),
