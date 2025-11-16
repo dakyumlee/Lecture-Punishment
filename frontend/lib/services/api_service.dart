@@ -407,3 +407,38 @@ class ApiService {
     return jsonDecode(response.body);
   }
 }
+
+  static Future<Map<String, dynamic>> extractQuestionsFromPdf({
+    required List<int> fileBytes,
+    required String fileName,
+  }) async {
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/ocr/extract'));
+    request.files.add(http.MultipartFile.fromBytes('file', fileBytes, filename: fileName));
+    var streamedResponse = await request.send();
+    var response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode != 200) {
+      throw Exception('OCR 실패: ${response.statusCode}');
+    }
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<Map<String, dynamic>> createQuiz({
+    required String category,
+    String? groupId,
+    required Map<String, dynamic> questionData,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/quizzes'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'category': category,
+        'groupId': groupId,
+        ...questionData,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('퀴즈 생성 실패: ${response.statusCode}');
+    }
+    return jsonDecode(response.body);
+  }
+}
