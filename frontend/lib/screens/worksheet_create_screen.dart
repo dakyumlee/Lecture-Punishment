@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../services/api_service.dart';
+import '../config/env.dart';
 
 class WorksheetCreateScreen extends StatefulWidget {
   const WorksheetCreateScreen({super.key});
@@ -16,6 +20,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
   
   final List<Map<String, dynamic>> _questions = [];
   bool _isLoading = false;
+  bool _isProcessing = false;
 
   Future<void> _saveWorksheet() async {
     if (!_formKey.currentState!.validate()) return;
@@ -47,6 +52,136 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
     }
   }
 
+  Future<void> _pickAndExtractOcr() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      withData: true,
+    );
+    
+    if (result != null && result.files.single.bytes != null) {
+      setState(() => _isProcessing = true);
+      
+      try {
+        var request = http.MultipartRequest(
+          'POST',
+          Uri.parse('${Env.apiUrl}/ocr/extract'),
+        );
+        request.files.add(http.MultipartFile.fromBytes(
+          'file',
+          result.files.single.bytes!,
+          filename: result.files.single.name,
+        ));
+        
+        var streamedResponse = await request.send();
+        var response = await http.Response.fromStream(streamedResponse);
+        
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          List<dynamic> extractedQuestions = data['questions'] ?? [];
+          
+          if (extractedQuestions.isEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('추출된 문제가 없습니다')),
+              );
+            }
+          } else {
+            setState(() {
+              for (var q in extractedQuestions) {
+                _questions.add({
+                  'questionNumber': _questions.length + 1,
+                  'questionType': q['questionType'] ?? 'subjective',
+                  'questionText': q['questionText'] ?? '',
+                  'optionA': q['optionA'],
+                  'optionB': q['optionB'],
+                  'optionC': q['optionC'],
+                  'optionD': q['optionD'],
+                  'correctAnswer': q['correctAnswer'] ?? '',
+                  'points': q['points'] ?? 10,
+                  'allowPartial': false,
+                  'similarityThreshold': 0.85,
+                });
+              }
+            });
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${extractedQuestions.length}개 문제가 추가되었습니다')),
+              );
+            }
+          }
+        } else {
+          throw Exception('OCR 추출 실패: ${response.statusCode}');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('OCR 오류: $e')),
+          );
+        }
+      } finally {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+
+  Future<void> _pickAndImportCsv() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+      withData: true,
+    );
+    
+    if (result != null && result.files.single.bytes != null) {
+      setState(() => _isProcessing = true);
+      
+      try {
+        String csvContent = utf8.decode(result.files.single.bytes!);
+        List<String> lines = csvContent.split('\n');
+        
+        for (int i = 1; i < lines.length; i++) {
+          if (lines[i].trim().isEmpty) continue;
+          
+          List<String> fields = lines[i].split(',');
+          if (fields.length < 3) continue;
+          
+          String questionType = fields.length > 1 ? fields[1].trim() : 'subjective';
+          
+          setState(() {
+            _questions.add({
+              'questionNumber': _questions.length + 1,
+              'questionType': questionType,
+              'questionText': fields.length > 2 ? fields[2].trim() : '',
+              'optionA': questionType == 'multiple_choice' && fields.length > 3 ? fields[3].trim() : null,
+              'optionB': questionType == 'multiple_choice' && fields.length > 4 ? fields[4].trim() : null,
+              'optionC': questionType == 'multiple_choice' && fields.length > 5 ? fields[5].trim() : null,
+              'optionD': questionType == 'multiple_choice' && fields.length > 6 ? fields[6].trim() : null,
+              'correctAnswer': fields.length > 7 ? fields[7].trim() : '',
+              'points': fields.length > 8 ? int.tryParse(fields[8].trim()) ?? 10 : 10,
+              'allowPartial': false,
+              'similarityThreshold': 0.85,
+            });
+          });
+        }
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${lines.length - 1}개 문제가 추가되었습니다')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('CSV 오류: $e')),
+          );
+        }
+      } finally {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+
   void _addQuestion() {
     showDialog(
       context: context,
@@ -59,6 +194,8 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
         String optionD = '';
         String correctAnswer = '';
         int points = 10;
+        bool allowPartial = false;
+        double similarityThreshold = 0.85;
         
         return StatefulBuilder(
           builder: (context, setDialogState) => AlertDialog(
@@ -111,7 +248,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionA = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: '① 보기',
+                        labelText: '① 보기 A',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -120,7 +257,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionB = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: '② 보기',
+                        labelText: '② 보기 B',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -129,7 +266,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionC = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: '③ 보기',
+                        labelText: '③ 보기 C',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -138,7 +275,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionD = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: '④ 보기',
+                        labelText: '④ 보기 D',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -162,6 +299,38 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       labelStyle: TextStyle(color: Color(0xFF736A63)),
                     ),
                   ),
+                  if (questionType == 'subjective') ...[
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      title: const Text(
+                        '부분 점수 허용',
+                        style: TextStyle(color: Color(0xFFD9D4D2), fontSize: 14),
+                      ),
+                      value: allowPartial,
+                      activeColor: const Color(0xFFD9D4D2),
+                      onChanged: (val) {
+                        setDialogState(() {
+                          allowPartial = val;
+                        });
+                      },
+                    ),
+                    Text(
+                      '유사도: ${(similarityThreshold * 100).toInt()}%',
+                      style: const TextStyle(color: Color(0xFFD9D4D2)),
+                    ),
+                    Slider(
+                      value: similarityThreshold,
+                      min: 0.5,
+                      max: 1.0,
+                      activeColor: const Color(0xFFD9D4D2),
+                      inactiveColor: const Color(0xFF736A63),
+                      onChanged: (val) {
+                        setDialogState(() {
+                          similarityThreshold = val;
+                        });
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -190,6 +359,8 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       'optionD': questionType == 'multiple_choice' ? optionD : null,
                       'correctAnswer': correctAnswer,
                       'points': points,
+                      'allowPartial': allowPartial,
+                      'similarityThreshold': similarityThreshold,
                     });
                   });
                   Navigator.pop(context);
@@ -217,6 +388,8 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
         String optionD = question['optionD'] ?? '';
         String correctAnswer = question['correctAnswer'] ?? '';
         int points = question['points'] ?? 10;
+        bool allowPartial = question['allowPartial'] ?? false;
+        double similarityThreshold = question['similarityThreshold'] ?? 0.85;
         
         return StatefulBuilder(
           builder: (context, setDialogState) => AlertDialog(
@@ -271,7 +444,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionA = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: '① 보기',
+                        labelText: '① 보기 A',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -281,7 +454,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionB = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: '② 보기',
+                        labelText: '② 보기 B',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -291,7 +464,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionC = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: '③ 보기',
+                        labelText: '③ 보기 C',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -301,7 +474,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionD = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: '④ 보기',
+                        labelText: '④ 보기 D',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -327,6 +500,38 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       labelStyle: TextStyle(color: Color(0xFF736A63)),
                     ),
                   ),
+                  if (questionType == 'subjective') ...[
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      title: const Text(
+                        '부분 점수 허용',
+                        style: TextStyle(color: Color(0xFFD9D4D2), fontSize: 14),
+                      ),
+                      value: allowPartial,
+                      activeColor: const Color(0xFFD9D4D2),
+                      onChanged: (val) {
+                        setDialogState(() {
+                          allowPartial = val;
+                        });
+                      },
+                    ),
+                    Text(
+                      '유사도: ${(similarityThreshold * 100).toInt()}%',
+                      style: const TextStyle(color: Color(0xFFD9D4D2)),
+                    ),
+                    Slider(
+                      value: similarityThreshold,
+                      min: 0.5,
+                      max: 1.0,
+                      activeColor: const Color(0xFFD9D4D2),
+                      inactiveColor: const Color(0xFF736A63),
+                      onChanged: (val) {
+                        setDialogState(() {
+                          similarityThreshold = val;
+                        });
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -348,6 +553,8 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       'optionD': questionType == 'multiple_choice' ? optionD : null,
                       'correctAnswer': correctAnswer,
                       'points': points,
+                      'allowPartial': allowPartial,
+                      'similarityThreshold': similarityThreshold,
                     };
                   });
                   Navigator.pop(context);
@@ -376,6 +583,8 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
     final questionText = question['questionText'] ?? '';
     final isMultipleChoice = questionType == 'multiple_choice';
     final hasCorrectAnswer = (question['correctAnswer'] ?? '').isNotEmpty;
+    final allowPartial = question['allowPartial'] ?? false;
+    final similarity = question['similarityThreshold'] ?? 0.85;
     
     return Card(
       color: const Color(0xFF595048),
@@ -416,6 +625,19 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                     ),
                   ),
                 ),
+                if (!isMultipleChoice && allowPartial)
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00010D),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '부분점수 ${(similarity * 100).toInt()}%',
+                      style: const TextStyle(color: Color(0xFFD9D4D2), fontSize: 11),
+                    ),
+                  ),
                 if (!hasCorrectAnswer)
                   Container(
                     margin: const EdgeInsets.only(left: 8),
@@ -565,31 +787,73 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
                   ElevatedButton.icon(
-                    onPressed: _addQuestion,
+                    onPressed: _isProcessing ? null : _addQuestion,
                     icon: const Icon(Icons.add, color: Color(0xFFD9D4D2)),
                     label: const Text(
-                      '문제 추가',
+                      '수동 추가',
                       style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF595048),
                     ),
                   ),
+                  ElevatedButton.icon(
+                    onPressed: _isProcessing ? null : _pickAndExtractOcr,
+                    icon: const Icon(Icons.document_scanner, color: Color(0xFFD9D4D2)),
+                    label: const Text(
+                      'OCR 추출',
+                      style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF736A63),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: _isProcessing ? null : _pickAndImportCsv,
+                    icon: const Icon(Icons.upload_file, color: Color(0xFFD9D4D2)),
+                    label: const Text(
+                      'CSV 업로드',
+                      style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF736A63),
+                    ),
+                  ),
                 ],
               ),
+              if (_isProcessing)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFFD9D4D2)),
+                  ),
+                ),
               const SizedBox(height: 16),
               if (_questions.isEmpty)
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.all(32),
-                    child: Text(
-                      '문제를 추가하세요',
-                      style: const TextStyle(
-                        color: Color(0xFF736A63),
-                        fontFamily: 'JoseonGulim',
-                        fontSize: 16,
-                      ),
+                    child: Column(
+                      children: const [
+                        Icon(Icons.quiz, size: 48, color: Color(0xFF736A63)),
+                        SizedBox(height: 16),
+                        Text(
+                          '문제를 추가하세요',
+                          style: TextStyle(
+                            color: Color(0xFF736A63),
+                            fontFamily: 'JoseonGulim',
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 )
