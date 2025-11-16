@@ -19,7 +19,7 @@ public class WorksheetQuestion {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "worksheet_id", nullable = false)
-    private PdfWorksheet worksheet;
+    private Worksheet worksheet;
 
     @Column(name = "question_number", nullable = false)
     private Integer questionNumber;
@@ -29,9 +29,6 @@ public class WorksheetQuestion {
 
     @Column(name = "question_text", columnDefinition = "TEXT", nullable = false)
     private String questionText;
-
-    @Column(name = "correct_answer", columnDefinition = "TEXT", nullable = false)
-    private String correctAnswer;
 
     @Column(name = "option_a", columnDefinition = "TEXT")
     private String optionA;
@@ -45,22 +42,39 @@ public class WorksheetQuestion {
     @Column(name = "option_d", columnDefinition = "TEXT")
     private String optionD;
 
-    @Column(nullable = false)
-    private Integer points = 10;
+    @Column(name = "correct_answer", length = 255)
+    private String correctAnswer;
 
-    @Column(name = "allow_partial")
-    private Boolean allowPartial = false;
+    @Column
+    private Integer points;
 
-    @Column(name = "similarity_threshold", precision = 3, scale = 2)
-    private BigDecimal similarityThreshold = new BigDecimal("0.85");
+    @Column(columnDefinition = "TEXT")
+    private String explanation;
+
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+        if (updatedAt == null) {
+            updatedAt = LocalDateTime.now();
+        }
+        if (points == null) {
+            points = 10;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

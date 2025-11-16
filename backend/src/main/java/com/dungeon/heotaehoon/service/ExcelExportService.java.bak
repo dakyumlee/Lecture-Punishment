@@ -109,7 +109,7 @@ public class ExcelExportService {
             
             int attendanceScore = 20;
             int assignmentScore = 30;
-            int examScore = submission.getScore() != null ? (int) (submission.getScore() * 0.5) : 0;
+            int examScore = submission.getTotalScore() != null ? (int) (submission.getTotalScore() * 0.5) : 0;
             int totalScore = attendanceScore + assignmentScore + examScore;
             
             String pf = determinePF(totalScore, attendanceScore);
@@ -199,7 +199,7 @@ public class ExcelExportService {
             
             int attendanceScore = 20;
             int assignmentScore = 30;
-            int examScore = submission.getScore() != null ? (int) (submission.getScore() * 0.5) : 0;
+            int examScore = submission.getTotalScore() != null ? (int) (submission.getTotalScore() * 0.5) : 0;
             int totalScore = attendanceScore + assignmentScore + examScore;
             
             String pf = determinePF(totalScore, attendanceScore);
