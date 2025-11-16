@@ -406,7 +406,6 @@ class ApiService {
     );
     return jsonDecode(response.body);
   }
-}
 
   static Future<Map<String, dynamic>> extractQuestionsFromPdf({
     required List<int> fileBytes,
