@@ -160,7 +160,6 @@ public class WorksheetController {
     }
 
     @GetMapping("/{id}/original")
-    @GetMapping("/{id}/original")
     public ResponseEntity<byte[]> viewOriginalFile(@PathVariable String id) {
         try {
             byte[] fileData = worksheetService.getOriginalFile(id);
@@ -217,6 +216,9 @@ public class WorksheetController {
             return ResponseEntity.status(404).body(new byte[0]);
         }
     }
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> getPdf(@PathVariable String id) {
         try {
             Worksheet worksheet = worksheetService.getWorksheetById(id);
             List<WorksheetQuestion> questions = worksheetService.getQuestionsByWorksheetId(id);
