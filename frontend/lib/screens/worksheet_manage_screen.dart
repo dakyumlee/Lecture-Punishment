@@ -4,6 +4,7 @@ import 'dart:html' as html;
 import 'ocr_extract_screen.dart';
 import '../config/env.dart';
 import 'question_add_screen.dart';
+import 'admin/worksheet_create_screen.dart';
 
 class WorksheetManageScreen extends StatefulWidget {
   const WorksheetManageScreen({super.key});
@@ -137,6 +138,29 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
         backgroundColor: const Color(0xFF00010D),
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WorksheetCreateScreen(),
+            ),
+          );
+          if (result == true) {
+            _loadWorksheets();
+          }
+        },
+        backgroundColor: const Color(0xFF595048),
+        icon: const Icon(Icons.add, color: Color(0xFFD9D4D2)),
+        label: const Text(
+          '문제지 생성',
+          style: TextStyle(
+            color: Color(0xFFD9D4D2),
+            fontFamily: 'JoseonGulim',
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFFD9D4D2)),
@@ -162,7 +186,7 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        '새로운 문제지를 생성하세요',
+                        '아래 + 버튼으로 새로운 문제지를 생성하세요',
                         style: TextStyle(
                           color: Color(0xFF595048),
                           fontFamily: 'JoseonGulim',

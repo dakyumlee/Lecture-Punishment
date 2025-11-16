@@ -5,6 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,9 +17,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,6 +42,7 @@ public class OcrService {
             
             StringBuilder fullText = new StringBuilder();
             List<String> pageImages = new ArrayList<>();
+            Map<Integer, List<String>> embeddedImages = new HashMap<>();
             
             log.info("PDF has {} pages", document.getNumberOfPages());
             
@@ -53,6 +55,12 @@ public class OcrService {
                     String base64Image = imageToBase64(image);
                     pageImages.add(base64Image);
                     
+                    List<String> extractedImages = extractImagesFromPage(document, page);
+                    if (!extractedImages.isEmpty()) {
+                        embeddedImages.put(page, extractedImages);
+                        log.info("Found {} embedded images on page {}", extractedImages.size(), page + 1);
+                    }
+                    
                     String pageText = tesseract.doOCR(image);
                     fullText.append(pageText).append("\n");
                     
@@ -64,15 +72,9 @@ public class OcrService {
             
             String extractedText = fullText.toString();
             log.info("Total extracted text length: {}", extractedText.length());
-            log.debug("Extracted text: {}", extractedText);
             
             if (extractedText.length() > 0) {
-                questions = parseQuestions(extractedText);
-                
-                if (!questions.isEmpty() && !pageImages.isEmpty()) {
-                    questions.get(0).setImageData(pageImages.get(0));
-                }
-                
+                questions = parseQuestions(extractedText, pageImages, embeddedImages);
                 log.info("Parsed {} questions", questions.size());
             } else {
                 log.warn("No text extracted from PDF");
@@ -86,6 +88,28 @@ public class OcrService {
         return questions;
     }
 
+    private List<String> extractImagesFromPage(PDDocument document, int pageIndex) throws IOException {
+        List<String> images = new ArrayList<>();
+        PDPage page = document.getPage(pageIndex);
+        PDResources resources = page.getResources();
+        
+        for (Map.Entry<org.apache.pdfbox.cos.COSName, org.apache.pdfbox.pdmodel.graphics.PDXObject> entry : resources.getXObjectNames()) {
+            org.apache.pdfbox.pdmodel.graphics.PDXObject xobject = resources.getXObject(entry.getKey());
+            
+            if (xobject instanceof PDImageXObject) {
+                PDImageXObject imageObject = (PDImageXObject) xobject;
+                BufferedImage image = imageObject.getImage();
+                
+                if (image.getWidth() > 100 && image.getHeight() > 100) {
+                    String base64 = imageToBase64(image);
+                    images.add(base64);
+                }
+            }
+        }
+        
+        return images;
+    }
+
     private String imageToBase64(BufferedImage image) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(image, "png", baos);
@@ -93,7 +117,7 @@ public class OcrService {
         return Base64.getEncoder().encodeToString(imageBytes);
     }
 
-    private List<QuestionData> parseQuestions(String text) {
+    private List<QuestionData> parseQuestions(String text, List<String> pageImages, Map<Integer, List<String>> embeddedImages) {
         List<QuestionData> questions = new ArrayList<>();
         
         String cleanedText = text
@@ -121,6 +145,15 @@ public class OcrService {
                 question.setQuestionNumber(questionNumber);
                 question.setPoints(10);
                 question.setCorrectAnswer("1");
+                
+                int pageIndex = Math.min(questionNumber - 1, pageImages.size() - 1);
+                if (pageIndex >= 0 && pageIndex < pageImages.size()) {
+                    question.setImageData(pageImages.get(pageIndex));
+                }
+                
+                if (embeddedImages.containsKey(pageIndex)) {
+                    question.setEmbeddedImages(embeddedImages.get(pageIndex));
+                }
                 
                 log.info("Processing Q{}: {}", questionNumber, fullContent.substring(0, Math.min(100, fullContent.length())));
                 
@@ -172,12 +205,7 @@ public class OcrService {
                         question.setOptionC(options[2] != null ? options[2] : "");
                         question.setOptionD(options[3] != null ? options[3] : "");
                         
-                        log.info("Q{} - Options: A={}, B={}, C={}, D={}", 
-                            questionNumber, 
-                            options[0] != null ? options[0].substring(0, Math.min(20, options[0].length())) : "null",
-                            options[1] != null ? options[1].substring(0, Math.min(20, options[1].length())) : "null",
-                            options[2] != null ? options[2].substring(0, Math.min(20, options[2].length())) : "null",
-                            options[3] != null ? options[3].substring(0, Math.min(20, options[3].length())) : "null");
+                        log.info("Q{} - Options parsed successfully", questionNumber);
                     } else {
                         question.setQuestionText(fullContent);
                     }
@@ -207,6 +235,7 @@ public class OcrService {
         private String correctAnswer;
         private Integer points;
         private String imageData;
+        private List<String> embeddedImages;
 
         public Integer getQuestionNumber() { return questionNumber; }
         public void setQuestionNumber(Integer questionNumber) { this.questionNumber = questionNumber; }
@@ -228,5 +257,7 @@ public class OcrService {
         public void setPoints(Integer points) { this.points = points; }
         public String getImageData() { return imageData; }
         public void setImageData(String imageData) { this.imageData = imageData; }
+        public List<String> getEmbeddedImages() { return embeddedImages; }
+        public void setEmbeddedImages(List<String> embeddedImages) { this.embeddedImages = embeddedImages; }
     }
 }

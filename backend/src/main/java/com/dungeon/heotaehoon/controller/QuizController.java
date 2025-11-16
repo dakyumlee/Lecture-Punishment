@@ -55,3 +55,15 @@ public class QuizController {
         return ResponseEntity.ok(quiz);
     }
 }
+
+    @PostMapping("/generate-ai")
+    public ResponseEntity<List<Quiz>> generateAiQuizzes(@RequestBody Map<String, Object> request) {
+        String bossId = (String) request.get("bossId");
+        String topic = (String) request.get("topic");
+        Integer count = (Integer) request.getOrDefault("count", 5);
+        
+        log.info("Generating AI quizzes for boss: {}, topic: {}, count: {}", bossId, topic, count);
+        
+        List<Quiz> quizzes = aiQuizGenerationService.generateQuizzesForBoss(bossId, topic, count);
+        return ResponseEntity.ok(quizzes);
+    }
