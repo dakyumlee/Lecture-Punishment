@@ -398,13 +398,14 @@ class ApiService {
     return jsonDecode(response.body) as List;
   }
 
-  static Future<Map<String, dynamic>> createWorksheet(String title, String description, List<Map<String, dynamic>> questions) async {
+  static Future<Map<String, dynamic>> createWorksheet(String title, String description, String category, List<Map<String, dynamic>> questions) async {
     final response = await http.post(
       Uri.parse('$baseUrl/worksheets'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'title': title,
         'description': description,
+        'category': category,
         'questions': questions,
       }),
     );

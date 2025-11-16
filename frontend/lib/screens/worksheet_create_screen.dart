@@ -25,7 +25,8 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
       await ApiService.createWorksheet(
         _titleController.text,
         _descriptionController.text,
-        _questions,
+        _categoryController.text,
+        _confirmedQuestions,
       );
       
       if (mounted) {
