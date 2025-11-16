@@ -216,7 +216,7 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
     final title = worksheet['title'] ?? '제목 없음';
     final category = worksheet['category'] ?? '미분류';
     final description = worksheet['description'] ?? '';
-    final totalQuestions = worksheet['totalQuestions'] ?? 0;
+    final totalQuestions = worksheet['questionCount'] ?? 0;
     final id = worksheet['id'] ?? '';
 
     return Card(
