@@ -223,7 +223,6 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                     onChanged: (val) {
                       setDialogState(() {
                         questionType = val!;
-                        correctAnswer = '';
                       });
                     },
                   ),
@@ -249,7 +248,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionA = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: 'A. 보기',
+                        labelText: '① 보기 A',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -258,7 +257,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionB = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: 'B. 보기',
+                        labelText: '② 보기 B',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -267,7 +266,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionC = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: 'C. 보기',
+                        labelText: '③ 보기 C',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -276,42 +275,20 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionD = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: 'D. 보기',
+                        labelText: '④ 보기 D',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
                   ],
                   const SizedBox(height: 16),
-                  if (questionType == 'multiple_choice')
-                    DropdownButtonFormField<String>(
-                      value: correctAnswer.isEmpty ? null : correctAnswer,
-                      dropdownColor: const Color(0xFF595048),
-                      style: const TextStyle(color: Color(0xFFD9D4D2)),
-                      decoration: const InputDecoration(
-                        labelText: '정답 선택',
-                        labelStyle: TextStyle(color: Color(0xFF736A63)),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'A', child: Text('A')),
-                        DropdownMenuItem(value: 'B', child: Text('B')),
-                        DropdownMenuItem(value: 'C', child: Text('C')),
-                        DropdownMenuItem(value: 'D', child: Text('D')),
-                      ],
-                      onChanged: (val) {
-                        setDialogState(() {
-                          correctAnswer = val ?? '';
-                        });
-                      },
-                    )
-                  else
-                    TextField(
-                      onChanged: (val) => correctAnswer = val,
-                      style: const TextStyle(color: Color(0xFFD9D4D2)),
-                      decoration: const InputDecoration(
-                        labelText: '정답',
-                        labelStyle: TextStyle(color: Color(0xFF736A63)),
-                      ),
+                  TextField(
+                    onChanged: (val) => correctAnswer = val,
+                    style: const TextStyle(color: Color(0xFFD9D4D2)),
+                    decoration: InputDecoration(
+                      labelText: questionType == 'multiple_choice' ? '정답 (A/B/C/D)' : '정답',
+                      labelStyle: const TextStyle(color: Color(0xFF736A63)),
                     ),
+                  ),
                   const SizedBox(height: 16),
                   TextField(
                     onChanged: (val) => points = int.tryParse(val) ?? 10,
@@ -440,9 +417,6 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                     onChanged: (val) {
                       setDialogState(() {
                         questionType = val!;
-                        if (questionType != 'multiple_choice') {
-                          correctAnswer = '';
-                        }
                       });
                     },
                   ),
@@ -470,7 +444,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionA = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: 'A. 보기',
+                        labelText: '① 보기 A',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -480,7 +454,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionB = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: 'B. 보기',
+                        labelText: '② 보기 B',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -490,7 +464,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionC = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: 'C. 보기',
+                        labelText: '③ 보기 C',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
@@ -500,43 +474,21 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                       onChanged: (val) => optionD = val,
                       style: const TextStyle(color: Color(0xFFD9D4D2)),
                       decoration: const InputDecoration(
-                        labelText: 'D. 보기',
+                        labelText: '④ 보기 D',
                         labelStyle: TextStyle(color: Color(0xFF736A63)),
                       ),
                     ),
                   ],
                   const SizedBox(height: 16),
-                  if (questionType == 'multiple_choice')
-                    DropdownButtonFormField<String>(
-                      value: correctAnswer.isEmpty ? null : correctAnswer,
-                      dropdownColor: const Color(0xFF595048),
-                      style: const TextStyle(color: Color(0xFFD9D4D2)),
-                      decoration: const InputDecoration(
-                        labelText: '정답 선택',
-                        labelStyle: TextStyle(color: Color(0xFF736A63)),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'A', child: Text('A')),
-                        DropdownMenuItem(value: 'B', child: Text('B')),
-                        DropdownMenuItem(value: 'C', child: Text('C')),
-                        DropdownMenuItem(value: 'D', child: Text('D')),
-                      ],
-                      onChanged: (val) {
-                        setDialogState(() {
-                          correctAnswer = val ?? '';
-                        });
-                      },
-                    )
-                  else
-                    TextField(
-                      controller: TextEditingController(text: correctAnswer),
-                      onChanged: (val) => correctAnswer = val,
-                      style: const TextStyle(color: Color(0xFFD9D4D2)),
-                      decoration: const InputDecoration(
-                        labelText: '정답',
-                        labelStyle: TextStyle(color: Color(0xFF736A63)),
-                      ),
+                  TextField(
+                    controller: TextEditingController(text: correctAnswer),
+                    onChanged: (val) => correctAnswer = val,
+                    style: const TextStyle(color: Color(0xFFD9D4D2)),
+                    decoration: InputDecoration(
+                      labelText: questionType == 'multiple_choice' ? '정답 (A/B/C/D)' : '정답',
+                      labelStyle: const TextStyle(color: Color(0xFF736A63)),
                     ),
+                  ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: TextEditingController(text: points.toString()),
@@ -722,13 +674,13 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
             if (isMultipleChoice) ...[
               const SizedBox(height: 12),
               if (question['optionA'] != null)
-                _buildOption('A', question['optionA']),
+                _buildOption('①', question['optionA']),
               if (question['optionB'] != null)
-                _buildOption('B', question['optionB']),
+                _buildOption('②', question['optionB']),
               if (question['optionC'] != null)
-                _buildOption('C', question['optionC']),
+                _buildOption('③', question['optionC']),
               if (question['optionD'] != null)
-                _buildOption('D', question['optionD']),
+                _buildOption('④', question['optionD']),
             ],
           ],
         ),
@@ -740,7 +692,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Text(
-        '$marker. $text',
+        '$marker $text',
         style: const TextStyle(
           color: Color(0xFF736A63),
           fontFamily: 'JoseonGulim',

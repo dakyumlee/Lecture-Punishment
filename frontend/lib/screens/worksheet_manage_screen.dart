@@ -5,7 +5,6 @@ import 'ocr_extract_screen.dart';
 import '../config/env.dart';
 import 'question_add_screen.dart';
 import 'worksheet_create_screen.dart';
-import 'worksheet_solve_screen.dart';
 
 class WorksheetManageScreen extends StatefulWidget {
   const WorksheetManageScreen({super.key});
@@ -94,27 +93,19 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
     }
   }
 
-  void _viewWorksheet(String id, String title) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WorksheetSolveScreen(
-          worksheetId: id,
-          worksheetTitle: title,
-          studentId: 'preview',
-        ),
-      ),
-    );
+  void _viewPdf(String id) {
+    final url = '${Env.apiUrl}/worksheets/$id/pdf';
+    html.window.open(url, '_blank');
   }
 
   void _downloadPdf(String id, String title) {
     final url = '${Env.apiUrl}/worksheets/$id/download';
     html.AnchorElement(href: url)
-      ..setAttribute('download', '$title.txt')
+      ..setAttribute('download', '$title.pdf')
       ..click();
     
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('문제지 다운로드 시작')),
+      const SnackBar(content: Text('PDF 다운로드 시작')),
     );
   }
 
@@ -333,7 +324,7 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _viewWorksheet(id, title),
+                        onPressed: () => _viewPdf(id),
                         icon: const Icon(Icons.visibility, size: 20),
                         label: const Text('보기'),
                         style: ElevatedButton.styleFrom(
