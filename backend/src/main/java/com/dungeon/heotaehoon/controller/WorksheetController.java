@@ -27,12 +27,15 @@ public class WorksheetController {
             List<Map<String, Object>> response = new ArrayList<>();
             
             for (Worksheet ws : worksheets) {
+                Long questionCount = worksheetService.getQuestionCount(ws.getId());
+                log.info("Worksheet {} has {} questions", ws.getId(), questionCount);
+                
                 Map<String, Object> wsMap = new HashMap<>();
                 wsMap.put("id", ws.getId());
                 wsMap.put("title", ws.getTitle());
                 wsMap.put("description", ws.getDescription());
                 wsMap.put("category", ws.getCategory() != null ? ws.getCategory() : "기타");
-                wsMap.put("questionCount", worksheetService.getQuestionCount(ws.getId()));
+                wsMap.put("questionCount", questionCount);
                 wsMap.put("createdAt", ws.getCreatedAt());
                 response.add(wsMap);
             }
@@ -172,6 +175,50 @@ public class WorksheetController {
         } catch (Exception e) {
             log.error("Failed to view worksheet", e);
             return ResponseEntity.status(404).body(new HashMap<>());
+        }
+    }
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> getPdf(@PathVariable String id) {
+        try {
+            Worksheet worksheet = worksheetService.getWorksheetById(id);
+            List<WorksheetQuestion> questions = worksheetService.getQuestionsByWorksheetId(id);
+            
+            StringBuilder content = new StringBuilder();
+            content.append("=".repeat(80)).append("\n");
+            content.append(worksheet.getTitle()).append("\n");
+            if (worksheet.getDescription() != null) {
+                content.append(worksheet.getDescription()).append("\n");
+            }
+            content.append("카테고리: ").append(worksheet.getCategory() != null ? worksheet.getCategory() : "기타").append("\n");
+            content.append("=".repeat(80)).append("\n\n");
+            
+            for (WorksheetQuestion q : questions) {
+                content.append(q.getQuestionNumber()).append(". ").append(q.getQuestionText()).append("\n\n");
+                
+                if ("multiple_choice".equals(q.getQuestionType())) {
+                    if (q.getOptionA() != null) content.append("  1) ").append(q.getOptionA()).append("\n");
+                    if (q.getOptionB() != null) content.append("  2) ").append(q.getOptionB()).append("\n");
+                    if (q.getOptionC() != null) content.append("  3) ").append(q.getOptionC()).append("\n");
+                    if (q.getOptionD() != null) content.append("  4) ").append(q.getOptionD()).append("\n");
+                }
+                
+                content.append("\n");
+            }
+            
+            byte[] bytes = content.toString().getBytes("UTF-8");
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.TEXT_PLAIN);
+            headers.setContentDispositionFormData("inline", worksheet.getTitle() + ".txt");
+            headers.setContentLength(bytes.length);
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(bytes);
+        } catch (Exception e) {
+            log.error("Failed to get pdf", e);
+            return ResponseEntity.status(500).body(new byte[0]);
         }
     }
 
