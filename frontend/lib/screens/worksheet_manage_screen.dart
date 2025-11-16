@@ -1,14 +1,14 @@
+import '../services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:html' as html;
-import '../services/api_service.dart';
+import 'admin/ocr_extract_screen.dart';
 import '../config/env.dart';
+import 'question_add_screen.dart';
 import 'worksheet_create_screen.dart';
 import 'worksheet_solve_screen.dart';
-import 'admin/ocr_extract_screen.dart';
 
 class WorksheetManageScreen extends StatefulWidget {
   const WorksheetManageScreen({super.key});
-
   @override
   State<WorksheetManageScreen> createState() => _WorksheetManageScreenState();
 }
@@ -41,59 +41,55 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
     }
   }
 
-  void _confirmDelete(String id, String title) {
-    showDialog(
+  Future<void> _deleteWorksheet(String id, String title) async {
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF0D0D0D),
+        backgroundColor: const Color(0xFF595048),
         title: const Text(
-          '문제지 삭제',
+          '삭제 확인',
           style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
         ),
         content: Text(
-          '"$title" 문제지를 삭제하시겠습니까?',
+          '$title 문제지를 삭제하시겠습니까?\n모든 문제가 함께 삭제됩니다.',
           style: const TextStyle(color: Color(0xFFD9D4D2)),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteWorksheet(id);
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('삭제', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
-  }
 
-  Future<void> _deleteWorksheet(String id) async {
-    try {
-      final response = await ApiService.deleteWorksheet(id);
-      
-      if (response['success'] == true) {
+    if (confirm == true) {
+      try {
+        final success = await ApiService.deleteWorksheet(id);
+        if (success) {
+          _loadWorksheets();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('문제지가 삭제되었습니다')),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('삭제 실패')),
+            );
+          }
+        }
+      } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('문제지가 삭제되었습니다')),
+            SnackBar(content: Text('삭제 실패: $e')),
           );
         }
-        _loadWorksheets();
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('삭제 실패')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('삭제 실패: $e')),
-        );
       }
     }
   }
@@ -212,6 +208,7 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
               : RefreshIndicator(
                   onRefresh: _loadWorksheets,
                   color: const Color(0xFFD9D4D2),
+                  backgroundColor: const Color(0xFF595048),
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _worksheets.length,
@@ -294,7 +291,6 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFF00010D),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF595048)),
                     ),
                     child: Text(
                       description,
@@ -307,64 +303,82 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                Row(
                   children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => WorksheetCreateScreen(
-                              worksheetId: id,
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => QuestionAddScreen(
+                                worksheetId: id,
+                                worksheetTitle: title,
+                              ),
                             ),
+                          ).then((_) => _loadWorksheets());
+                        },
+                        icon: const Icon(Icons.add, size: 20),
+                        label: const Text('문제 추가'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF595048),
+                          foregroundColor: const Color(0xFFD9D4D2),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ).then((_) => _loadWorksheets());
-                      },
-                      icon: const Icon(Icons.add, size: 20),
-                      label: const Text('문제 추가'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF595048),
-                        foregroundColor: const Color(0xFFD9D4D2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
-                    ElevatedButton.icon(
-                      onPressed: () => _viewWorksheet(id, title),
-                      icon: const Icon(Icons.visibility, size: 20),
-                      label: const Text('보기'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF736A63),
-                        foregroundColor: const Color(0xFFD9D4D2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _viewWorksheet(id, title),
+                        icon: const Icon(Icons.visibility, size: 20),
+                        label: const Text('보기'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF736A63),
+                          foregroundColor: const Color(0xFFD9D4D2),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
-                    ElevatedButton.icon(
-                      onPressed: () => _downloadPdf(id, title),
-                      icon: const Icon(Icons.download, size: 20),
-                      label: const Text('다운로드'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF736A63),
-                        foregroundColor: const Color(0xFFD9D4D2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _downloadPdf(id, title),
+                        icon: const Icon(Icons.download, size: 20),
+                        label: const Text('다운로드'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF595048).withOpacity(0.7),
+                          foregroundColor: const Color(0xFFD9D4D2),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
-                    ElevatedButton.icon(
-                      onPressed: () => _confirmDelete(id, title),
-                      icon: const Icon(Icons.delete, size: 20),
-                      label: const Text('삭제'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade900,
-                        foregroundColor: const Color(0xFFD9D4D2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _deleteWorksheet(id, title),
+                        icon: const Icon(Icons.delete, size: 20),
+                        label: const Text('삭제'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade900,
+                          foregroundColor: const Color(0xFFD9D4D2),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
