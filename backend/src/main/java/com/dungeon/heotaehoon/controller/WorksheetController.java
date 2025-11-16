@@ -10,7 +10,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 @Slf4j
@@ -54,6 +53,9 @@ public class WorksheetController {
             
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> questions = (List<Map<String, Object>>) request.get("questions");
+            
+            log.info("Creating worksheet - Title: {}, Category: {}, Questions: {}", 
+                title, category, questions.size());
             
             Worksheet worksheet = worksheetService.createWorksheet(title, description, category, questions);
             
@@ -107,6 +109,34 @@ public class WorksheetController {
         } catch (Exception e) {
             log.error("Failed to get worksheet", e);
             return ResponseEntity.status(404).body(new HashMap<>());
+        }
+    }
+
+    @GetMapping("/{id}/questions")
+    public ResponseEntity<List<Map<String, Object>>> getWorksheetQuestions(@PathVariable String id) {
+        try {
+            List<WorksheetQuestion> questions = worksheetService.getQuestionsByWorksheetId(id);
+            
+            List<Map<String, Object>> questionList = new ArrayList<>();
+            for (WorksheetQuestion q : questions) {
+                Map<String, Object> qMap = new HashMap<>();
+                qMap.put("id", q.getId());
+                qMap.put("questionNumber", q.getQuestionNumber());
+                qMap.put("questionText", q.getQuestionText());
+                qMap.put("questionType", q.getQuestionType());
+                qMap.put("optionA", q.getOptionA());
+                qMap.put("optionB", q.getOptionB());
+                qMap.put("optionC", q.getOptionC());
+                qMap.put("optionD", q.getOptionD());
+                qMap.put("correctAnswer", q.getCorrectAnswer());
+                qMap.put("points", q.getPoints());
+                questionList.add(qMap);
+            }
+            
+            return ResponseEntity.ok(questionList);
+        } catch (Exception e) {
+            log.error("Failed to get worksheet questions", e);
+            return ResponseEntity.status(500).body(new ArrayList<>());
         }
     }
 
@@ -192,6 +222,7 @@ public class WorksheetController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteWorksheet(@PathVariable String id) {
         try {
+            log.info("Deleting worksheet: {}", id);
             worksheetService.deleteWorksheet(id);
             
             Map<String, Object> response = new HashMap<>();
@@ -200,7 +231,7 @@ public class WorksheetController {
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Failed to delete worksheet", e);
+            log.error("Failed to delete worksheet: {}", id, e);
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("error", e.getMessage());
