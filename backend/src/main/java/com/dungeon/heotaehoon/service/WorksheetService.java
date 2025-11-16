@@ -41,6 +41,8 @@ public class WorksheetService {
 
     @Transactional
     public Worksheet createWorksheet(String title, String description, String category, List<Map<String, Object>> questions) {
+        log.info("Creating worksheet with {} questions", questions.size());
+        
         Worksheet worksheet = Worksheet.builder()
                 .title(title)
                 .description(description)
@@ -50,24 +52,34 @@ public class WorksheetService {
                 .build();
         
         worksheet = worksheetRepository.save(worksheet);
+        log.info("Worksheet saved with ID: {}", worksheet.getId());
         
+        int savedCount = 0;
         for (Map<String, Object> qData : questions) {
-            WorksheetQuestion question = WorksheetQuestion.builder()
-                    .worksheet(worksheet)
-                    .questionNumber(getInteger(qData, "questionNumber"))
-                    .questionType((String) qData.get("questionType"))
-                    .questionText((String) qData.get("questionText"))
-                    .optionA((String) qData.get("optionA"))
-                    .optionB((String) qData.get("optionB"))
-                    .optionC((String) qData.get("optionC"))
-                    .optionD((String) qData.get("optionD"))
-                    .correctAnswer((String) qData.get("correctAnswer"))
-                    .points(getInteger(qData, "points"))
-                    .build();
-            
-            questionRepository.save(question);
+            try {
+                WorksheetQuestion question = WorksheetQuestion.builder()
+                        .worksheet(worksheet)
+                        .questionNumber(getInteger(qData, "questionNumber"))
+                        .questionType((String) qData.get("questionType"))
+                        .questionText((String) qData.get("questionText"))
+                        .optionA((String) qData.get("optionA"))
+                        .optionB((String) qData.get("optionB"))
+                        .optionC((String) qData.get("optionC"))
+                        .optionD((String) qData.get("optionD"))
+                        .correctAnswer((String) qData.get("correctAnswer"))
+                        .points(getInteger(qData, "points"))
+                        .build();
+                
+                questionRepository.save(question);
+                savedCount++;
+                log.info("Question {} saved successfully", savedCount);
+            } catch (Exception e) {
+                log.error("Failed to save question {}: {}", savedCount + 1, e.getMessage(), e);
+                throw e;
+            }
         }
         
+        log.info("Total {} questions saved for worksheet {}", savedCount, worksheet.getId());
         return worksheet;
     }
 
