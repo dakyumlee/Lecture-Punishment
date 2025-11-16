@@ -1,84 +1,68 @@
 package com.dungeon.heotaehoon.service;
 
 import com.dungeon.heotaehoon.entity.Worksheet;
-import com.dungeon.heotaehoon.entity.Question;
+import com.dungeon.heotaehoon.entity.WorksheetQuestion;
+import com.dungeon.heotaehoon.repository.WorksheetQuestionRepository;
 import com.dungeon.heotaehoon.repository.WorksheetRepository;
-import com.dungeon.heotaehoon.repository.QuestionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class WorksheetService {
-    
-    private final WorksheetRepository worksheetRepository;
-    private final QuestionRepository questionRepository;
 
-    public List<Map<String, Object>> getAllWorksheetsWithDetails(String groupId) {
-        List<Worksheet> worksheets;
-        
-        if (groupId != null && !groupId.isEmpty()) {
-            worksheets = worksheetRepository.findByGroupId(groupId);
-        } else {
-            worksheets = worksheetRepository.findAll();
-        }
-        
-        return worksheets.stream().map(worksheet -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", worksheet.getId());
-            map.put("title", worksheet.getTitle());
-            map.put("description", worksheet.getDescription());
-            map.put("category", worksheet.getCategory());
-            map.put("totalQuestions", questionRepository.countByWorksheetId(worksheet.getId()));
-            map.put("createdAt", worksheet.getCreatedAt());
-            return map;
-        }).collect(Collectors.toList());
+    private final WorksheetRepository worksheetRepository;
+    private final WorksheetQuestionRepository questionRepository;
+
+    public List<Worksheet> getAllWorksheets() {
+        return worksheetRepository.findAll();
     }
 
-    public Map<String, Object> getWorksheetWithQuestions(String id) {
-        Worksheet worksheet = worksheetRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Worksheet not found"));
-        
-        List<Question> questions = questionRepository.findByWorksheetOrderByQuestionNumberAsc(worksheet);
-        
-        Map<String, Object> result = new HashMap<>();
-        result.put("worksheet", worksheet);
-        result.put("questions", questions);
-        
-        return result;
+    public Worksheet getWorksheetById(String id) {
+        return worksheetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("문제지를 찾을 수 없습니다"));
+    }
+
+    public List<WorksheetQuestion> getQuestionsByWorksheetId(String worksheetId) {
+        Worksheet worksheet = getWorksheetById(worksheetId);
+        return questionRepository.findByWorksheetOrderByQuestionNumberAsc(worksheet);
+    }
+
+    public Long getQuestionCount(String worksheetId) {
+        return questionRepository.countByWorksheetId(worksheetId);
     }
 
     @Transactional
-    public Worksheet createWorksheet(String title, String description, String category, String groupId, List<Map<String, Object>> questionsData) {
+    public Worksheet createWorksheet(String title, String description, String category, List<Map<String, Object>> questions) {
         Worksheet worksheet = Worksheet.builder()
                 .title(title)
                 .description(description)
-                .category(category)
-                .groupId(groupId)
+                .category(category != null && !category.trim().isEmpty() ? category : "기타")
                 .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
         
         worksheet = worksheetRepository.save(worksheet);
         
-        for (Map<String, Object> questionData : questionsData) {
-            Question question = Question.builder()
+        for (Map<String, Object> qData : questions) {
+            WorksheetQuestion question = WorksheetQuestion.builder()
                     .worksheet(worksheet)
-                    .questionNumber((Integer) questionData.getOrDefault("questionNumber", 1))
-                    .questionType((String) questionData.getOrDefault("questionType", "multiple_choice"))
-                    .questionText((String) questionData.get("questionText"))
-                    .optionA((String) questionData.get("optionA"))
-                    .optionB((String) questionData.get("optionB"))
-                    .optionC((String) questionData.get("optionC"))
-                    .optionD((String) questionData.get("optionD"))
-                    .correctAnswer((String) questionData.getOrDefault("correctAnswer", "1"))
-                    .points((Integer) questionData.getOrDefault("points", 10))
+                    .questionNumber(getInteger(qData, "questionNumber"))
+                    .questionType((String) qData.get("questionType"))
+                    .questionText((String) qData.get("questionText"))
+                    .optionA((String) qData.get("optionA"))
+                    .optionB((String) qData.get("optionB"))
+                    .optionC((String) qData.get("optionC"))
+                    .optionD((String) qData.get("optionD"))
+                    .correctAnswer((String) qData.get("correctAnswer"))
+                    .points(getInteger(qData, "points"))
                     .build();
             
             questionRepository.save(question);
@@ -88,11 +72,48 @@ public class WorksheetService {
     }
 
     @Transactional
-    public void deleteWorksheet(String id) {
-        Worksheet worksheet = worksheetRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Worksheet not found"));
+    public WorksheetQuestion addQuestion(String worksheetId, Map<String, Object> questionData) {
+        Worksheet worksheet = getWorksheetById(worksheetId);
         
+        WorksheetQuestion question = WorksheetQuestion.builder()
+                .worksheet(worksheet)
+                .questionNumber(getInteger(questionData, "questionNumber"))
+                .questionType((String) questionData.get("questionType"))
+                .questionText((String) questionData.get("questionText"))
+                .optionA((String) questionData.get("optionA"))
+                .optionB((String) questionData.get("optionB"))
+                .optionC((String) questionData.get("optionC"))
+                .optionD((String) questionData.get("optionD"))
+                .correctAnswer((String) questionData.get("correctAnswer"))
+                .points(getInteger(questionData, "points"))
+                .build();
+        
+        return questionRepository.save(question);
+    }
+
+    @Transactional
+    public void deleteWorksheet(String id) {
+        Worksheet worksheet = getWorksheetById(id);
         questionRepository.deleteByWorksheet(worksheet);
         worksheetRepository.delete(worksheet);
+    }
+
+    @Transactional
+    public void deleteQuestion(String questionId) {
+        questionRepository.deleteById(questionId);
+    }
+
+    private Integer getInteger(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null) return null;
+        if (value instanceof Integer) return (Integer) value;
+        if (value instanceof String) {
+            try {
+                return Integer.parseInt((String) value);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
     }
 }
