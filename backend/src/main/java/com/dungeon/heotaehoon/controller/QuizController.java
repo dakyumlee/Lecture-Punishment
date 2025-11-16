@@ -1,40 +1,57 @@
 package com.dungeon.heotaehoon.controller;
 
 import com.dungeon.heotaehoon.entity.Quiz;
-import com.dungeon.heotaehoon.repository.QuizRepository;
+import com.dungeon.heotaehoon.service.QuizService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/quizzes")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class QuizController {
-
-    private final QuizRepository quizRepository;
-
-    @GetMapping
-    public ResponseEntity<List<Quiz>> getAllQuizzes() {
-        return ResponseEntity.ok(quizRepository.findAll());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Quiz> getQuizById(@PathVariable String id) {
-        return quizRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+    
+    private final QuizService quizService;
 
     @GetMapping("/boss/{bossId}")
     public ResponseEntity<List<Quiz>> getQuizzesByBoss(@PathVariable String bossId) {
-        return ResponseEntity.ok(quizRepository.findByBossId(bossId));
+        log.info("Fetching quizzes for boss: {}", bossId);
+        List<Quiz> quizzes = quizService.getQuizzesByBoss(bossId);
+        return ResponseEntity.ok(quizzes);
     }
 
     @GetMapping("/lesson/{lessonId}")
     public ResponseEntity<List<Quiz>> getQuizzesByLesson(@PathVariable String lessonId) {
-        return ResponseEntity.ok(quizRepository.findByLessonId(lessonId));
+        log.info("Fetching quizzes for lesson: {}", lessonId);
+        List<Quiz> quizzes = quizService.getQuizzesByLesson(lessonId);
+        return ResponseEntity.ok(quizzes);
+    }
+
+    @PostMapping("/{quizId}/submit")
+    public ResponseEntity<Map<String, Object>> submitAnswer(
+            @PathVariable String quizId,
+            @RequestBody Map<String, String> request) {
+        
+        String studentId = request.get("studentId");
+        String selectedAnswer = request.get("selectedAnswer");
+        
+        log.info("Student {} submitted answer {} for quiz {}", studentId, selectedAnswer, quizId);
+        
+        Map<String, Object> result = quizService.submitAnswer(quizId, studentId, selectedAnswer);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping
+    public ResponseEntity<Quiz> createQuiz(@RequestBody Map<String, Object> request) {
+        String lessonId = (String) request.get("lessonId");
+        String bossId = (String) request.get("bossId");
+        
+        Quiz quiz = quizService.createQuiz(lessonId, bossId, request);
+        return ResponseEntity.ok(quiz);
     }
 }
