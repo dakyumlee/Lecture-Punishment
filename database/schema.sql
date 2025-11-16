@@ -154,6 +154,9 @@ CREATE TABLE worksheets (
     description TEXT,
     category VARCHAR(100),
     group_id UUID,
+    original_file BYTEA,
+    original_file_name VARCHAR(255),
+    original_file_type VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
