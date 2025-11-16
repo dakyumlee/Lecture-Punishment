@@ -28,7 +28,6 @@ public class Worksheet {
     @Column(name = "group_id")
     private String groupId;
 
-    @Lob
     @Column(name = "original_file", columnDefinition = "BYTEA")
     private byte[] originalFile;
 
