@@ -2,6 +2,7 @@ package com.dungeon.heotaehoon.controller;
 
 import com.dungeon.heotaehoon.entity.Quiz;
 import com.dungeon.heotaehoon.service.QuizService;
+import com.dungeon.heotaehoon.service.AiQuizGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import java.util.Map;
 public class QuizController {
     
     private final QuizService quizService;
+    private final AiQuizGenerationService aiQuizGenerationService;
 
     @GetMapping("/boss/{bossId}")
     public ResponseEntity<List<Quiz>> getQuizzesByBoss(@PathVariable String bossId) {
@@ -54,7 +56,6 @@ public class QuizController {
         Quiz quiz = quizService.createQuiz(lessonId, bossId, request);
         return ResponseEntity.ok(quiz);
     }
-}
 
     @PostMapping("/generate-ai")
     public ResponseEntity<List<Quiz>> generateAiQuizzes(@RequestBody Map<String, Object> request) {
@@ -67,3 +68,4 @@ public class QuizController {
         List<Quiz> quizzes = aiQuizGenerationService.generateQuizzesForBoss(bossId, topic, count);
         return ResponseEntity.ok(quizzes);
     }
+}

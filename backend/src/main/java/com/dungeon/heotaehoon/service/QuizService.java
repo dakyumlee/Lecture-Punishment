@@ -18,6 +18,8 @@ public class QuizService {
     private final StudentRepository studentRepository;
     private final QuizResultRepository quizResultRepository;
     private final RageMessageService rageMessageService;
+    private final BossRepository bossRepository;
+    private final LessonRepository lessonRepository;
 
     @Transactional
     public Map<String, Object> submitAnswer(String quizId, String studentId, String selectedAnswer) {
@@ -84,7 +86,20 @@ public class QuizService {
 
     @Transactional
     public Quiz createQuiz(String lessonId, String bossId, Map<String, Object> quizData) {
+        Boss boss = null;
+        Lesson lesson = null;
+        
+        if (bossId != null) {
+            boss = bossRepository.findById(bossId).orElse(null);
+        }
+        
+        if (lessonId != null) {
+            lesson = lessonRepository.findById(lessonId).orElse(null);
+        }
+        
         Quiz quiz = Quiz.builder()
+                .boss(boss)
+                .lesson(lesson)
                 .question((String) quizData.get("question"))
                 .optionA((String) quizData.get("optionA"))
                 .optionB((String) quizData.get("optionB"))
