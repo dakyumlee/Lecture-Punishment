@@ -5,17 +5,17 @@ import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDResources;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import org.apache.pdfbox.cos.COSName;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFPicture;
+import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -64,6 +64,59 @@ public class OcrService {
         return questions;
     }
 
+    public List<QuestionData> extractQuestionsFromDocx(MultipartFile file) throws IOException {
+        List<QuestionData> questions = new ArrayList<>();
+        
+        log.info("Starting DOCX extraction for file: {}", file.getOriginalFilename());
+        
+        try (InputStream inputStream = file.getInputStream();
+             XWPFDocument document = new XWPFDocument(inputStream)) {
+            
+            StringBuilder fullText = new StringBuilder();
+            Tesseract tesseract = new Tesseract();
+            tesseract.setDatapath("/usr/share/tessdata");
+            tesseract.setLanguage("kor+eng");
+            
+            for (XWPFParagraph paragraph : document.getParagraphs()) {
+                String text = paragraph.getText();
+                if (text != null && !text.trim().isEmpty()) {
+                    fullText.append(text).append("\n");
+                }
+                
+                for (XWPFRun run : paragraph.getRuns()) {
+                    List<XWPFPicture> pictures = run.getEmbeddedPictures();
+                    for (XWPFPicture picture : pictures) {
+                        try {
+                            byte[] imageData = picture.getPictureData().getData();
+                            BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageData));
+                            
+                            if (image != null) {
+                                String imageText = tesseract.doOCR(image);
+                                if (imageText != null && !imageText.trim().isEmpty()) {
+                                    fullText.append("\n").append(imageText).append("\n");
+                                    log.info("Extracted text from image: {} chars", imageText.length());
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to process embedded image", e);
+                        }
+                    }
+                }
+            }
+            
+            String extractedText = fullText.toString();
+            log.info("Total extracted text length: {}", extractedText.length());
+            
+            questions = parseQuestions(extractedText);
+            
+        } catch (Exception e) {
+            log.error("DOCX extraction failed", e);
+            throw new RuntimeException("DOCX 처리 중 오류가 발생했습니다: " + e.getMessage(), e);
+        }
+        
+        return questions;
+    }
+
     private List<QuestionData> parseQuestions(String text) {
         List<QuestionData> questions = new ArrayList<>();
         
@@ -85,7 +138,7 @@ public class OcrService {
                 question.setQuestionNumber(questionNumber);
                 question.setQuestionType("multiple_choice");
                 question.setPoints(10);
-                question.setCorrectAnswer("1");
+                question.setCorrectAnswer("A");
                 
                 if (fullContent.contains("1)") || fullContent.contains("①")) {
                     int optionStart = fullContent.indexOf("1)");
@@ -117,6 +170,7 @@ public class OcrService {
                     }
                 } else {
                     question.setQuestionText(fullContent);
+                    question.setQuestionType("subjective");
                 }
                 
                 questions.add(question);

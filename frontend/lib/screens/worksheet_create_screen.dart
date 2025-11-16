@@ -126,10 +126,10 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
     }
   }
 
-  Future<void> _pickAndImportCsv() async {
+  Future<void> _pickAndImportDocx() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['csv'],
+      allowedExtensions: ['docx'],
       withData: true,
     );
     
@@ -137,43 +137,61 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
       setState(() => _isProcessing = true);
       
       try {
-        String csvContent = utf8.decode(result.files.single.bytes!);
-        List<String> lines = csvContent.split('\n');
+        var request = http.MultipartRequest(
+          'POST',
+          Uri.parse('${Env.apiUrl}/ocr/extract-docx'),
+        );
+        request.files.add(http.MultipartFile.fromBytes(
+          'file',
+          result.files.single.bytes!,
+          filename: result.files.single.name,
+        ));
         
-        for (int i = 1; i < lines.length; i++) {
-          if (lines[i].trim().isEmpty) continue;
+        var streamedResponse = await request.send();
+        var response = await http.Response.fromStream(streamedResponse);
+        
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          List<dynamic> extractedQuestions = data['questions'] ?? [];
           
-          List<String> fields = lines[i].split(',');
-          if (fields.length < 3) continue;
-          
-          String questionType = fields.length > 1 ? fields[1].trim() : 'subjective';
-          
-          setState(() {
-            _questions.add({
-              'questionNumber': _questions.length + 1,
-              'questionType': questionType,
-              'questionText': fields.length > 2 ? fields[2].trim() : '',
-              'optionA': questionType == 'multiple_choice' && fields.length > 3 ? fields[3].trim() : null,
-              'optionB': questionType == 'multiple_choice' && fields.length > 4 ? fields[4].trim() : null,
-              'optionC': questionType == 'multiple_choice' && fields.length > 5 ? fields[5].trim() : null,
-              'optionD': questionType == 'multiple_choice' && fields.length > 6 ? fields[6].trim() : null,
-              'correctAnswer': fields.length > 7 ? fields[7].trim() : '',
-              'points': fields.length > 8 ? int.tryParse(fields[8].trim()) ?? 10 : 10,
-              'allowPartial': false,
-              'similarityThreshold': 0.85,
+          if (extractedQuestions.isEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('추출된 문제가 없습니다')),
+              );
+            }
+          } else {
+            setState(() {
+              for (var q in extractedQuestions) {
+                _questions.add({
+                  'questionNumber': _questions.length + 1,
+                  'questionType': q['questionType'] ?? 'subjective',
+                  'questionText': q['questionText'] ?? '',
+                  'optionA': q['optionA'],
+                  'optionB': q['optionB'],
+                  'optionC': q['optionC'],
+                  'optionD': q['optionD'],
+                  'correctAnswer': q['correctAnswer'] ?? '',
+                  'points': q['points'] ?? 10,
+                  'allowPartial': false,
+                  'similarityThreshold': 0.85,
+                });
+              }
             });
-          });
-        }
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${lines.length - 1}개 문제가 추가되었습니다')),
-          );
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${extractedQuestions.length}개 문제가 추가되었습니다')),
+              );
+            }
+          }
+        } else {
+          throw Exception('DOCX 추출 실패: ${response.statusCode}');
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('CSV 오류: $e')),
+            SnackBar(content: Text('DOCX 오류: $e')),
           );
         }
       } finally {
@@ -865,10 +883,10 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                     ),
                   ),
                   ElevatedButton.icon(
-                    onPressed: _isProcessing ? null : _pickAndImportCsv,
+                    onPressed: _isProcessing ? null : _pickAndImportDocx,
                     icon: const Icon(Icons.upload_file, color: Color(0xFFD9D4D2)),
                     label: const Text(
-                      'CSV 업로드',
+                      'DOCX 업로드',
                       style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
                     ),
                     style: ElevatedButton.styleFrom(

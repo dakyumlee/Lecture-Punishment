@@ -38,4 +38,26 @@ public class OcrController {
             return ResponseEntity.status(500).body(error);
         }
     }
+
+    @PostMapping("/extract-docx")
+    public ResponseEntity<Map<String, Object>> extractQuestionsFromDocx(@RequestParam("file") MultipartFile file) {
+        log.info("DOCX extraction request for file: {}", file.getOriginalFilename());
+        
+        try {
+            List<OcrService.QuestionData> questions = ocrService.extractQuestionsFromDocx(file);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("questions", questions);
+            response.put("count", questions.size());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("DOCX extraction failed", e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", "DOCX 처리 실패: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
 }
