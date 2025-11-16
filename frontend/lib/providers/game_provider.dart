@@ -157,8 +157,10 @@ class GameProvider with ChangeNotifier {
     }
   }
 
-  Future<void> submitAnswer(String quizId, String answer) async {
-    if (_currentStudent == null) return;
+  Future<Map<String, dynamic>> submitAnswer(String quizId, String answer) async {
+    if (_currentStudent == null) {
+      return {'isCorrect': false, 'message': '로그인이 필요합니다'};
+    }
 
     try {
       final response = await ApiService.submitQuizAnswer(
@@ -178,8 +180,9 @@ class GameProvider with ChangeNotifier {
       }
 
       notifyListeners();
+      return response;
     } catch (e) {
-      rethrow;
+      return {'isCorrect': false, 'message': '오류가 발생했습니다'};
     }
   }
 

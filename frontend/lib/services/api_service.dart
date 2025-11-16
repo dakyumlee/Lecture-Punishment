@@ -369,7 +369,7 @@ class ApiService {
     required String selectedAnswer,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/game/quiz/$quizId/answer'),
+      Uri.parse('$baseUrl/quizzes/$quizId/submit'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'studentId': studentId,
