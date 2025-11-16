@@ -5,11 +5,19 @@ import com.dungeon.heotaehoon.entity.WorksheetQuestion;
 import com.dungeon.heotaehoon.service.WorksheetService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.*;
 
 @Slf4j
@@ -144,37 +152,24 @@ public class WorksheetController {
     }
 
     @GetMapping("/{id}/view")
-    public ResponseEntity<Map<String, Object>> viewWorksheet(@PathVariable String id) {
+    public ResponseEntity<byte[]> viewPdf(@PathVariable String id) {
         try {
             Worksheet worksheet = worksheetService.getWorksheetById(id);
             List<WorksheetQuestion> questions = worksheetService.getQuestionsByWorksheetId(id);
             
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", worksheet.getId());
-            response.put("title", worksheet.getTitle());
-            response.put("description", worksheet.getDescription());
-            response.put("category", worksheet.getCategory() != null ? worksheet.getCategory() : "기타");
-            response.put("createdAt", worksheet.getCreatedAt());
+            byte[] pdfBytes = generatePdf(worksheet, questions);
             
-            List<Map<String, Object>> questionList = new ArrayList<>();
-            for (WorksheetQuestion q : questions) {
-                Map<String, Object> qMap = new HashMap<>();
-                qMap.put("questionNumber", q.getQuestionNumber());
-                qMap.put("questionText", q.getQuestionText());
-                qMap.put("questionType", q.getQuestionType());
-                qMap.put("optionA", q.getOptionA());
-                qMap.put("optionB", q.getOptionB());
-                qMap.put("optionC", q.getOptionC());
-                qMap.put("optionD", q.getOptionD());
-                questionList.add(qMap);
-            }
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + worksheet.getTitle() + ".pdf\"");
+            headers.setContentLength(pdfBytes.length);
             
-            response.put("questions", questionList);
-            
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(pdfBytes);
         } catch (Exception e) {
-            log.error("Failed to view worksheet", e);
-            return ResponseEntity.status(404).body(new HashMap<>());
+            log.error("Failed to generate PDF view", e);
+            return ResponseEntity.status(500).body(new byte[0]);
         }
     }
 
@@ -184,85 +179,154 @@ public class WorksheetController {
             Worksheet worksheet = worksheetService.getWorksheetById(id);
             List<WorksheetQuestion> questions = worksheetService.getQuestionsByWorksheetId(id);
             
-            StringBuilder content = new StringBuilder();
-            content.append("=".repeat(80)).append("\n");
-            content.append(worksheet.getTitle()).append("\n");
-            if (worksheet.getDescription() != null) {
-                content.append(worksheet.getDescription()).append("\n");
-            }
-            content.append("카테고리: ").append(worksheet.getCategory() != null ? worksheet.getCategory() : "기타").append("\n");
-            content.append("=".repeat(80)).append("\n\n");
-            
-            for (WorksheetQuestion q : questions) {
-                content.append(q.getQuestionNumber()).append(". ").append(q.getQuestionText()).append("\n\n");
-                
-                if ("multiple_choice".equals(q.getQuestionType())) {
-                    if (q.getOptionA() != null) content.append("  1) ").append(q.getOptionA()).append("\n");
-                    if (q.getOptionB() != null) content.append("  2) ").append(q.getOptionB()).append("\n");
-                    if (q.getOptionC() != null) content.append("  3) ").append(q.getOptionC()).append("\n");
-                    if (q.getOptionD() != null) content.append("  4) ").append(q.getOptionD()).append("\n");
-                }
-                
-                content.append("\n");
-            }
-            
-            byte[] bytes = content.toString().getBytes("UTF-8");
+            byte[] pdfBytes = generatePdf(worksheet, questions);
             
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.TEXT_PLAIN);
-            headers.setContentDispositionFormData("inline", worksheet.getTitle() + ".txt");
-            headers.setContentLength(bytes.length);
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + worksheet.getTitle() + ".pdf\"");
+            headers.setContentLength(pdfBytes.length);
             
             return ResponseEntity.ok()
                     .headers(headers)
-                    .body(bytes);
+                    .body(pdfBytes);
         } catch (Exception e) {
-            log.error("Failed to get pdf", e);
+            log.error("Failed to get PDF", e);
             return ResponseEntity.status(500).body(new byte[0]);
         }
     }
 
     @GetMapping("/{id}/download")
-    public ResponseEntity<byte[]> downloadWorksheet(@PathVariable String id) {
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable String id) {
         try {
             Worksheet worksheet = worksheetService.getWorksheetById(id);
             List<WorksheetQuestion> questions = worksheetService.getQuestionsByWorksheetId(id);
             
-            StringBuilder content = new StringBuilder();
-            content.append("=".repeat(80)).append("\n");
-            content.append(worksheet.getTitle()).append("\n");
-            if (worksheet.getDescription() != null) {
-                content.append(worksheet.getDescription()).append("\n");
-            }
-            content.append("카테고리: ").append(worksheet.getCategory() != null ? worksheet.getCategory() : "기타").append("\n");
-            content.append("=".repeat(80)).append("\n\n");
-            
-            for (WorksheetQuestion q : questions) {
-                content.append(q.getQuestionNumber()).append(". ").append(q.getQuestionText()).append("\n\n");
-                
-                if ("multiple_choice".equals(q.getQuestionType())) {
-                    if (q.getOptionA() != null) content.append("  1) ").append(q.getOptionA()).append("\n");
-                    if (q.getOptionB() != null) content.append("  2) ").append(q.getOptionB()).append("\n");
-                    if (q.getOptionC() != null) content.append("  3) ").append(q.getOptionC()).append("\n");
-                    if (q.getOptionD() != null) content.append("  4) ").append(q.getOptionD()).append("\n");
-                }
-                
-                content.append("\n");
-            }
-            
-            byte[] bytes = content.toString().getBytes("UTF-8");
+            byte[] pdfBytes = generatePdf(worksheet, questions);
             
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.TEXT_PLAIN);
-            headers.setContentDispositionFormData("attachment", worksheet.getTitle() + ".txt");
-            headers.setContentLength(bytes.length);
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + worksheet.getTitle() + ".pdf\"");
+            headers.setContentLength(pdfBytes.length);
             
             return ResponseEntity.ok()
                     .headers(headers)
-                    .body(bytes);
+                    .body(pdfBytes);
         } catch (Exception e) {
-            log.error("Failed to download worksheet", e);
+            log.error("Failed to download PDF", e);
             return ResponseEntity.status(500).body(new byte[0]);
+        }
+    }
+
+    private byte[] generatePdf(Worksheet worksheet, List<WorksheetQuestion> questions) throws Exception {
+        PDDocument document = new PDDocument();
+        
+        try {
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+            
+            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            
+            float margin = 50;
+            float yPosition = page.getMediaBox().getHeight() - margin;
+            float leading = 15f;
+            
+            PDType0Font font;
+            try {
+                InputStream fontStream = new ClassPathResource("fonts/NanumGothic.ttf").getInputStream();
+                font = PDType0Font.load(document, fontStream);
+            } catch (Exception e) {
+                log.warn("Korean font not found, using fallback");
+                font = PDType0Font.load(document, this.getClass().getResourceAsStream("/fonts/NanumGothic.ttf"));
+            }
+            
+            contentStream.beginText();
+            contentStream.setFont(font, 18);
+            contentStream.newLineAtOffset(margin, yPosition);
+            contentStream.showText(worksheet.getTitle());
+            contentStream.endText();
+            
+            yPosition -= 30;
+            
+            if (worksheet.getDescription() != null && !worksheet.getDescription().isEmpty()) {
+                contentStream.beginText();
+                contentStream.setFont(font, 11);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText(worksheet.getDescription());
+                contentStream.endText();
+                yPosition -= 25;
+            }
+            
+            String categoryText = "카테고리: " + (worksheet.getCategory() != null ? worksheet.getCategory() : "기타");
+            contentStream.beginText();
+            contentStream.setFont(font, 10);
+            contentStream.newLineAtOffset(margin, yPosition);
+            contentStream.showText(categoryText);
+            contentStream.endText();
+            
+            yPosition -= 40;
+            
+            for (WorksheetQuestion q : questions) {
+                if (yPosition < margin + 150) {
+                    contentStream.close();
+                    page = new PDPage(PDRectangle.A4);
+                    document.addPage(page);
+                    contentStream = new PDPageContentStream(document, page);
+                    yPosition = page.getMediaBox().getHeight() - margin;
+                }
+                
+                String questionText = q.getQuestionNumber() + ". " + q.getQuestionText();
+                contentStream.beginText();
+                contentStream.setFont(font, 12);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText(questionText);
+                contentStream.endText();
+                
+                yPosition -= 25;
+                
+                if ("multiple_choice".equals(q.getQuestionType())) {
+                    contentStream.setFont(font, 11);
+                    
+                    if (q.getOptionA() != null) {
+                        contentStream.beginText();
+                        contentStream.newLineAtOffset(margin + 20, yPosition);
+                        contentStream.showText("1) " + q.getOptionA());
+                        contentStream.endText();
+                        yPosition -= leading;
+                    }
+                    if (q.getOptionB() != null) {
+                        contentStream.beginText();
+                        contentStream.newLineAtOffset(margin + 20, yPosition);
+                        contentStream.showText("2) " + q.getOptionB());
+                        contentStream.endText();
+                        yPosition -= leading;
+                    }
+                    if (q.getOptionC() != null) {
+                        contentStream.beginText();
+                        contentStream.newLineAtOffset(margin + 20, yPosition);
+                        contentStream.showText("3) " + q.getOptionC());
+                        contentStream.endText();
+                        yPosition -= leading;
+                    }
+                    if (q.getOptionD() != null) {
+                        contentStream.beginText();
+                        contentStream.newLineAtOffset(margin + 20, yPosition);
+                        contentStream.showText("4) " + q.getOptionD());
+                        contentStream.endText();
+                        yPosition -= leading;
+                    }
+                }
+                
+                yPosition -= 25;
+            }
+            
+            contentStream.close();
+            
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            document.save(baos);
+            return baos.toByteArray();
+            
+        } finally {
+            document.close();
         }
     }
 
