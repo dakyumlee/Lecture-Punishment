@@ -93,19 +93,23 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
     }
   }
 
-  void _viewPdf(String id) {
-    final url = '${Env.apiUrl}/worksheets/$id/pdf';
+  void _viewFile(String id, bool hasOriginalFile) {
+    final url = hasOriginalFile 
+      ? '${Env.apiUrl}/worksheets/$id/original'
+      : '${Env.apiUrl}/worksheets/$id/pdf';
     html.window.open(url, '_blank');
   }
 
-  void _downloadPdf(String id, String title) {
-    final url = '${Env.apiUrl}/worksheets/$id/download';
+  void _downloadFile(String id, String title, bool hasOriginalFile) {
+    final url = hasOriginalFile
+      ? '${Env.apiUrl}/worksheets/$id/original/download'
+      : '${Env.apiUrl}/worksheets/$id/download';
     html.AnchorElement(href: url)
-      ..setAttribute('download', '$title.pdf')
+      ..setAttribute('download', '$title')
       ..click();
     
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('PDF 다운로드 시작')),
+      SnackBar(content: Text('${hasOriginalFile ? "원본 파일" : "PDF"} 다운로드 시작')),
     );
   }
 
@@ -218,6 +222,8 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
     final description = worksheet['description'] ?? '';
     final totalQuestions = worksheet['questionCount'] ?? 0;
     final id = worksheet['id'] ?? '';
+    final hasOriginalFile = worksheet['hasOriginalFile'] ?? false;
+    final originalFileName = worksheet['originalFileName'];
 
     return Card(
       color: const Color(0xFF0D0D0D),
@@ -265,6 +271,18 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                   fontFamily: 'JoseonGulim',
                 ),
               ),
+              if (hasOriginalFile) ...[
+                const SizedBox(width: 12),
+                const Icon(Icons.attach_file, color: Color(0xFF736A63), size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  '원본',
+                  style: const TextStyle(
+                    color: Color(0xFF736A63),
+                    fontFamily: 'JoseonGulim',
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -290,6 +308,33 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                         fontFamily: 'JoseonGulim',
                         fontSize: 14,
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (hasOriginalFile && originalFileName != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF595048),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.insert_drive_file, color: Color(0xFFD9D4D2), size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            originalFileName,
+                            style: const TextStyle(
+                              color: Color(0xFFD9D4D2),
+                              fontFamily: 'JoseonGulim',
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -324,9 +369,12 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _viewPdf(id),
-                        icon: const Icon(Icons.visibility, size: 20),
-                        label: const Text('보기'),
+                        onPressed: () => _viewFile(id, hasOriginalFile),
+                        icon: Icon(
+                          hasOriginalFile ? Icons.description : Icons.picture_as_pdf, 
+                          size: 20
+                        ),
+                        label: Text(hasOriginalFile ? '원본 보기' : 'PDF 보기'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF736A63),
                           foregroundColor: const Color(0xFFD9D4D2),
@@ -344,7 +392,7 @@ class _WorksheetManageScreenState extends State<WorksheetManageScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _downloadPdf(id, title),
+                        onPressed: () => _downloadFile(id, title, hasOriginalFile),
                         icon: const Icon(Icons.download, size: 20),
                         label: const Text('다운로드'),
                         style: ElevatedButton.styleFrom(

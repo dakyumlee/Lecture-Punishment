@@ -3,6 +3,7 @@ package com.dungeon.heotaehoon.controller;
 import com.dungeon.heotaehoon.entity.Worksheet;
 import com.dungeon.heotaehoon.entity.WorksheetQuestion;
 import com.dungeon.heotaehoon.service.WorksheetService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -15,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -27,6 +29,7 @@ import java.util.*;
 public class WorksheetController {
 
     private final WorksheetService worksheetService;
+    private final ObjectMapper objectMapper;
 
     @GetMapping
     public ResponseEntity<List<Map<String, Object>>> getAllWorksheets() {
@@ -45,6 +48,8 @@ public class WorksheetController {
                 wsMap.put("category", ws.getCategory() != null ? ws.getCategory() : "기타");
                 wsMap.put("questionCount", questionCount);
                 wsMap.put("createdAt", ws.getCreatedAt());
+                wsMap.put("hasOriginalFile", ws.getOriginalFile() != null);
+                wsMap.put("originalFileName", ws.getOriginalFileName());
                 response.add(wsMap);
             }
             
@@ -55,20 +60,21 @@ public class WorksheetController {
         }
     }
 
-    @PostMapping
-    public ResponseEntity<Map<String, Object>> createWorksheet(@RequestBody Map<String, Object> request) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, Object>> createWorksheet(
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam("category") String category,
+            @RequestParam("questions") String questionsJson,
+            @RequestParam(value = "originalFile", required = false) MultipartFile originalFile) {
         try {
-            String title = (String) request.get("title");
-            String description = (String) request.get("description");
-            String category = (String) request.get("category");
-            
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> questions = (List<Map<String, Object>>) request.get("questions");
+            List<Map<String, Object>> questions = objectMapper.readValue(questionsJson, List.class);
             
-            log.info("Creating worksheet - Title: {}, Category: {}, Questions: {}", 
-                title, category, questions.size());
+            log.info("Creating worksheet - Title: {}, Category: {}, Questions: {}, Has File: {}", 
+                title, category, questions.size(), originalFile != null);
             
-            Worksheet worksheet = worksheetService.createWorksheet(title, description, category, questions);
+            Worksheet worksheet = worksheetService.createWorksheet(title, description, category, questions, originalFile);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -97,6 +103,8 @@ public class WorksheetController {
             response.put("description", worksheet.getDescription());
             response.put("category", worksheet.getCategory() != null ? worksheet.getCategory() : "기타");
             response.put("createdAt", worksheet.getCreatedAt());
+            response.put("hasOriginalFile", worksheet.getOriginalFile() != null);
+            response.put("originalFileName", worksheet.getOriginalFileName());
             
             List<Map<String, Object>> questionList = new ArrayList<>();
             for (WorksheetQuestion q : questions) {
@@ -151,25 +159,53 @@ public class WorksheetController {
         }
     }
 
-    @GetMapping("/{id}/view")
-    public ResponseEntity<byte[]> viewPdf(@PathVariable String id) {
+    @GetMapping("/{id}/original")
+    public ResponseEntity<byte[]> viewOriginalFile(@PathVariable String id) {
         try {
-            Worksheet worksheet = worksheetService.getWorksheetById(id);
-            List<WorksheetQuestion> questions = worksheetService.getQuestionsByWorksheetId(id);
-            
-            byte[] pdfBytes = generatePdf(worksheet, questions);
+            byte[] fileData = worksheetService.getOriginalFile(id);
+            String fileName = worksheetService.getOriginalFileName(id);
+            String fileType = worksheetService.getOriginalFileType(id);
             
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + worksheet.getTitle() + ".pdf\"");
-            headers.setContentLength(pdfBytes.length);
+            if (fileType != null) {
+                headers.setContentType(MediaType.parseMediaType(fileType));
+            } else {
+                headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            }
+            headers.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"");
+            headers.setContentLength(fileData.length);
             
             return ResponseEntity.ok()
                     .headers(headers)
-                    .body(pdfBytes);
+                    .body(fileData);
         } catch (Exception e) {
-            log.error("Failed to generate PDF view", e);
-            return ResponseEntity.status(500).body(new byte[0]);
+            log.error("Failed to view original file", e);
+            return ResponseEntity.status(404).body(new byte[0]);
+        }
+    }
+
+    @GetMapping("/{id}/original/download")
+    public ResponseEntity<byte[]> downloadOriginalFile(@PathVariable String id) {
+        try {
+            byte[] fileData = worksheetService.getOriginalFile(id);
+            String fileName = worksheetService.getOriginalFileName(id);
+            String fileType = worksheetService.getOriginalFileType(id);
+            
+            HttpHeaders headers = new HttpHeaders();
+            if (fileType != null) {
+                headers.setContentType(MediaType.parseMediaType(fileType));
+            } else {
+                headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            }
+            headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"");
+            headers.setContentLength(fileData.length);
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(fileData);
+        } catch (Exception e) {
+            log.error("Failed to download original file", e);
+            return ResponseEntity.status(404).body(new byte[0]);
         }
     }
 

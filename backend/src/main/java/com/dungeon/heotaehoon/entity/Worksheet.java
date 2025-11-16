@@ -28,6 +28,16 @@ public class Worksheet {
     @Column(name = "group_id")
     private String groupId;
 
+    @Lob
+    @Column(name = "original_file", columnDefinition = "BYTEA")
+    private byte[] originalFile;
+
+    @Column(name = "original_file_name")
+    private String originalFileName;
+
+    @Column(name = "original_file_type")
+    private String originalFileType;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

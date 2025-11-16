@@ -8,7 +8,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -40,17 +42,29 @@ public class WorksheetService {
     }
 
     @Transactional
-    public Worksheet createWorksheet(String title, String description, String category, List<Map<String, Object>> questions) {
+    public Worksheet createWorksheet(String title, String description, String category, List<Map<String, Object>> questions, MultipartFile originalFile) {
         log.info("Creating worksheet with {} questions", questions.size());
         
-        Worksheet worksheet = Worksheet.builder()
+        Worksheet.WorksheetBuilder worksheetBuilder = Worksheet.builder()
                 .title(title)
                 .description(description)
                 .category(category != null && !category.trim().isEmpty() ? category : "기타")
                 .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
+                .updatedAt(LocalDateTime.now());
         
+        if (originalFile != null && !originalFile.isEmpty()) {
+            try {
+                worksheetBuilder
+                    .originalFile(originalFile.getBytes())
+                    .originalFileName(originalFile.getOriginalFilename())
+                    .originalFileType(originalFile.getContentType());
+                log.info("Original file saved: {}", originalFile.getOriginalFilename());
+            } catch (IOException e) {
+                log.error("Failed to save original file", e);
+            }
+        }
+        
+        Worksheet worksheet = worksheetBuilder.build();
         worksheet = worksheetRepository.save(worksheet);
         log.info("Worksheet saved with ID: {}", worksheet.getId());
         
@@ -113,6 +127,24 @@ public class WorksheetService {
     @Transactional
     public void deleteQuestion(String questionId) {
         questionRepository.deleteById(questionId);
+    }
+
+    public byte[] getOriginalFile(String worksheetId) {
+        Worksheet worksheet = getWorksheetById(worksheetId);
+        if (worksheet.getOriginalFile() == null) {
+            throw new RuntimeException("원본 파일이 없습니다");
+        }
+        return worksheet.getOriginalFile();
+    }
+
+    public String getOriginalFileName(String worksheetId) {
+        Worksheet worksheet = getWorksheetById(worksheetId);
+        return worksheet.getOriginalFileName();
+    }
+
+    public String getOriginalFileType(String worksheetId) {
+        Worksheet worksheet = getWorksheetById(worksheetId);
+        return worksheet.getOriginalFileType();
     }
 
     private Integer getInteger(Map<String, Object> map, String key) {

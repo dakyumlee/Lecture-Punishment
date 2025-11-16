@@ -21,6 +21,9 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
   final List<Map<String, dynamic>> _questions = [];
   bool _isLoading = false;
   bool _isProcessing = false;
+  
+  List<int>? _originalFileBytes;
+  String? _originalFileName;
 
   Future<void> _saveWorksheet() async {
     if (!_formKey.currentState!.validate()) return;
@@ -33,6 +36,8 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
         _descriptionController.text,
         _categoryController.text,
         _questions,
+        fileBytes: _originalFileBytes,
+        fileName: _originalFileName,
       );
       
       if (mounted) {
@@ -63,6 +68,11 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
       setState(() => _isProcessing = true);
       
       try {
+        setState(() {
+          _originalFileBytes = result.files.single.bytes;
+          _originalFileName = result.files.single.name;
+        });
+        
         var request = http.MultipartRequest(
           'POST',
           Uri.parse('${Env.apiUrl}/ocr/extract'),
@@ -107,7 +117,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
             
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${extractedQuestions.length}개 문제가 추가되었습니다')),
+                SnackBar(content: Text('${extractedQuestions.length}개 문제가 추가되었습니다 (원본 파일 저장됨)')),
               );
             }
           }
@@ -137,6 +147,11 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
       setState(() => _isProcessing = true);
       
       try {
+        setState(() {
+          _originalFileBytes = result.files.single.bytes;
+          _originalFileName = result.files.single.name;
+        });
+        
         var request = http.MultipartRequest(
           'POST',
           Uri.parse('${Env.apiUrl}/ocr/extract-docx'),
@@ -181,7 +196,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
             
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${extractedQuestions.length}개 문제가 추가되었습니다')),
+                SnackBar(content: Text('${extractedQuestions.length}개 문제가 추가되었습니다 (원본 파일 저장됨)')),
               );
             }
           }
@@ -855,6 +870,27 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                   ),
                 ],
               ),
+              if (_originalFileName != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.attach_file, color: Color(0xFF736A63), size: 16),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '원본 파일: $_originalFileName',
+                          style: const TextStyle(
+                            color: Color(0xFF736A63),
+                            fontFamily: 'JoseonGulim',
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,
@@ -875,7 +911,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                     onPressed: _isProcessing ? null : _pickAndExtractOcr,
                     icon: const Icon(Icons.document_scanner, color: Color(0xFFD9D4D2)),
                     label: const Text(
-                      'OCR 추출',
+                      'PDF 추출',
                       style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -886,7 +922,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
                     onPressed: _isProcessing ? null : _pickAndImportDocx,
                     icon: const Icon(Icons.upload_file, color: Color(0xFFD9D4D2)),
                     label: const Text(
-                      'DOCX 업로드',
+                      'DOCX 추출',
                       style: TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
                     ),
                     style: ElevatedButton.styleFrom(

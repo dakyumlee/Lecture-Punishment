@@ -398,18 +398,37 @@ class ApiService {
     return jsonDecode(response.body) as List;
   }
 
-  static Future<Map<String, dynamic>> createWorksheet(String title, String description, String category, List<Map<String, dynamic>> questions) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/worksheets'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'title': title,
-        'description': description,
-        'category': category,
-        'questions': questions,
-      }),
-    );
+  static Future<Map<String, dynamic>> createWorksheet(
+    String title, 
+    String description, 
+    String category, 
+    List<Map<String, dynamic>> questions,
+    {List<int>? fileBytes, String? fileName}
+  ) async {
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/worksheets'));
+    
+    request.fields['title'] = title;
+    request.fields['description'] = description;
+    request.fields['category'] = category;
+    request.fields['questions'] = jsonEncode(questions);
+    
+    if (fileBytes != null && fileName != null) {
+      request.files.add(http.MultipartFile.fromBytes(
+        'originalFile',
+        fileBytes,
+        filename: fileName,
+      ));
+    }
+    
+    var streamedResponse = await request.send();
+    var response = await http.Response.fromStream(streamedResponse);
+    
+    if (response.statusCode != 200) {
+      throw Exception('문제지 생성 실패: ${response.statusCode}');
+    }
+    
     return jsonDecode(response.body);
+  }
   }
 
   static Future<Map<String, dynamic>> extractQuestionsFromPdf({
