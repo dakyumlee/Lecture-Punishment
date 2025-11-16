@@ -1,7 +1,7 @@
 import '../services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:html' as html;
-import 'admin/ocr_extract_screen.dart';
+import 'ocr_extract_screen.dart';
 import '../config/env.dart';
 import 'question_add_screen.dart';
 import 'worksheet_create_screen.dart';

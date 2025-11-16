@@ -12,6 +12,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _categoryController = TextEditingController();
   
   final List<Map<String, dynamic>> _questions = [];
   bool _isLoading = false;
@@ -26,7 +27,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
         _titleController.text,
         _descriptionController.text,
         _categoryController.text,
-        _confirmedQuestions,
+        _questions,
       );
       
       if (mounted) {
@@ -522,6 +523,21 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: _categoryController,
+                style: const TextStyle(color: Color(0xFFD9D4D2)),
+                decoration: const InputDecoration(
+                  labelText: '카테고리',
+                  labelStyle: TextStyle(color: Color(0xFF736A63), fontFamily: 'JoseonGulim'),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF595048)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
                 controller: _descriptionController,
                 style: const TextStyle(color: Color(0xFFD9D4D2)),
                 maxLines: 3,
@@ -593,6 +609,7 @@ class _WorksheetCreateScreenState extends State<WorksheetCreateScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 }
