@@ -170,11 +170,17 @@ public class WorksheetController {
                 .replaceAll("\\+", "%20");
             
             HttpHeaders headers = new HttpHeaders();
-            if (fileType != null) {
+            
+            if (fileType != null && !fileType.isEmpty()) {
                 headers.setContentType(MediaType.parseMediaType(fileType));
+            } else if (fileName != null && fileName.toLowerCase().endsWith(".pdf")) {
+                headers.setContentType(MediaType.APPLICATION_PDF);
+            } else if (fileName != null && fileName.toLowerCase().endsWith(".docx")) {
+                headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
             } else {
-                headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+                headers.setContentType(MediaType.APPLICATION_PDF);
             }
+            
             headers.set(HttpHeaders.CONTENT_DISPOSITION, 
                 "inline; filename*=UTF-8''" + encodedFileName);
             headers.setContentLength(fileData.length);
@@ -187,7 +193,6 @@ public class WorksheetController {
             return ResponseEntity.status(404).body(new byte[0]);
         }
     }
-
     @GetMapping("/{id}/original/download")
     public ResponseEntity<byte[]> downloadOriginalFile(@PathVariable String id) {
         try {
