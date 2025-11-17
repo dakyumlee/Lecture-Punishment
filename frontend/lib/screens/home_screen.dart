@@ -149,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => DungeonEntranceScreen(student: student),
+                            builder: (context) => DungeonScreen(student: student),
                           ),
                         );
                         _refreshStudent();

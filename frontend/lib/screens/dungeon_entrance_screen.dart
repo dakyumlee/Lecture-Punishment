@@ -242,14 +242,12 @@ class _DungeonEntranceScreenState extends State<DungeonEntranceScreen> {
   }
 
   void _enterDungeon() {
+  void _enterDungeon() {
     if (_entrance?['bossId'] != null) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => QuizScreen(
-            bossId: _entrance!['bossId'],
-            student: widget.student,
-          ),
+          builder: (context) => QuizScreen(),
         ),
       );
     } else {
