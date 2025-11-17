@@ -93,7 +93,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         context: context,
                         builder: (context) => const _CreateLessonDialog(),
                       );
-                      if (result == true) _loadStats();
+                      if (result == true) {
+                        _loadStats();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✅ 수업과 보스가 생성되었습니다!'),
+                              backgroundColor: Colors.green,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      }
                     },
                   ),
                   const SizedBox(height: 12),
@@ -529,6 +540,7 @@ class _CreateLessonDialogState extends State<_CreateLessonDialog> {
   List<dynamic> _groups = [];
   String? _selectedGroupId;
   bool _isLoading = true;
+  bool _isCreating = false;
 
   @override
   void initState() {
@@ -548,6 +560,43 @@ class _CreateLessonDialogState extends State<_CreateLessonDialog> {
     }
   }
 
+  Future<void> _createLesson() async {
+    if (titleController.text.isEmpty || subjectController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('수업 제목과 과목을 입력해주세요'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isCreating = true);
+
+    try {
+      await ApiService.createLesson(
+        title: titleController.text,
+        description: subjectController.text,
+        groupId: _selectedGroupId,
+      );
+      
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      setState(() => _isCreating = false);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('오류: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -558,99 +607,98 @@ class _CreateLessonDialogState extends State<_CreateLessonDialog> {
       ),
       content: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFFD9D4D2)))
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleController,
-                  style: const TextStyle(color: Color(0xFFD9D4D2)),
-                  decoration: const InputDecoration(
-                    labelText: '수업 제목',
-                    labelStyle: TextStyle(color: Color(0xFF736A63)),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF736A63)),
+          : _isCreating
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    CircularProgressIndicator(color: Color(0xFFD9D4D2)),
+                    SizedBox(height: 16),
+                    Text(
+                      '보스와 퀴즈를 생성 중...',
+                      style: TextStyle(color: Color(0xFFD9D4D2)),
                     ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: subjectController,
-                  style: const TextStyle(color: Color(0xFFD9D4D2)),
-                  decoration: const InputDecoration(
-                    labelText: '과목',
-                    labelStyle: TextStyle(color: Color(0xFF736A63)),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF736A63)),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: _selectedGroupId,
-                  dropdownColor: const Color(0xFF595048),
-                  style: const TextStyle(color: Color(0xFFD9D4D2)),
-                  decoration: const InputDecoration(
-                    labelText: '그룹 (선택사항)',
-                    labelStyle: TextStyle(color: Color(0xFF736A63)),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF736A63)),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                    ),
-                  ),
-                  items: [
-                    const DropdownMenuItem<String>(
-                      value: null,
-                      child: Text('전체 (그룹 없음)', style: TextStyle(color: Color(0xFF736A63))),
-                    ),
-                    ..._groups.map((group) {
-                      return DropdownMenuItem<String>(
-                        value: group['id'],
-                        child: Text(
-                          group['groupName'],
-                          style: const TextStyle(color: Color(0xFFD9D4D2)),
-                        ),
-                      );
-                    }).toList(),
                   ],
-                  onChanged: (value) {
-                    setState(() => _selectedGroupId = value);
-                  },
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      style: const TextStyle(color: Color(0xFFD9D4D2)),
+                      decoration: const InputDecoration(
+                        labelText: '수업 제목',
+                        labelStyle: TextStyle(color: Color(0xFF736A63)),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF736A63)),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: subjectController,
+                      style: const TextStyle(color: Color(0xFFD9D4D2)),
+                      decoration: const InputDecoration(
+                        labelText: '과목',
+                        labelStyle: TextStyle(color: Color(0xFF736A63)),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF736A63)),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _selectedGroupId,
+                      dropdownColor: const Color(0xFF595048),
+                      style: const TextStyle(color: Color(0xFFD9D4D2)),
+                      decoration: const InputDecoration(
+                        labelText: '그룹 (선택사항)',
+                        labelStyle: TextStyle(color: Color(0xFF736A63)),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF736A63)),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                        ),
+                      ),
+                      items: [
+                        const DropdownMenuItem<String>(
+                          value: null,
+                          child: Text('전체 (그룹 없음)', style: TextStyle(color: Color(0xFF736A63))),
+                        ),
+                        ..._groups.map((group) {
+                          return DropdownMenuItem<String>(
+                            value: group['id'],
+                            child: Text(
+                              group['groupName'],
+                              style: const TextStyle(color: Color(0xFFD9D4D2)),
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                      onChanged: (value) {
+                        setState(() => _selectedGroupId = value);
+                      },
+                    ),
+                  ],
                 ),
-              ],
-            ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
-        ),
-        TextButton(
-          onPressed: () async {
-            try {
-              await ApiService.createLesson(
-                title: titleController.text,
-                description: subjectController.text,
-                groupId: _selectedGroupId,
-              );
-              if (context.mounted) Navigator.pop(context, true);
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('오류: $e')),
-                );
-              }
-            }
-          },
-          child: const Text('생성', style: TextStyle(color: Color(0xFFD9D4D2))),
-        ),
-      ],
+      actions: _isCreating
+          ? []
+          : [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+              ),
+              TextButton(
+                onPressed: _createLesson,
+                child: const Text('생성', style: TextStyle(color: Color(0xFFD9D4D2))),
+              ),
+            ],
     );
   }
 
