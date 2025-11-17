@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/student.dart';
 import '../services/api_service.dart';
-import 'dungeon_entrance_screen.dart';
+import 'dungeon_screen.dart';
 import 'worksheet_list_screen.dart';
 import 'ranking_screen.dart';
 import 'shop_screen.dart';
