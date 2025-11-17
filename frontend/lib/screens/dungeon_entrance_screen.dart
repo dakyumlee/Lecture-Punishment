@@ -1,220 +1,261 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/student.dart';
-import '../providers/game_provider.dart';
-import 'dungeon_screen.dart';
+import '../services/api_service.dart';
+import 'quiz_screen.dart';
 
 class DungeonEntranceScreen extends StatefulWidget {
   final Student student;
-  const DungeonEntranceScreen({super.key, required this.student});
+  final String lessonId;
+  
+  const DungeonEntranceScreen({
+    super.key, 
+    required this.student,
+    required this.lessonId,
+  });
+
   @override
   State<DungeonEntranceScreen> createState() => _DungeonEntranceScreenState();
 }
 
 class _DungeonEntranceScreenState extends State<DungeonEntranceScreen> {
+  Map<String, dynamic>? _entrance;
   bool _isLoading = true;
-  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadDungeon();
+    _loadEntrance();
   }
 
-  Future<void> _loadDungeon() async {
+  Future<void> _loadEntrance() async {
     try {
-      final provider = Provider.of<GameProvider>(context, listen: false);
-      await provider.loadCurrentBoss();
-      setState(() => _isLoading = false);
-    } catch (e) {
+      final entrance = await ApiService.getDungeonEntrance(widget.lessonId);
       setState(() {
+        _entrance = entrance;
         _isLoading = false;
-        _errorMessage = e.toString();
       });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('던전 정보를 불러올 수 없습니다: $e')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF00010D),
-        appBar: AppBar(
-          title: const Text('던전 입장', style: TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2))),
-          backgroundColor: const Color(0xFF595048),
-          iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
+    return Scaffold(
+      backgroundColor: const Color(0xFF00010D),
+      appBar: AppBar(
+        title: const Text(
+          '던전 입장',
+          style: TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2)),
         ),
-        body: const Center(child: CircularProgressIndicator(color: Color(0xFFD9D4D2))),
-      );
-    }
-
-    if (_errorMessage != null) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF00010D),
-        appBar: AppBar(
-          title: const Text('던전 입장', style: TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2))),
-          backgroundColor: const Color(0xFF595048),
-          iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 80, color: Color(0xFF595048)),
-              const SizedBox(height: 24),
-              Text(
-                '던전을 불러올 수 없습니다',
-                style: const TextStyle(
-                  color: Color(0xFF736A63),
-                  fontFamily: 'JoseonGulim',
-                  fontSize: 18,
-                ),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF595048),
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                ),
-                child: const Text(
-                  '돌아가기',
-                  style: TextStyle(
-                    fontFamily: 'JoseonGulim',
-                    fontSize: 16,
-                    color: Color(0xFFD9D4D2),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Consumer<GameProvider>(
-      builder: (context, provider, _) {
-        if (provider.currentBoss == null) {
-          return Scaffold(
-            backgroundColor: const Color(0xFF00010D),
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    '오늘의 보스가 없습니다',
-                    style: TextStyle(
-                      color: Color(0xFFD9D4D2),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 20,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF595048),
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    ),
-                    child: const Text(
-                      '돌아가기',
-                      style: TextStyle(
-                        fontFamily: 'JoseonGulim',
-                        fontSize: 16,
-                        color: Color(0xFFD9D4D2),
+        backgroundColor: const Color(0xFF595048),
+        iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFD9D4D2)))
+          : _entrance == null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 80, color: Color(0xFF595048)),
+                      const SizedBox(height: 24),
+                      const Text(
+                        '던전 정보를 불러올 수 없습니다',
+                        style: TextStyle(
+                          color: Color(0xFF736A63),
+                          fontFamily: 'JoseonGulim',
+                          fontSize: 18,
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 32),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF595048),
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        ),
+                        child: const Text(
+                          '돌아가기',
+                          style: TextStyle(
+                            fontFamily: 'JoseonGulim',
+                            fontSize: 16,
+                            color: Color(0xFFD9D4D2),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        return Scaffold(
-          backgroundColor: const Color(0xFF00010D),
-          appBar: AppBar(
-            title: const Text('던전 입장', style: TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2))),
-            backgroundColor: const Color(0xFF595048),
-            iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
-          ),
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    '오늘의 보스',
-                    style: TextStyle(
-                      color: Color(0xFF736A63),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    provider.currentBoss!.name,
-                    style: const TextStyle(
-                      color: Color(0xFFD9D4D2),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF595048),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                )
+              : SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
                     child: Column(
                       children: [
-                        const Icon(Icons.warning_amber, size: 80, color: Color(0xFFD9D4D2)),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 40),
                         const Text(
-                          '안 외웠으면 뒤진다',
+                          '오늘의 보스',
                           style: TextStyle(
+                            color: Color(0xFF736A63),
+                            fontFamily: 'JoseonGulim',
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _entrance!['bossName'] ?? '보스',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
                             color: Color(0xFFD9D4D2),
                             fontFamily: 'JoseonGulim',
-                            fontSize: 24,
+                            fontSize: 32,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 32),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DungeonScreen(student: widget.student),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0D0D0D),
-                            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
+                        if (_entrance!['bossSubtitle'] != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            _entrance!['bossSubtitle'],
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Color(0xFF736A63),
+                              fontFamily: 'JoseonGulim',
+                              fontSize: 16,
+                            ),
                           ),
+                        ],
+                        const SizedBox(height: 48),
+                        Row(
+                          children: [
+                            ...List.generate(
+                              _entrance!['difficultyStars'] ?? 3,
+                              (index) => const Icon(
+                                Icons.star,
+                                color: Color(0xFFD9D4D2),
+                                size: 24,
+                              ),
+                            ),
+                          ],
+                          mainAxisAlignment: MainAxisAlignment.center,
+                        ),
+                        const SizedBox(height: 32),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF595048),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFD9D4D2), width: 2),
+                          ),
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF00010D),
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                child: const Icon(
+                                  Icons.warning_amber,
+                                  size: 60,
+                                  color: Color(0xFFD9D4D2),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              Text(
+                                _entrance!['instructorName'] ?? '허태훈',
+                                style: const TextStyle(
+                                  color: Color(0xFF736A63),
+                                  fontFamily: 'JoseonGulim',
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                '"${_entrance!['entranceDialogue'] ?? '안 외웠으면 뒤진다'}"',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Color(0xFFD9D4D2),
+                                  fontFamily: 'JoseonGulim',
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => _enterDungeon(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0D0D0D),
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: const BorderSide(color: Color(0xFFD9D4D2), width: 2),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.logout, color: Color(0xFFD9D4D2)),
+                                SizedBox(width: 12),
+                                Text(
+                                  '던전 입장',
+                                  style: TextStyle(
+                                    fontFamily: 'JoseonGulim',
+                                    fontSize: 20,
+                                    color: Color(0xFFD9D4D2),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
                           child: const Text(
-                            '입장',
+                            '돌아가기',
                             style: TextStyle(
                               fontFamily: 'JoseonGulim',
-                              fontSize: 20,
-                              color: Color(0xFFD9D4D2),
-                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Color(0xFF736A63),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+                ),
     );
+  }
+
+  void _enterDungeon() {
+    if (_entrance?['bossId'] != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => QuizScreen(
+            bossId: _entrance!['bossId'],
+            student: widget.student,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('아직 준비된 퀴즈가 없습니다')),
+      );
+    }
   }
 }

@@ -34,7 +34,7 @@ public class AiQuizGenerationService {
         Boss boss = bossRepository.findById(bossId)
                 .orElseThrow(() -> new RuntimeException("Boss not found"));
         
-        log.info("Generating {} quizzes for boss: {} on topic: {}", count, boss.getName(), topic);
+        log.info("Generating {} quizzes for boss: {} on topic: {}", count, boss.getBossName(), topic);
         
         String prompt = String.format(
             "당신은 '%s' 보스입니다. '%s' 주제로 학생들을 테스트할 객관식 문제 %d개를 생성하세요.\n\n" +
@@ -51,7 +51,7 @@ public class AiQuizGenerationService {
             "}\n\n" +
             "난이도는 1(쉬움)~5(어려움)로 설정하세요.\n" +
             "JSON 배열로 %d개의 문제를 반환하세요.",
-            boss.getName(), topic, count, count
+            boss.getBossName(), topic, count, count
         );
         
         try {

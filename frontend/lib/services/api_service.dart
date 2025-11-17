@@ -442,7 +442,7 @@ class ApiService {
     
     return jsonDecode(response.body);
   }
-  
+
   static Future<Map<String, dynamic>> extractQuestionsFromPdf({
     required List<int> fileBytes,
     required String fileName,
@@ -476,7 +476,6 @@ class ApiService {
     }
     return jsonDecode(response.body);
   }
-}
 
   static Future<List<dynamic>> getAvailableDungeons(String studentId) async {
     final response = await http.get(Uri.parse('$baseUrl/dungeons/student/$studentId'));
@@ -487,3 +486,4 @@ class ApiService {
     final response = await http.get(Uri.parse('$baseUrl/dungeons/lesson/$lessonId/entrance'));
     return jsonDecode(response.body);
   }
+}
