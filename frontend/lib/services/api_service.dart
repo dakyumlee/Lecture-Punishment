@@ -396,9 +396,9 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<Map<String, String>> getRandomRage() async {
+  static Future<Map<String, dynamic>> getRandomRage() async {
     final response = await http.get(Uri.parse('$baseUrl/game/rage/random'));
-    return Map<String, String>.from(jsonDecode(response.body));
+    return Map<String, dynamic>.from(jsonDecode(response.body));
   }
 
   static Future<Student> getStudentByUsername(String username) async {
