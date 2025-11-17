@@ -1,11 +1,7 @@
 package com.dungeon.heotaehoon.config;
 
-import com.dungeon.heotaehoon.entity.Instructor;
-import com.dungeon.heotaehoon.entity.ShopItem;
-import com.dungeon.heotaehoon.entity.MentalRecoveryMission;
-import com.dungeon.heotaehoon.repository.InstructorRepository;
-import com.dungeon.heotaehoon.repository.ShopItemRepository;
-import com.dungeon.heotaehoon.repository.MentalRecoveryMissionRepository;
+import com.dungeon.heotaehoon.entity.*;
+import com.dungeon.heotaehoon.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,6 +14,7 @@ public class DataInitializer implements CommandLineRunner {
     private final ShopItemRepository shopItemRepository;
     private final InstructorRepository instructorRepository;
     private final MentalRecoveryMissionRepository mentalRecoveryMissionRepository;
+    private final RaidBossRepository raidBossRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -27,6 +24,8 @@ public class DataInitializer implements CommandLineRunner {
         createShopItems();
         mentalRecoveryMissionRepository.deleteAll();
         createMentalRecoveryMissions();
+        raidBossRepository.deleteAll();
+        createRaidBosses();
     }
 
     private void initializeInstructor() {
@@ -52,6 +51,55 @@ public class DataInitializer implements CommandLineRunner {
         );
         System.out.println("   아이디: hth422");
         System.out.println("   비밀번호: password1234!");
+    }
+
+    private void createRaidBosses() {
+        raidBossRepository.save(RaidBoss.builder()
+            .bossName("최종 보스: 허태훈의 분노")
+            .description("모든 던전을 정복한 자만이 도전할 수 있는 최강의 보스")
+            .totalHp(10000)
+            .currentHp(10000)
+            .minParticipants(3)
+            .timeLimitMinutes(30)
+            .damagePerCorrect(200)
+            .rewardExp(100)
+            .rewardPoints(500)
+            .penaltyDescription("실패 시 전원 과제 3배")
+            .isActive(true)
+            .isDefeated(false)
+            .build());
+
+        raidBossRepository.save(RaidBoss.builder()
+            .bossName("중간 보스: 지식의 수호자")
+            .description("지식을 시험하는 중간 난이도 레이드")
+            .totalHp(5000)
+            .currentHp(5000)
+            .minParticipants(2)
+            .timeLimitMinutes(20)
+            .damagePerCorrect(150)
+            .rewardExp(50)
+            .rewardPoints(250)
+            .penaltyDescription("실패 시 전원 과제 2배")
+            .isActive(true)
+            .isDefeated(false)
+            .build());
+
+        raidBossRepository.save(RaidBoss.builder()
+            .bossName("입문 보스: 협동의 시작")
+            .description("레이드를 처음 시작하는 초보자용")
+            .totalHp(3000)
+            .currentHp(3000)
+            .minParticipants(2)
+            .timeLimitMinutes(15)
+            .damagePerCorrect(100)
+            .rewardExp(30)
+            .rewardPoints(150)
+            .penaltyDescription("실패 시 전원 복습 필수")
+            .isActive(true)
+            .isDefeated(false)
+            .build());
+
+        System.out.println("✅ 레이드 보스 초기화 완료!");
     }
 
     private void createMentalRecoveryMissions() {
