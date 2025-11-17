@@ -67,10 +67,42 @@ class ApiService {
     return data.map((json) => Quiz.fromJson(json)).toList();
   }
 
+  static Future<Boss> getBoss(String bossId) async {
+    final response = await http.get(Uri.parse('$baseUrl/bosses/$bossId'));
+    return Boss.fromJson(jsonDecode(response.body));
+  }
+
   static Future<List<Boss>> getBosses() async {
     final response = await http.get(Uri.parse('$baseUrl/bosses'));
     final data = jsonDecode(response.body) as List;
     return data.map((json) => Boss.fromJson(json)).toList();
+  }
+
+  static Future<Map<String, dynamic>> addStudentExp(String studentId, int exp) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/students/$studentId/exp'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'exp': exp}),
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Student> updateStudentStats(String studentId, bool isCorrect) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/students/$studentId/stats'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'isCorrect': isCorrect}),
+    );
+    return Student.fromJson(jsonDecode(response.body));
+  }
+
+  static Future<Map<String, dynamic>> updateBossHp(String bossId, int damage) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/bosses/$bossId/hp'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'damage': damage}),
+    );
+    return jsonDecode(response.body);
   }
 
   static Future<List<Worksheet>> getWorksheets() async {

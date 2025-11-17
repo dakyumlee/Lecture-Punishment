@@ -88,8 +88,8 @@ public class StudentService {
         data.put("level", student.getLevel());
         data.put("exp", student.getExp());
         data.put("points", student.getPoints());
-        data.put("totalCorrect", 0);
-        data.put("totalWrong", 0);
+        data.put("totalCorrect", student.getTotalCorrect());
+        data.put("totalWrong", student.getTotalWrong());
         return data;
     }
 
@@ -130,6 +130,53 @@ public class StudentService {
         return studentRepository.save(student);
     }
 
+    @Transactional
+    public Map<String, Object> addExp(String studentId, int expAmount) {
+        Student student = getStudentById(studentId);
+        
+        int oldLevel = student.getLevel();
+        int oldExp = student.getExp();
+        
+        student.setExp(oldExp + expAmount);
+        
+        int newLevel = oldLevel;
+        boolean leveledUp = false;
+        
+        while (student.getExp() >= 100) {
+            student.setExp(student.getExp() - 100);
+            newLevel++;
+            leveledUp = true;
+        }
+        
+        if (leveledUp) {
+            student.setLevel(newLevel);
+        }
+        
+        studentRepository.save(student);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("student", student);
+        result.put("leveledUp", leveledUp);
+        result.put("oldLevel", oldLevel);
+        result.put("newLevel", newLevel);
+        result.put("expGained", expAmount);
+        
+        return result;
+    }
+
+    @Transactional
+    public Student updateQuizStats(String studentId, boolean isCorrect) {
+        Student student = getStudentById(studentId);
+        
+        if (isCorrect) {
+            student.setTotalCorrect(student.getTotalCorrect() + 1);
+        } else {
+            student.setTotalWrong(student.getTotalWrong() + 1);
+        }
+        
+        return studentRepository.save(student);
+    }
+
     public List<Student> getTopStudents() {
         return studentRepository.findTop10ByOrderByExpDesc();
     }
@@ -138,11 +185,16 @@ public class StudentService {
         Student student = getStudentById(studentId);
         Map<String, Object> stats = new HashMap<>();
 
+        int totalQuizzes = student.getTotalCorrect() + student.getTotalWrong();
+        double accuracy = totalQuizzes > 0 
+            ? (student.getTotalCorrect() * 100.0 / totalQuizzes) 
+            : 0.0;
+
         stats.put("level", student.getLevel());
         stats.put("exp", student.getExp());
-        stats.put("totalCorrect", 0);
-        stats.put("totalWrong", 0);
-        stats.put("accuracy", 0.0);
+        stats.put("totalCorrect", student.getTotalCorrect());
+        stats.put("totalWrong", student.getTotalWrong());
+        stats.put("accuracy", Math.round(accuracy * 10.0) / 10.0);
         stats.put("mentalGauge", 100);
         stats.put("points", student.getPoints());
 

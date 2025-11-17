@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/quiz.dart';
 import '../models/student.dart';
+import '../models/boss.dart';
 import '../services/api_service.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -13,22 +14,37 @@ class QuizScreen extends StatefulWidget {
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
-class _QuizScreenState extends State<QuizScreen> {
+class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateMixin {
   List<Quiz> _quizzes = [];
+  Boss? _boss;
+  Student? _student;
   bool _isLoading = true;
   int currentQuestionIndex = 0;
   String? selectedAnswer;
   bool showResult = false;
   bool isCorrect = false;
   String? rageMessage;
+  int combo = 0;
+  late AnimationController _shakeController;
 
   @override
   void initState() {
     super.initState();
-    _loadQuizzes();
+    _student = widget.student;
+    _shakeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _loadData();
   }
 
-  Future<void> _loadQuizzes() async {
+  @override
+  void dispose() {
+    _shakeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData() async {
     if (widget.bossId == null) {
       setState(() => _isLoading = false);
       return;
@@ -36,15 +52,18 @@ class _QuizScreenState extends State<QuizScreen> {
     
     try {
       final quizzes = await ApiService.getQuizzes(widget.bossId!);
+      final boss = await ApiService.getBoss(widget.bossId!);
+      
       setState(() {
         _quizzes = quizzes;
+        _boss = boss;
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('퀴즈를 불러올 수 없습니다: $e')),
+          SnackBar(content: Text('데이터를 불러올 수 없습니다: $e')),
         );
       }
     }
@@ -56,7 +75,7 @@ class _QuizScreenState extends State<QuizScreen> {
       backgroundColor: const Color(0xFF00010D),
       appBar: AppBar(
         title: const Text(
-          '퀴즈',
+          '퀴즈 배틀',
           style: TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2)),
         ),
         backgroundColor: const Color(0xFF595048),
@@ -65,39 +84,7 @@ class _QuizScreenState extends State<QuizScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFFD9D4D2)))
           : _quizzes.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.quiz, size: 80, color: Color(0xFF595048)),
-                      const SizedBox(height: 24),
-                      const Text(
-                        '아직 준비된 퀴즈가 없습니다',
-                        style: TextStyle(
-                          color: Color(0xFF736A63),
-                          fontFamily: 'JoseonGulim',
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF595048),
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                        ),
-                        child: const Text(
-                          '돌아가기',
-                          style: TextStyle(
-                            fontFamily: 'JoseonGulim',
-                            fontSize: 16,
-                            color: Color(0xFFD9D4D2),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
+              ? _buildEmptyState()
               : SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -105,6 +92,10 @@ class _QuizScreenState extends State<QuizScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _buildHeader(),
+                        const SizedBox(height: 12),
+                        if (_boss != null) _buildBossHpBar(),
+                        const SizedBox(height: 12),
+                        if (combo >= 3) _buildComboIndicator(),
                         const SizedBox(height: 20),
                         _buildQuestionCard(_quizzes[currentQuestionIndex]),
                         const SizedBox(height: 30),
@@ -120,6 +111,42 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.quiz, size: 80, color: Color(0xFF595048)),
+          const SizedBox(height: 24),
+          const Text(
+            '아직 준비된 퀴즈가 없습니다',
+            style: TextStyle(
+              color: Color(0xFF736A63),
+              fontFamily: 'JoseonGulim',
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF595048),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            ),
+            child: const Text(
+              '돌아가기',
+              style: TextStyle(
+                fontFamily: 'JoseonGulim',
+                fontSize: 16,
+                color: Color(0xFFD9D4D2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -130,28 +157,44 @@ class _QuizScreenState extends State<QuizScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '문제 ${currentQuestionIndex + 1}/${_quizzes.length}',
-            style: const TextStyle(
-              color: Color(0xFFD9D4D2),
-              fontSize: 24,
-              fontFamily: 'JoseonGulim',
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '문제 ${currentQuestionIndex + 1}/${_quizzes.length}',
+                style: const TextStyle(
+                  color: Color(0xFFD9D4D2),
+                  fontSize: 24,
+                  fontFamily: 'JoseonGulim',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (combo > 0)
+                Text(
+                  '🔥 $combo 콤보!',
+                  style: const TextStyle(
+                    color: Color(0xFFD9D4D2),
+                    fontSize: 16,
+                    fontFamily: 'JoseonGulim',
+                  ),
+                ),
+            ],
           ),
-          if (widget.student != null)
+          if (_student != null)
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  'Lv.${widget.student!.level}',
+                  'Lv.${_student!.level}',
                   style: const TextStyle(
                     color: Color(0xFFD9D4D2),
                     fontSize: 20,
                     fontFamily: 'JoseonGulim',
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  'EXP: ${widget.student!.exp}',
+                  'EXP: ${_student!.exp}/100',
                   style: const TextStyle(
                     color: Color(0xFF736A63),
                     fontSize: 16,
@@ -165,21 +208,120 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
-  Widget _buildQuestionCard(Quiz quiz) {
+  Widget _buildBossHpBar() {
+    double hpPercent = _boss!.currentHp / _boss!.totalHp;
+    
     return Container(
-      padding: const EdgeInsets.all(30),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D0D),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFF595048), width: 2),
       ),
-      child: Text(
-        quiz.question,
-        style: const TextStyle(
-          color: Color(0xFFD9D4D2),
-          fontSize: 22,
-          height: 1.5,
-          fontFamily: 'JoseonGulim',
+      child: Column(
+        children: [
+          Text(
+            _boss!.bossName,
+            style: const TextStyle(
+              color: Color(0xFFD9D4D2),
+              fontSize: 18,
+              fontFamily: 'JoseonGulim',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Stack(
+            children: [
+              Container(
+                height: 24,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF595048),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                height: 24,
+                width: MediaQuery.of(context).size.width * 0.8 * hpPercent,
+                decoration: BoxDecoration(
+                  color: hpPercent > 0.5 ? Colors.red : Colors.orange,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              Container(
+                height: 24,
+                alignment: Alignment.center,
+                child: Text(
+                  '${_boss!.currentHp} / ${_boss!.totalHp}',
+                  style: const TextStyle(
+                    color: Color(0xFFD9D4D2),
+                    fontSize: 12,
+                    fontFamily: 'JoseonGulim',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComboIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF736A63), Color(0xFF595048)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            '🎉 허태훈의 감탄! 잘하고 있어! 🎉',
+            style: TextStyle(
+              color: Color(0xFFD9D4D2),
+              fontSize: 18,
+              fontFamily: 'JoseonGulim',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestionCard(Quiz quiz) {
+    return AnimatedBuilder(
+      animation: _shakeController,
+      builder: (context, child) {
+        double shake = 0;
+        if (_shakeController.isAnimating) {
+          shake = Math.sin(_shakeController.value * 3.14159 * 4) * 10;
+        }
+        return Transform.translate(
+          offset: Offset(shake, 0),
+          child: child,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(30),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D0D0D),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF595048), width: 2),
+        ),
+        child: Text(
+          quiz.question,
+          style: const TextStyle(
+            color: Color(0xFFD9D4D2),
+            fontSize: 22,
+            height: 1.5,
+            fontFamily: 'JoseonGulim',
+          ),
         ),
       ),
     );
@@ -285,12 +427,43 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Future<void> _submitAnswer(Quiz quiz) async {
+    if (_student == null || widget.bossId == null) return;
+    
     try {
       bool correct = selectedAnswer == quiz.correctAnswer;
       
-      if (!correct) {
+      if (correct) {
+        combo++;
+        
+        final expResult = await ApiService.addStudentExp(_student!.id, 10);
+        await ApiService.updateStudentStats(_student!.id, true);
+        
+        if (_boss != null) {
+          final bossResult = await ApiService.updateBossHp(widget.bossId!, 200);
+          setState(() {
+            _boss!.currentHp = bossResult['currentHp'];
+            _boss!.isDefeated = bossResult['isDefeated'];
+          });
+          
+          if (_boss!.isDefeated) {
+            _showBossDefeatedDialog();
+          }
+        }
+        
+        setState(() {
+          _student!.exp = expResult['student']['exp'];
+          _student!.level = expResult['student']['level'];
+        });
+        
+        if (expResult['leveledUp']) {
+          _showLevelUpDialog(expResult['oldLevel'], expResult['newLevel']);
+        }
+      } else {
+        combo = 0;
+        await ApiService.updateStudentStats(_student!.id, false);
         final rage = await ApiService.getRandomRage();
         rageMessage = rage['message'];
+        _shakeController.forward(from: 0);
       }
       
       setState(() {
@@ -304,6 +477,111 @@ class _QuizScreenState extends State<QuizScreen> {
         );
       }
     }
+  }
+
+  void _showLevelUpDialog(int oldLevel, int newLevel) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF595048),
+        title: const Text(
+          '🎉 레벨 업! 🎉',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFFD9D4D2),
+            fontFamily: 'JoseonGulim',
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Lv.$oldLevel → Lv.$newLevel',
+              style: const TextStyle(
+                color: Color(0xFFD9D4D2),
+                fontFamily: 'JoseonGulim',
+                fontSize: 24,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '축하합니다!\n더욱 강해졌습니다!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF736A63),
+                fontFamily: 'JoseonGulim',
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              '확인',
+              style: TextStyle(color: Color(0xFFD9D4D2), fontSize: 18),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBossDefeatedDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF595048),
+        title: const Text(
+          '⚔️ 보스 처치! ⚔️',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFFD9D4D2),
+            fontFamily: 'JoseonGulim',
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${_boss!.bossName}\n격파!',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFFD9D4D2),
+                fontFamily: 'JoseonGulim',
+                fontSize: 20,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '🎉 훌륭합니다! 🎉',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF736A63),
+                fontFamily: 'JoseonGulim',
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              '확인',
+              style: TextStyle(color: Color(0xFFD9D4D2), fontSize: 18),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildResultMessage() {
@@ -320,7 +598,7 @@ class _QuizScreenState extends State<QuizScreen> {
       child: Column(
         children: [
           Text(
-            isCorrect ? '정답!' : '오답!',
+            isCorrect ? '✅ 정답!' : '❌ 오답!',
             style: const TextStyle(
               color: Color(0xFFD9D4D2),
               fontSize: 32,
@@ -331,15 +609,28 @@ class _QuizScreenState extends State<QuizScreen> {
           const SizedBox(height: 20),
           Text(
             isCorrect
-                ? '잘했어! 계속 가자!'
+                ? combo >= 3 
+                    ? '완벽해! 이 기세로 계속 가자!'
+                    : '잘했어! 계속 가자!'
                 : (rageMessage ?? '틀렸어! 복습 좀 해라!'),
             style: const TextStyle(
               color: Color(0xFFD9D4D2),
-              fontSize: 24,
+              fontSize: 20,
               fontFamily: 'JoseonGulim',
             ),
             textAlign: TextAlign.center,
           ),
+          if (isCorrect) ...[
+            const SizedBox(height: 16),
+            const Text(
+              '💰 EXP +10',
+              style: TextStyle(
+                color: Color(0xFF736A63),
+                fontSize: 16,
+                fontFamily: 'JoseonGulim',
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -351,7 +642,7 @@ class _QuizScreenState extends State<QuizScreen> {
     return ElevatedButton(
       onPressed: () {
         if (isLastQuestion) {
-          Navigator.pop(context);
+          _showFinalResults();
         } else {
           setState(() {
             currentQuestionIndex++;
@@ -369,7 +660,7 @@ class _QuizScreenState extends State<QuizScreen> {
         ),
       ),
       child: Text(
-        isLastQuestion ? '완료' : '다음 문제',
+        isLastQuestion ? '결과 확인' : '다음 문제',
         style: const TextStyle(
           color: Color(0xFFD9D4D2),
           fontSize: 24,
@@ -379,4 +670,62 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
     );
   }
+
+  void _showFinalResults() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF595048),
+        title: const Text(
+          '🎊 퀴즈 완료! 🎊',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFFD9D4D2),
+            fontFamily: 'JoseonGulim',
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '총 ${_quizzes.length}문제 완료!',
+              style: const TextStyle(
+                color: Color(0xFFD9D4D2),
+                fontFamily: 'JoseonGulim',
+                fontSize: 20,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (_student != null)
+              Text(
+                '현재 레벨: Lv.${_student!.level}\nEXP: ${_student!.exp}/100',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF736A63),
+                  fontFamily: 'JoseonGulim',
+                  fontSize: 16,
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text(
+              '확인',
+              style: TextStyle(color: Color(0xFFD9D4D2), fontSize: 18),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+import 'dart:math' as Math;

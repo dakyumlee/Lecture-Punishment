@@ -72,6 +72,24 @@ public class StudentController {
         ));
     }
 
+    @PostMapping("/{studentId}/exp")
+    public ResponseEntity<Map<String, Object>> addExp(
+            @PathVariable String studentId,
+            @RequestBody Map<String, Integer> request) {
+        Integer expAmount = request.get("exp");
+        Map<String, Object> result = studentService.addExp(studentId, expAmount != null ? expAmount : 10);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/{studentId}/stats")
+    public ResponseEntity<Student> updateStats(
+            @PathVariable String studentId,
+            @RequestBody Map<String, Boolean> request) {
+        Boolean isCorrect = request.get("isCorrect");
+        Student student = studentService.updateQuizStats(studentId, isCorrect != null && isCorrect);
+        return ResponseEntity.ok(student);
+    }
+
     @GetMapping("/{studentId}/stats")
     public ResponseEntity<Map<String, Object>> getStudentStats(@PathVariable String studentId) {
         return ResponseEntity.ok(studentService.getStudentStats(studentId));
