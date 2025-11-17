@@ -128,15 +128,20 @@ class ApiService {
     required String description,
     String? groupId,
   }) async {
-    await http.post(
+    final response = await http.post(
       Uri.parse('$baseUrl/admin/lessons'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'title': title, 
         'description': description,
+        'subject': description,
         'groupId': groupId,
       }),
     );
+    
+    if (response.statusCode != 200) {
+      throw Exception('수업 생성 실패: ${response.body}');
+    }
   }
 
   static Future<List<dynamic>> getAdminLessons() async {
