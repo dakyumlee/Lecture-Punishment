@@ -195,12 +195,11 @@ public class StudentService {
         stats.put("totalCorrect", student.getTotalCorrect());
         stats.put("totalWrong", student.getTotalWrong());
         stats.put("accuracy", Math.round(accuracy * 10.0) / 10.0);
-        stats.put("mentalGauge", 100);
+        stats.put("mentalGauge", student.getMentalGauge());
         stats.put("points", student.getPoints());
 
         return stats;
     }
-}
 
     @Transactional
     public Student updateMentalGauge(String studentId, int amount) {
