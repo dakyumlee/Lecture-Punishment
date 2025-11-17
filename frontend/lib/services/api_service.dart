@@ -477,3 +477,13 @@ class ApiService {
     return jsonDecode(response.body);
   }
 }
+
+  static Future<List<dynamic>> getAvailableDungeons(String studentId) async {
+    final response = await http.get(Uri.parse('$baseUrl/dungeons/student/$studentId'));
+    return jsonDecode(response.body) as List;
+  }
+
+  static Future<Map<String, dynamic>> getDungeonEntrance(String lessonId) async {
+    final response = await http.get(Uri.parse('$baseUrl/dungeons/lesson/$lessonId/entrance'));
+    return jsonDecode(response.body);
+  }
