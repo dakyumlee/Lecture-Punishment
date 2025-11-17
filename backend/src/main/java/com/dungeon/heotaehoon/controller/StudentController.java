@@ -2,6 +2,7 @@ package com.dungeon.heotaehoon.controller;
 
 import com.dungeon.heotaehoon.entity.Student;
 import com.dungeon.heotaehoon.service.StudentService;
+import com.dungeon.heotaehoon.service.InstructorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import java.util.Map;
 public class StudentController {
 
     private final StudentService studentService;
+    private final InstructorService instructorService;
 
     @GetMapping("/{studentId}")
     public ResponseEntity<Student> getStudent(@PathVariable String studentId) {
@@ -92,6 +94,10 @@ public class StudentController {
         if (pointsEarned > 0) {
             student.setPoints(student.getPoints() + pointsEarned);
             studentService.updateProfile(studentId, null, null, null, null);
+            
+            instructorService.addInstructorExp(1);
+        } else {
+            instructorService.addRage(5);
         }
         
         Map<String, Object> result = Map.of(

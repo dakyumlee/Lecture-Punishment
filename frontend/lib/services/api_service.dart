@@ -524,3 +524,32 @@ class ApiService {
     return jsonDecode(response.body);
   }
 }
+
+  static Future<Map<String, dynamic>> getInstructor() async {
+    final response = await http.get(Uri.parse('$baseUrl/instructor'));
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> getInstructorStats() async {
+    final response = await http.get(Uri.parse('$baseUrl/instructor/stats'));
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> addInstructorExp(int exp) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/instructor/exp'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'exp': exp}),
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> addInstructorRage(int rage) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/instructor/rage/add'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'rage': rage}),
+    );
+    return jsonDecode(response.body);
+  }
+}
