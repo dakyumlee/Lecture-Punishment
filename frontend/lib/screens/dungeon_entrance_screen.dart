@@ -242,18 +242,11 @@ class _DungeonEntranceScreenState extends State<DungeonEntranceScreen> {
   }
 
   void _enterDungeon() {
-  void _enterDungeon() {
-    if (_entrance?['bossId'] != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => QuizScreen(),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('아직 준비된 퀴즈가 없습니다')),
-      );
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QuizScreen(),
+      ),
+    );
   }
 }
