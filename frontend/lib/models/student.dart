@@ -2,8 +2,8 @@ class Student {
   final String id;
   final String username;
   final String displayName;
-  final int exp;
-  final int level;
+  int exp;
+  int level;
   final int points;
   final bool isProfileComplete;
   final int? totalCorrect;

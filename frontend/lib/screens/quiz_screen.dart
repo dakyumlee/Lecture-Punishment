@@ -1,3 +1,4 @@
+import 'dart:math' as Math;
 import 'package:flutter/material.dart';
 import '../models/quiz.dart';
 import '../models/student.dart';
@@ -209,7 +210,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildBossHpBar() {
-    double hpPercent = _boss!.currentHp / _boss!.totalHp;
+    double hpPercent = _boss!.hpCurrent / _boss!.hpTotal;
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -221,7 +222,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
       child: Column(
         children: [
           Text(
-            _boss!.bossName,
+            _boss!.name,
             style: const TextStyle(
               color: Color(0xFFD9D4D2),
               fontSize: 18,
@@ -252,7 +253,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                 height: 24,
                 alignment: Alignment.center,
                 child: Text(
-                  '${_boss!.currentHp} / ${_boss!.totalHp}',
+                  '${_boss!.hpCurrent} / ${_boss!.hpTotal}',
                   style: const TextStyle(
                     color: Color(0xFFD9D4D2),
                     fontSize: 12,
@@ -441,7 +442,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
         if (_boss != null) {
           final bossResult = await ApiService.updateBossHp(widget.bossId!, 200);
           setState(() {
-            _boss!.currentHp = bossResult['currentHp'];
+            _boss!.hpCurrent = bossResult['currentHp'];
             _boss!.isDefeated = bossResult['isDefeated'];
           });
           
@@ -551,7 +552,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '${_boss!.bossName}\n격파!',
+              '${_boss!.name}\n격파!',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Color(0xFFD9D4D2),
@@ -727,5 +728,3 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
     );
   }
 }
-
-import 'dart:math' as Math;
