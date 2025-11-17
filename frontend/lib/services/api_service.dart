@@ -523,7 +523,6 @@ class ApiService {
     final response = await http.get(Uri.parse('$baseUrl/dungeons/lesson/$lessonId/entrance'));
     return jsonDecode(response.body);
   }
-}
 
   static Future<Map<String, dynamic>> getInstructor() async {
     final response = await http.get(Uri.parse('$baseUrl/instructor'));
