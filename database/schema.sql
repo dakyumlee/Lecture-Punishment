@@ -54,7 +54,7 @@ CREATE TABLE lessons (
 
 CREATE TABLE bosses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    lesson_id UUID REFERENCES lessons(id),
+    lesson_id UUID REFERENCES lessons(id) ON DELETE CASCADE,
     boss_name VARCHAR(100) NOT NULL,
     boss_subtitle VARCHAR(200),
     total_hp INTEGER DEFAULT 1000,
@@ -66,8 +66,8 @@ CREATE TABLE bosses (
 
 CREATE TABLE quizzes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    lesson_id UUID REFERENCES lessons(id),
-    boss_id UUID REFERENCES bosses(id),
+    lesson_id UUID REFERENCES lessons(id) ON DELETE CASCADE,
+    boss_id UUID REFERENCES bosses(id) ON DELETE CASCADE,
     question_text TEXT NOT NULL,
     option_a TEXT NOT NULL,
     option_b TEXT NOT NULL,
