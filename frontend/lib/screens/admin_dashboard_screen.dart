@@ -1,4 +1,5 @@
 import '../services/api_service.dart';
+import '../widgets/instructor_status_widget.dart';
 import 'package:flutter/material.dart';
 import 'worksheet_manage_screen.dart';
 import 'group_manage_screen.dart';
@@ -57,6 +58,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const InstructorStatusWidget(),
+                  const SizedBox(height: 24),
                   if (_stats != null) ...[
                     Row(
                       children: [
