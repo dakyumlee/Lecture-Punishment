@@ -201,3 +201,73 @@ public class StudentService {
         return stats;
     }
 }
+
+    @Transactional
+    public Student updateMentalGauge(String studentId, int amount) {
+        Student student = getStudentById(studentId);
+        
+        int newMental = Math.max(0, Math.min(100, student.getMentalGauge() + amount));
+        student.setMentalGauge(newMental);
+        
+        return studentRepository.save(student);
+    }
+
+    @Transactional
+    public Map<String, Object> reduceMental(String studentId, int amount) {
+        Student student = getStudentById(studentId);
+        
+        int oldMental = student.getMentalGauge();
+        int newMental = Math.max(0, oldMental - amount);
+        student.setMentalGauge(newMental);
+        
+        boolean needsRecovery = newMental < 30;
+        String mentalStatus = getMentalStatus(newMental);
+        
+        studentRepository.save(student);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("student", student);
+        result.put("oldMental", oldMental);
+        result.put("newMental", newMental);
+        result.put("needsRecovery", needsRecovery);
+        result.put("mentalStatus", mentalStatus);
+        
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> recoverMental(String studentId, int amount) {
+        Student student = getStudentById(studentId);
+        
+        int oldMental = student.getMentalGauge();
+        int newMental = Math.min(100, oldMental + amount);
+        student.setMentalGauge(newMental);
+        
+        String mentalStatus = getMentalStatus(newMental);
+        
+        studentRepository.save(student);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("student", student);
+        result.put("oldMental", oldMental);
+        result.put("newMental", newMental);
+        result.put("recovered", amount);
+        result.put("mentalStatus", mentalStatus);
+        
+        return result;
+    }
+
+    private String getMentalStatus(int mentalGauge) {
+        if (mentalGauge >= 80) {
+            return "최상";
+        } else if (mentalGauge >= 60) {
+            return "양호";
+        } else if (mentalGauge >= 40) {
+            return "보통";
+        } else if (mentalGauge >= 30) {
+            return "주의";
+        } else {
+            return "위험 - 회복 필요!";
+        }
+    }
+}

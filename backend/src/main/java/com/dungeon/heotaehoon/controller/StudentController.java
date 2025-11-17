@@ -90,19 +90,25 @@ public class StudentController {
         Boolean isCorrect = request.get("isCorrect");
         Student student = studentService.updateQuizStats(studentId, isCorrect != null && isCorrect);
         
-        int pointsEarned = (isCorrect != null && isCorrect) ? 5 : 0;
-        if (pointsEarned > 0) {
+        int pointsEarned = 0;
+        Map<String, Object> mentalResult = null;
+        
+        if (isCorrect != null && isCorrect) {
+            pointsEarned = 5;
             student.setPoints(student.getPoints() + pointsEarned);
             studentService.updateProfile(studentId, null, null, null, null);
-            
             instructorService.addInstructorExp(1);
         } else {
             instructorService.addRage(5);
+            mentalResult = studentService.reduceMental(studentId, 10);
+            student = (Student) mentalResult.get("student");
         }
         
         Map<String, Object> result = Map.of(
             "student", student,
-            "pointsEarned", pointsEarned
+            "pointsEarned", pointsEarned,
+            "mentalStatus", mentalResult != null ? mentalResult.get("mentalStatus") : "양호",
+            "needsRecovery", mentalResult != null ? mentalResult.get("needsRecovery") : false
         );
         return ResponseEntity.ok(result);
     }
@@ -115,5 +121,18 @@ public class StudentController {
     @GetMapping("/top")
     public ResponseEntity<?> getTopStudents() {
         return ResponseEntity.ok(studentService.getTopStudents());
+    }
+
+    @PostMapping("/{studentId}/mental")
+    public ResponseEntity<Map<String, Object>> updateMental(
+            @PathVariable String studentId,
+            @RequestBody Map<String, Integer> request) {
+        Integer amount = request.get("amount");
+        
+        if (amount > 0) {
+            return ResponseEntity.ok(studentService.recoverMental(studentId, amount));
+        } else {
+            return ResponseEntity.ok(studentService.reduceMental(studentId, Math.abs(amount)));
+        }
     }
 }

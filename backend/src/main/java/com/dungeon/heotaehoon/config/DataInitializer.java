@@ -2,8 +2,10 @@ package com.dungeon.heotaehoon.config;
 
 import com.dungeon.heotaehoon.entity.Instructor;
 import com.dungeon.heotaehoon.entity.ShopItem;
+import com.dungeon.heotaehoon.entity.MentalRecoveryMission;
 import com.dungeon.heotaehoon.repository.InstructorRepository;
 import com.dungeon.heotaehoon.repository.ShopItemRepository;
+import com.dungeon.heotaehoon.repository.MentalRecoveryMissionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,6 +17,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private final ShopItemRepository shopItemRepository;
     private final InstructorRepository instructorRepository;
+    private final MentalRecoveryMissionRepository mentalRecoveryMissionRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -22,6 +25,8 @@ public class DataInitializer implements CommandLineRunner {
         initializeInstructor();
         shopItemRepository.deleteAll();
         createShopItems();
+        mentalRecoveryMissionRepository.deleteAll();
+        createMentalRecoveryMissions();
     }
 
     private void initializeInstructor() {
@@ -47,6 +52,105 @@ public class DataInitializer implements CommandLineRunner {
         );
         System.out.println("   아이디: hth422");
         System.out.println("   비밀번호: password1234!");
+    }
+
+    private void createMentalRecoveryMissions() {
+        mentalRecoveryMissionRepository.save(MentalRecoveryMission.builder()
+            .missionType("word_quiz")
+            .title("단어 퀴즈: 사과")
+            .description("영어로 사과를 뭐라고 할까요?")
+            .questionText("영어로 '사과'를 뭐라고 할까요?")
+            .correctAnswer("apple")
+            .recoveryAmount(15)
+            .difficultyLevel(1)
+            .isActive(true)
+            .build());
+
+        mentalRecoveryMissionRepository.save(MentalRecoveryMission.builder()
+            .missionType("word_quiz")
+            .title("단어 퀴즈: 고양이")
+            .description("영어로 고양이를 뭐라고 할까요?")
+            .questionText("영어로 '고양이'를 뭐라고 할까요?")
+            .correctAnswer("cat")
+            .recoveryAmount(15)
+            .difficultyLevel(1)
+            .isActive(true)
+            .build());
+
+        mentalRecoveryMissionRepository.save(MentalRecoveryMission.builder()
+            .missionType("word_quiz")
+            .title("단어 퀴즈: 안녕")
+            .description("영어로 안녕을 뭐라고 할까요?")
+            .questionText("영어로 '안녕'을 뭐라고 할까요?")
+            .correctAnswer("hello")
+            .recoveryAmount(15)
+            .difficultyLevel(1)
+            .isActive(true)
+            .build());
+
+        mentalRecoveryMissionRepository.save(MentalRecoveryMission.builder()
+            .missionType("word_quiz")
+            .title("단어 퀴즈: 물")
+            .description("영어로 물을 뭐라고 할까요?")
+            .questionText("영어로 '물'을 뭐라고 할까요?")
+            .correctAnswer("water")
+            .recoveryAmount(15)
+            .difficultyLevel(1)
+            .isActive(true)
+            .build());
+
+        mentalRecoveryMissionRepository.save(MentalRecoveryMission.builder()
+            .missionType("word_quiz")
+            .title("단어 퀴즈: 책")
+            .description("영어로 책을 뭐라고 할까요?")
+            .questionText("영어로 '책'을 뭐라고 할까요?")
+            .correctAnswer("book")
+            .recoveryAmount(15)
+            .difficultyLevel(1)
+            .isActive(true)
+            .build());
+
+        mentalRecoveryMissionRepository.save(MentalRecoveryMission.builder()
+            .missionType("self_praise")
+            .title("셀프 칭찬하기")
+            .description("자신을 칭찬하는 긍정적인 문장을 10자 이상 작성해보세요")
+            .questionText("오늘 나 자신에게 해주고 싶은 칭찬을 적어보세요 (최소 10자)")
+            .recoveryAmount(20)
+            .difficultyLevel(1)
+            .isActive(true)
+            .build());
+
+        mentalRecoveryMissionRepository.save(MentalRecoveryMission.builder()
+            .missionType("self_praise")
+            .title("긍정 확언")
+            .description("나는 할 수 있다는 마음가짐을 갖고 긍정적인 다짐을 적어보세요")
+            .questionText("나는 반드시 __________할 수 있다! (빈칸 채우기)")
+            .recoveryAmount(20)
+            .difficultyLevel(1)
+            .isActive(true)
+            .build());
+
+        mentalRecoveryMissionRepository.save(MentalRecoveryMission.builder()
+            .missionType("meditation")
+            .title("심호흡 명상")
+            .description("30초간 깊게 숨을 쉬며 마음을 진정시켜보세요")
+            .questionText("30초간 눈을 감고 깊게 숨을 들이쉬고 내쉬세요")
+            .recoveryAmount(10)
+            .difficultyLevel(1)
+            .isActive(true)
+            .build());
+
+        mentalRecoveryMissionRepository.save(MentalRecoveryMission.builder()
+            .missionType("meditation")
+            .title("스트레칭 타임")
+            .description("잠시 자리에서 일어나 가볍게 스트레칭을 해보세요")
+            .questionText("30초간 편안하게 몸을 풀어보세요")
+            .recoveryAmount(10)
+            .difficultyLevel(1)
+            .isActive(true)
+            .build());
+
+        System.out.println("✅ 멘탈 회복 미션 초기화 완료!");
     }
 
     private void createShopItems() {
