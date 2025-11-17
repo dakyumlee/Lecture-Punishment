@@ -23,7 +23,7 @@ public class ShopController {
     @GetMapping("/items")
     public ResponseEntity<List<ShopItem>> getAllItems() {
         List<ShopItem> items = shopItemRepository.findAll();
-        if (items.isEmpty()) {
+        if (items.isEmpty) {
             return ResponseEntity.ok(List.of());
         }
         return ResponseEntity.ok(items);
@@ -39,7 +39,7 @@ public class ShopController {
         return ResponseEntity.ok(shopItemRepository.findByItemType(type));
     }
 
-    @PostMapping("/purchase")
+    @PostMapping("/buy")
     public ResponseEntity<?> purchaseItem(@RequestBody Map<String, String> request) {
         try {
             String studentId = request.get("studentId");
@@ -52,40 +52,41 @@ public class ShopController {
                     .orElseThrow(() -> new RuntimeException("아이템을 찾을 수 없습니다"));
 
             if (!item.getIsAvailable()) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("message", "구매할 수 없는 아이템입니다");
-                return ResponseEntity.badRequest().body(errorResponse);
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "구매할 수 없는 아이템입니다"
+                ));
             }
 
             if (student.getPoints() < item.getPrice()) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("message", "포인트가 부족합니다");
-                return ResponseEntity.badRequest().body(errorResponse);
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "포인트가 부족합니다"
+                ));
             }
 
             student.setPoints(student.getPoints() - item.getPrice());
             
             if ("expression".equals(item.getItemType())) {
-                student.setCharacterExpression(item.getEffectValue());
+                student.setCharacterExpression(item.getImageUrl());
             } else if ("outfit".equals(item.getItemType())) {
-                student.setCharacterOutfit(item.getEffectValue());
+                student.setCharacterOutfit(item.getImageUrl());
             }
             
             studentRepository.save(student);
 
-            Map<String, Object> successResponse = new HashMap<>();
-            successResponse.put("success", true);
-            successResponse.put("message", "구매 완료");
-            successResponse.put("student", student);
-            return ResponseEntity.ok(successResponse);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "구매 완료",
+                "remainingPoints", student.getPoints(),
+                "student", student
+            ));
             
         } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "구매 실패: " + e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "구매 실패: " + e.getMessage()
+            ));
         }
     }
 }

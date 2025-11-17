@@ -26,12 +26,15 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
   bool isCorrect = false;
   String? rageMessage;
   int combo = 0;
+  int currentPoints = 0;
+  int earnedPoints = 0;
   late AnimationController _shakeController;
 
   @override
   void initState() {
     super.initState();
     _student = widget.student;
+    currentPoints = _student?.points ?? 0;
     _shakeController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -155,55 +158,83 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
         color: const Color(0xFF595048),
         borderRadius: BorderRadius.circular(15),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '문제 ${currentQuestionIndex + 1}/${_quizzes.length}',
-                style: const TextStyle(
-                  color: Color(0xFFD9D4D2),
-                  fontSize: 24,
-                  fontFamily: 'JoseonGulim',
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (combo > 0)
-                Text(
-                  '🔥 $combo 콤보!',
-                  style: const TextStyle(
-                    color: Color(0xFFD9D4D2),
-                    fontSize: 16,
-                    fontFamily: 'JoseonGulim',
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '문제 ${currentQuestionIndex + 1}/${_quizzes.length}',
+                    style: const TextStyle(
+                      color: Color(0xFFD9D4D2),
+                      fontSize: 24,
+                      fontFamily: 'JoseonGulim',
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
+                  if (combo > 0)
+                    Text(
+                      '🔥 $combo 콤보!',
+                      style: const TextStyle(
+                        color: Color(0xFFD9D4D2),
+                        fontSize: 16,
+                        fontFamily: 'JoseonGulim',
+                      ),
+                    ),
+                ],
+              ),
+              if (_student != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Lv.${_student!.level}',
+                      style: const TextStyle(
+                        color: Color(0xFFD9D4D2),
+                        fontSize: 20,
+                        fontFamily: 'JoseonGulim',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'EXP: ${_student!.exp}/100',
+                      style: const TextStyle(
+                        color: Color(0xFF736A63),
+                        fontSize: 14,
+                        fontFamily: 'JoseonGulim',
+                      ),
+                    ),
+                  ],
                 ),
             ],
           ),
-          if (_student != null)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0D0D0D),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                const Icon(Icons.monetization_on, color: Color(0xFFD9D4D2), size: 20),
+                const SizedBox(width: 8),
                 Text(
-                  'Lv.${_student!.level}',
+                  '$currentPoints P',
                   style: const TextStyle(
                     color: Color(0xFFD9D4D2),
-                    fontSize: 20,
+                    fontSize: 18,
                     fontFamily: 'JoseonGulim',
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  'EXP: ${_student!.exp}/100',
-                  style: const TextStyle(
-                    color: Color(0xFF736A63),
-                    fontSize: 16,
-                    fontFamily: 'JoseonGulim',
-                  ),
-                ),
               ],
             ),
+          ),
         ],
       ),
     );
@@ -437,7 +468,10 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
         combo++;
         
         final expResult = await ApiService.addStudentExp(_student!.id, 10);
-        await ApiService.updateStudentStats(_student!.id, true);
+        final statsResult = await ApiService.updateStudentStats(_student!.id, true);
+        
+        earnedPoints = statsResult['pointsEarned'] ?? 5;
+        currentPoints += earnedPoints;
         
         if (_boss != null) {
           final bossResult = await ApiService.updateBossHp(widget.bossId!, 200);
@@ -465,6 +499,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
         final rage = await ApiService.getRandomRage();
         rageMessage = rage['message'];
         _shakeController.forward(from: 0);
+        earnedPoints = 0;
       }
       
       setState(() {
@@ -623,13 +658,41 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
           ),
           if (isCorrect) ...[
             const SizedBox(height: 16),
-            const Text(
-              '💰 EXP +10',
-              style: TextStyle(
-                color: Color(0xFF736A63),
-                fontSize: 16,
-                fontFamily: 'JoseonGulim',
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  '💰 EXP +10',
+                  style: TextStyle(
+                    color: Color(0xFF736A63),
+                    fontSize: 16,
+                    fontFamily: 'JoseonGulim',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D0D0D),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.monetization_on, color: Color(0xFFD9D4D2), size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '+$earnedPoints P',
+                        style: const TextStyle(
+                          color: Color(0xFFD9D4D2),
+                          fontSize: 16,
+                          fontFamily: 'JoseonGulim',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ],
@@ -650,6 +713,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             selectedAnswer = null;
             showResult = false;
             rageMessage = null;
+            earnedPoints = 0;
           });
         }
       },
@@ -701,14 +765,42 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             ),
             const SizedBox(height: 16),
             if (_student != null)
-              Text(
-                '현재 레벨: Lv.${_student!.level}\nEXP: ${_student!.exp}/100',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF736A63),
-                  fontFamily: 'JoseonGulim',
-                  fontSize: 16,
-                ),
+              Column(
+                children: [
+                  Text(
+                    '현재 레벨: Lv.${_student!.level}\nEXP: ${_student!.exp}/100',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFF736A63),
+                      fontFamily: 'JoseonGulim',
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D0D0D),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.monetization_on, color: Color(0xFFD9D4D2), size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          '보유 포인트: $currentPoints P',
+                          style: const TextStyle(
+                            color: Color(0xFFD9D4D2),
+                            fontFamily: 'JoseonGulim',
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
           ],
         ),

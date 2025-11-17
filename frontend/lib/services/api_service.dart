@@ -87,13 +87,13 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<Student> updateStudentStats(String studentId, bool isCorrect) async {
+  static Future<Map<String, dynamic>> updateStudentStats(String studentId, bool isCorrect) async {
     final response = await http.post(
       Uri.parse('$baseUrl/students/$studentId/stats'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'isCorrect': isCorrect}),
     );
-    return Student.fromJson(jsonDecode(response.body));
+    return jsonDecode(response.body);
   }
 
   static Future<Map<String, dynamic>> updateBossHp(String bossId, int damage) async {

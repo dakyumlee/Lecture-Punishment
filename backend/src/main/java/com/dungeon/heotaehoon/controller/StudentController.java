@@ -82,12 +82,23 @@ public class StudentController {
     }
 
     @PostMapping("/{studentId}/stats")
-    public ResponseEntity<Student> updateStats(
+    public ResponseEntity<Map<String, Object>> updateStats(
             @PathVariable String studentId,
             @RequestBody Map<String, Boolean> request) {
         Boolean isCorrect = request.get("isCorrect");
         Student student = studentService.updateQuizStats(studentId, isCorrect != null && isCorrect);
-        return ResponseEntity.ok(student);
+        
+        int pointsEarned = (isCorrect != null && isCorrect) ? 5 : 0;
+        if (pointsEarned > 0) {
+            student.setPoints(student.getPoints() + pointsEarned);
+            studentService.updateProfile(studentId, null, null, null, null);
+        }
+        
+        Map<String, Object> result = Map.of(
+            "student", student,
+            "pointsEarned", pointsEarned
+        );
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/{studentId}/stats")
