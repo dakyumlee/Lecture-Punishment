@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +22,7 @@ public class ShopController {
     @GetMapping("/items")
     public ResponseEntity<List<ShopItem>> getAllItems() {
         List<ShopItem> items = shopItemRepository.findAll();
-        if (items.isEmpty) {
+        if (items.isEmpty()) {
             return ResponseEntity.ok(List.of());
         }
         return ResponseEntity.ok(items);
