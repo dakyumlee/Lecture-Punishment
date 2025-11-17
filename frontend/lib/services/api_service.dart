@@ -118,11 +118,24 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<void> createLesson({required String title, required String description}) async {
+  static Future<List<dynamic>> getActiveGroups() async {
+    final response = await http.get(Uri.parse('$baseUrl/groups/active'));
+    return jsonDecode(response.body) as List;
+  }
+
+  static Future<void> createLesson({
+    required String title, 
+    required String description,
+    String? groupId,
+  }) async {
     await http.post(
       Uri.parse('$baseUrl/admin/lessons'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'title': title, 'description': description}),
+      body: jsonEncode({
+        'title': title, 
+        'description': description,
+        'groupId': groupId,
+      }),
     );
   }
 
@@ -429,6 +442,7 @@ class ApiService {
     
     return jsonDecode(response.body);
   }
+  
   static Future<Map<String, dynamic>> extractQuestionsFromPdf({
     required List<int> fileBytes,
     required String fileName,

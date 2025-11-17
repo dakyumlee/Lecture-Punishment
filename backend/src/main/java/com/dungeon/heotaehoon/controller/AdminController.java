@@ -19,6 +19,7 @@ public class AdminController {
     private final StudentRepository studentRepository;
     private final LessonRepository lessonRepository;
     private final InstructorRepository instructorRepository;
+    private final StudentGroupRepository studentGroupRepository;
     private final StudentService studentService;
 
     @GetMapping("/students")
@@ -53,13 +54,20 @@ public class AdminController {
         String title = (String) request.get("title");
         String description = (String) request.get("description");
         String subject = (String) request.get("subject");
+        String groupId = (String) request.get("groupId");
         
         Instructor defaultInstructor = instructorRepository.findAll().stream().findFirst().orElse(null);
+        
+        StudentGroup group = null;
+        if (groupId != null && !groupId.isEmpty()) {
+            group = studentGroupRepository.findById(groupId).orElse(null);
+        }
         
         Lesson lesson = Lesson.builder()
                 .title(title)
                 .subject(subject != null ? subject : "기본")
                 .instructor(defaultInstructor)
+                .group(group)
                 .lessonDate(LocalDate.now())
                 .isActive(true)
                 .createdAt(LocalDateTime.now())
