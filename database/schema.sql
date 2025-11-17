@@ -1,9 +1,21 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+CREATE TABLE student_groups (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    group_name VARCHAR(100) NOT NULL,
+    year INTEGER,
+    course VARCHAR(100),
+    period VARCHAR(50),
+    description VARCHAR(1000),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE students (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username VARCHAR(50) UNIQUE NOT NULL,
     display_name VARCHAR(100) NOT NULL,
+    group_id UUID REFERENCES student_groups(id),
     level INTEGER DEFAULT 1,
     exp INTEGER DEFAULT 0,
     points INTEGER DEFAULT 0,
@@ -31,6 +43,7 @@ CREATE TABLE instructors (
 CREATE TABLE lessons (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     instructor_id UUID REFERENCES instructors(id),
+    group_id UUID REFERENCES student_groups(id),
     title VARCHAR(200) NOT NULL,
     subject VARCHAR(100) NOT NULL,
     difficulty_stars INTEGER DEFAULT 3,
@@ -153,7 +166,7 @@ CREATE TABLE worksheets (
     title VARCHAR(200) NOT NULL,
     description TEXT,
     category VARCHAR(100),
-    group_id UUID,
+    group_id UUID REFERENCES student_groups(id),
     original_file BYTEA,
     original_file_name VARCHAR(255),
     original_file_type VARCHAR(100),
@@ -248,6 +261,8 @@ CREATE TABLE shop_items (
 );
 
 CREATE INDEX idx_students_username ON students(username);
+CREATE INDEX idx_students_group ON students(group_id);
+CREATE INDEX idx_lessons_group ON lessons(group_id);
 CREATE INDEX idx_quiz_attempts_student ON quiz_attempts(student_id);
 CREATE INDEX idx_quiz_attempts_quiz ON quiz_attempts(quiz_id);
 CREATE INDEX idx_exp_logs_student ON exp_logs(student_id);

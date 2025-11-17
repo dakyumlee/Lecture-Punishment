@@ -21,6 +21,10 @@ public class Lesson {
     @JoinColumn(name = "instructor_id")
     private Instructor instructor;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "group_id")
+    private StudentGroup group;
+
     @Column(nullable = false)
     private String title;
 
