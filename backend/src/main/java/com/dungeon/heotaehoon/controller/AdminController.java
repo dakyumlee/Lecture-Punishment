@@ -99,7 +99,7 @@ public class AdminController {
             
             try {
                 aiQuizGenerationService.generateQuizzesForBoss(
-                    savedBoss, 
+                    savedBoss.getId(), 
                     subject != null ? subject : title, 
                     5
                 );
