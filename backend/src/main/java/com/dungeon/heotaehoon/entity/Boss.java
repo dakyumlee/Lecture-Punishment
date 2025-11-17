@@ -1,7 +1,7 @@
 package com.dungeon.heotaehoon.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -19,7 +19,7 @@ public class Boss {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "lesson_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     private Lesson lesson;
 
     @Column(name = "boss_name", nullable = false)
