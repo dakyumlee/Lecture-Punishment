@@ -1,9 +1,12 @@
 package com.dungeon.heotaehoon.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "lessons")
@@ -24,6 +27,16 @@ public class Lesson {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "group_id")
     private StudentGroup group;
+
+    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("lesson")
+    @Builder.Default
+    private List<Boss> bosses = new ArrayList<>();
+
+    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("lesson")
+    @Builder.Default
+    private List<Quiz> quizzes = new ArrayList<>();
 
     @Column(nullable = false)
     private String title;
