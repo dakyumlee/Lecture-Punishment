@@ -26,7 +26,7 @@ class Quiz {
   factory Quiz.fromJson(Map<String, dynamic> json) {
     return Quiz(
       id: json['id'] ?? '',
-      question: json['question'] ?? '',
+      question: json['question'] ?? json['questionText'] ?? '',
       optionA: json['optionA'] ?? '',
       optionB: json['optionB'] ?? '',
       optionC: json['optionC'] ?? '',
