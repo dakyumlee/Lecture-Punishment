@@ -542,6 +542,7 @@ class _CreateLessonDialogState extends State<_CreateLessonDialog> {
   
   List<dynamic> _groups = [];
   String? _selectedGroupId;
+  int _difficulty = 3;
   bool _isLoading = true;
   bool _isCreating = false;
 
@@ -581,6 +582,7 @@ class _CreateLessonDialogState extends State<_CreateLessonDialog> {
         title: titleController.text,
         description: subjectController.text,
         groupId: _selectedGroupId,
+        difficulty: _difficulty,
       );
       
       if (mounted) {
@@ -597,6 +599,17 @@ class _CreateLessonDialogState extends State<_CreateLessonDialog> {
           ),
         );
       }
+    }
+  }
+
+  String _getDifficultyLabel(int diff) {
+    switch (diff) {
+      case 1: return '⭐ 입문 (HP 500, 문제 10개)';
+      case 2: return '⭐⭐ 초급 (HP 1000, 문제 15개)';
+      case 3: return '⭐⭐⭐ 중급 (HP 1500, 문제 20개)';
+      case 4: return '⭐⭐⭐⭐ 상급 (HP 2500, 문제 25개)';
+      case 5: return '⭐⭐⭐⭐⭐ 허태훈의 진노 (HP 5000, 문제 30개)';
+      default: return '중급';
     }
   }
 
@@ -622,73 +635,140 @@ class _CreateLessonDialogState extends State<_CreateLessonDialog> {
                     ),
                   ],
                 )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: titleController,
-                      style: const TextStyle(color: Color(0xFFD9D4D2)),
-                      decoration: const InputDecoration(
-                        labelText: '수업 제목',
-                        labelStyle: TextStyle(color: Color(0xFF736A63)),
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFF736A63)),
-                        ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFFD9D4D2)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: subjectController,
-                      style: const TextStyle(color: Color(0xFFD9D4D2)),
-                      decoration: const InputDecoration(
-                        labelText: '과목',
-                        labelStyle: TextStyle(color: Color(0xFF736A63)),
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFF736A63)),
-                        ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+              : SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: titleController,
+                        style: const TextStyle(color: Color(0xFFD9D4D2)),
+                        decoration: const InputDecoration(
+                          labelText: '수업 제목',
+                          labelStyle: TextStyle(color: Color(0xFF736A63)),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Color(0xFF736A63)),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _selectedGroupId,
-                      dropdownColor: const Color(0xFF595048),
-                      style: const TextStyle(color: Color(0xFFD9D4D2)),
-                      decoration: const InputDecoration(
-                        labelText: '그룹 (선택사항)',
-                        labelStyle: TextStyle(color: Color(0xFF736A63)),
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFF736A63)),
-                        ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: subjectController,
+                        style: const TextStyle(color: Color(0xFFD9D4D2)),
+                        decoration: const InputDecoration(
+                          labelText: '과목',
+                          labelStyle: TextStyle(color: Color(0xFF736A63)),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Color(0xFF736A63)),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                          ),
                         ),
                       ),
-                      items: [
-                        const DropdownMenuItem<String>(
-                          value: null,
-                          child: Text('전체 (그룹 없음)', style: TextStyle(color: Color(0xFF736A63))),
-                        ),
-                        ..._groups.map((group) {
-                          return DropdownMenuItem<String>(
-                            value: group['id'],
-                            child: Text(
-                              group['groupName'],
-                              style: const TextStyle(color: Color(0xFFD9D4D2)),
+                      const SizedBox(height: 24),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '난이도 선택',
+                            style: TextStyle(
+                              color: Color(0xFFD9D4D2),
+                              fontFamily: 'JoseonGulim',
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
-                          );
-                        }).toList(),
-                      ],
-                      onChanged: (value) {
-                        setState(() => _selectedGroupId = value);
-                      },
-                    ),
-                  ],
+                          ),
+                          const SizedBox(height: 12),
+                          ...[1, 2, 3, 4, 5].map((diff) {
+                            bool isSelected = _difficulty == diff;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: InkWell(
+                                onTap: () => setState(() => _difficulty = diff),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: isSelected 
+                                        ? const Color(0xFF736A63) 
+                                        : const Color(0xFF0D0D0D),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: isSelected 
+                                          ? const Color(0xFFD9D4D2) 
+                                          : const Color(0xFF736A63),
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isSelected 
+                                            ? Icons.radio_button_checked 
+                                            : Icons.radio_button_unchecked,
+                                        color: const Color(0xFFD9D4D2),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _getDifficultyLabel(diff),
+                                          style: TextStyle(
+                                            color: const Color(0xFFD9D4D2),
+                                            fontFamily: 'JoseonGulim',
+                                            fontSize: 13,
+                                            fontWeight: isSelected 
+                                                ? FontWeight.bold 
+                                                : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedGroupId,
+                        dropdownColor: const Color(0xFF595048),
+                        style: const TextStyle(color: Color(0xFFD9D4D2)),
+                        decoration: const InputDecoration(
+                          labelText: '그룹 (선택사항)',
+                          labelStyle: TextStyle(color: Color(0xFF736A63)),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Color(0xFF736A63)),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Color(0xFFD9D4D2)),
+                          ),
+                        ),
+                        items: [
+                          const DropdownMenuItem<String>(
+                            value: null,
+                            child: Text('전체 (그룹 없음)', style: TextStyle(color: Color(0xFF736A63))),
+                          ),
+                          ..._groups.map((group) {
+                            return DropdownMenuItem<String>(
+                              value: group['id'],
+                              child: Text(
+                                group['groupName'],
+                                style: const TextStyle(color: Color(0xFFD9D4D2)),
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                        onChanged: (value) {
+                          setState(() => _selectedGroupId = value);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
       actions: _isCreating
           ? []

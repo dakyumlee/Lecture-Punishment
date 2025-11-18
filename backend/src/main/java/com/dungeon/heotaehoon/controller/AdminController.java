@@ -2,8 +2,7 @@ package com.dungeon.heotaehoon.controller;
 
 import com.dungeon.heotaehoon.entity.*;
 import com.dungeon.heotaehoon.repository.*;
-import com.dungeon.heotaehoon.service.StudentService;
-import com.dungeon.heotaehoon.service.AiQuizGenerationService;
+import com.dungeon.heotaehoon.service.AIQuizGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -19,39 +18,36 @@ import java.util.*;
 @RequiredArgsConstructor
 public class AdminController {
 
-    private final StudentRepository studentRepository;
     private final LessonRepository lessonRepository;
-    private final InstructorRepository instructorRepository;
-    private final StudentGroupRepository studentGroupRepository;
     private final BossRepository bossRepository;
-    private final StudentService studentService;
-    private final AiQuizGenerationService aiQuizGenerationService;
+    private final StudentRepository studentRepository;
+    private final InstructorRepository instructorRepository;
+    private final QuizRepository quizRepository;
+    private final StudentGroupRepository studentGroupRepository;
+    private final AIQuizGenerationService aiQuizGenerationService;
 
-    @GetMapping("/students")
-    public ResponseEntity<List<Student>> getAllStudents() {
-        List<Student> students = studentRepository.findAll();
-        return ResponseEntity.ok(students);
-    }
-    
-    @PostMapping("/students")
-    public ResponseEntity<Student> createStudent(@RequestBody Map<String, Object> request) {
-        String username = (String) request.get("username");
-        String displayName = (String) request.get("displayName");
-        String groupId = (String) request.get("groupId");
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getAdminStats() {
+        Map<String, Object> stats = new HashMap<>();
         
-        Student student = studentService.createStudent(username, displayName, groupId);
-        return ResponseEntity.ok(student);
-    }
-
-    @DeleteMapping("/students/{id}")
-    public ResponseEntity<Void> deleteStudent(@PathVariable String id) {
-        studentRepository.deleteById(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/lessons")
-    public ResponseEntity<List<Lesson>> getAllLessons() {
-        return ResponseEntity.ok(lessonRepository.findAll());
+        long totalStudents = studentRepository.count();
+        long totalLessons = lessonRepository.count();
+        long totalQuizzes = quizRepository.count();
+        
+        List<Student> allStudents = studentRepository.findAll();
+        int totalCorrect = allStudents.stream().mapToInt(Student::getTotalCorrect).sum();
+        int totalWrong = allStudents.stream().mapToInt(Student::getTotalWrong).sum();
+        int totalAttempts = totalCorrect + totalWrong;
+        String successRate = totalAttempts > 0 
+            ? String.format("%.1f%%", (totalCorrect * 100.0 / totalAttempts))
+            : "0%";
+        
+        stats.put("totalStudents", totalStudents);
+        stats.put("totalLessons", totalLessons);
+        stats.put("totalQuizzes", totalQuizzes);
+        stats.put("successRate", successRate);
+        
+        return ResponseEntity.ok(stats);
     }
 
     @PostMapping("/lessons")
@@ -61,6 +57,13 @@ public class AdminController {
             String description = (String) request.get("description");
             String subject = (String) request.get("subject");
             String groupId = (String) request.get("groupId");
+            Integer difficulty = request.get("difficulty") != null 
+                ? ((Number) request.get("difficulty")).intValue() 
+                : 3;
+            
+            if (difficulty < 1 || difficulty > 5) {
+                difficulty = 3;
+            }
             
             Instructor defaultInstructor = instructorRepository.findAll().stream().findFirst().orElse(null);
             
@@ -75,78 +78,204 @@ public class AdminController {
                     .instructor(defaultInstructor)
                     .group(group)
                     .lessonDate(LocalDate.now())
-                    .difficultyStars(3)
+                    .difficultyStars(difficulty)
                     .isActive(true)
                     .createdAt(LocalDateTime.now())
                     .build();
             
             Lesson savedLesson = lessonRepository.save(lesson);
-            log.info("Created lesson: {}", savedLesson.getId());
+            log.info("Created lesson: {} with difficulty: {}", savedLesson.getId(), difficulty);
+            
+            String bossName = getBossNameByDifficulty(difficulty, subject != null ? subject : title);
+            String specialAbility = getSpecialAbilityByDifficulty(difficulty);
             
             Boss boss = Boss.builder()
                     .lesson(savedLesson)
-                    .bossName("오늘의 보스: " + (subject != null ? subject : title))
-                    .bossSubtitle("지식의 수호자")
-                    .totalHp(1000)
-                    .currentHp(1000)
+                    .bossName(bossName)
+                    .bossSubtitle(getSubtitleByDifficulty(difficulty))
+                    .difficulty(difficulty)
+                    .specialAbility(specialAbility)
                     .isDefeated(false)
-                    .defeatRewardExp(100)
                     .createdAt(LocalDateTime.now())
                     .build();
             
             Boss savedBoss = bossRepository.save(boss);
-            log.info("Created boss: {} for lesson: {}", savedBoss.getId(), savedLesson.getId());
+            log.info("Created boss: {} for lesson: {} with difficulty: {} stars", 
+                savedBoss.getId(), savedLesson.getId(), difficulty);
+            
+            int quizCount = getQuizCountByDifficulty(difficulty);
             
             try {
                 aiQuizGenerationService.generateQuizzesForBoss(
                     savedBoss.getId(), 
                     subject != null ? subject : title, 
-                    5
+                    quizCount
                 );
-                log.info("AI quizzes generated for boss: {}", savedBoss.getId());
+                log.info("AI quizzes generated for boss: {} (count: {})", savedBoss.getId(), quizCount);
             } catch (Exception e) {
                 log.warn("Failed to generate AI quizzes: {}", e.getMessage());
             }
             
             Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("lessonId", savedLesson.getId());
-            response.put("bossId", savedBoss.getId());
+            response.put("lesson", savedLesson);
+            response.put("boss", savedBoss);
             response.put("message", "수업과 보스가 생성되었습니다");
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Failed to create lesson", e);
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("error", e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    @DeleteMapping("/lessons/{id}")
-    public ResponseEntity<Void> deleteLesson(@PathVariable String id) {
-        lessonRepository.deleteById(id);
-        return ResponseEntity.ok().build();
+    private String getBossNameByDifficulty(int difficulty, String subject) {
+        switch (difficulty) {
+            case 1: return "입문 보스: " + subject;
+            case 2: return "초급 보스: " + subject;
+            case 3: return "중급 보스: " + subject;
+            case 4: return "상급 보스: " + subject;
+            case 5: return "허태훈의 진노: " + subject;
+            default: return "보스: " + subject;
+        }
     }
-    
-    @GetMapping("/stats")
-    public ResponseEntity<Map<String, Object>> getStats() {
-        Map<String, Object> stats = new HashMap<>();
+
+    private String getSubtitleByDifficulty(int difficulty) {
+        switch (difficulty) {
+            case 1: return "기초의 수호자";
+            case 2: return "지식의 문지기";
+            case 3: return "지식의 수호자";
+            case 4: return "지식의 파수꾼";
+            case 5: return "최종 관문";
+            default: return "지식의 수호자";
+        }
+    }
+
+    private String getSpecialAbilityByDifficulty(int difficulty) {
+        switch (difficulty) {
+            case 1: return "없음";
+            case 2: return "압박: 틀리면 다음 문제 시간 -10초";
+            case 3: return "분노 폭발: 3문제 연속 틀리면 HP 10% 회복";
+            case 4: return "광폭화: HP 50% 이하 시 데미지 2배 필요";
+            case 5: return "허태훈의 진노: 모든 패널티 + HP 30% 회복";
+            default: return "없음";
+        }
+    }
+
+    private int getQuizCountByDifficulty(int difficulty) {
+        switch (difficulty) {
+            case 1: return 10;
+            case 2: return 15;
+            case 3: return 20;
+            case 4: return 25;
+            case 5: return 30;
+            default: return 15;
+        }
+    }
+
+    @GetMapping("/lessons")
+    public ResponseEntity<List<Map<String, Object>>> getAdminLessons() {
+        List<Lesson> lessons = lessonRepository.findAll();
+        List<Map<String, Object>> result = new ArrayList<>();
         
-        long totalStudents = studentRepository.count();
-        long totalLessons = lessonRepository.count();
+        for (Lesson lesson : lessons) {
+            Map<String, Object> lessonData = new HashMap<>();
+            lessonData.put("id", lesson.getId());
+            lessonData.put("title", lesson.getTitle());
+            lessonData.put("subject", lesson.getSubject());
+            lessonData.put("difficulty", lesson.getDifficultyStars());
+            lessonData.put("lessonDate", lesson.getLessonDate().toString());
+            lessonData.put("isActive", lesson.getIsActive());
+            
+            result.add(lessonData);
+        }
         
+        return ResponseEntity.ok(result);
+    }
+
+    @DeleteMapping("/lessons/{id}")
+    public ResponseEntity<Map<String, Object>> deleteLesson(@PathVariable String id) {
+        try {
+            log.info("Deleting lesson: {}", id);
+            lessonRepository.deleteById(id);
+            return ResponseEntity.ok(Map.of("success", true, "message", "수업이 삭제되었습니다"));
+        } catch (Exception e) {
+            log.error("Failed to delete lesson: {}", id, e);
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/students")
+    public ResponseEntity<List<Map<String, Object>>> getAdminStudents() {
         List<Student> students = studentRepository.findAll();
-        int totalCorrect = students.stream().mapToInt(Student::getTotalCorrect).sum();
-        int totalWrong = students.stream().mapToInt(Student::getTotalWrong).sum();
+        List<Map<String, Object>> result = new ArrayList<>();
         
-        stats.put("totalStudents", totalStudents);
-        stats.put("totalLessons", totalLessons);
-        stats.put("totalCorrect", totalCorrect);
-        stats.put("totalWrong", totalWrong);
-        stats.put("averageLevel", students.stream().mapToInt(Student::getLevel).average().orElse(0));
+        for (Student student : students) {
+            Map<String, Object> studentData = new HashMap<>();
+            studentData.put("id", student.getId());
+            studentData.put("username", student.getUsername());
+            studentData.put("displayName", student.getDisplayName());
+            studentData.put("level", student.getLevel());
+            studentData.put("exp", student.getExp());
+            studentData.put("points", student.getPoints());
+            
+            result.add(studentData);
+        }
         
-        return ResponseEntity.ok(stats);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/students")
+    public ResponseEntity<Map<String, Object>> createStudent(@RequestBody Map<String, String> request) {
+        try {
+            String username = request.get("username");
+            String displayName = request.get("displayName");
+            String groupId = request.get("groupId");
+            
+            if (studentRepository.findByUsername(username).isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "이미 존재하는 사용자명입니다"));
+            }
+            
+            StudentGroup group = null;
+            if (groupId != null && !groupId.isEmpty()) {
+                group = studentGroupRepository.findById(groupId).orElse(null);
+            }
+            
+            Student student = Student.builder()
+                    .username(username)
+                    .displayName(displayName)
+                    .group(group)
+                    .level(1)
+                    .exp(0)
+                    .points(0)
+                    .totalCorrect(0)
+                    .totalWrong(0)
+                    .mentalGauge(100)
+                    .isProfileComplete(false)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            
+            Student savedStudent = studentRepository.save(student);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", savedStudent.getId());
+            response.put("username", savedStudent.getUsername());
+            response.put("displayName", savedStudent.getDisplayName());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Failed to create student", e);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/students/{id}")
+    public ResponseEntity<Map<String, Object>> deleteStudent(@PathVariable String id) {
+        try {
+            studentRepository.deleteById(id);
+            return ResponseEntity.ok(Map.of("success", true, "message", "학생이 삭제되었습니다"));
+        } catch (Exception e) {
+            log.error("Failed to delete student: {}", id, e);
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+        }
     }
 }

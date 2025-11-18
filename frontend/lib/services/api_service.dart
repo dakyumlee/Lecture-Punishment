@@ -159,6 +159,7 @@ class ApiService {
     required String title, 
     required String description,
     String? groupId,
+    int? difficulty,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/admin/lessons'),
@@ -168,6 +169,7 @@ class ApiService {
         'description': description,
         'subject': description,
         'groupId': groupId,
+        'difficulty': difficulty ?? 3,
       }),
     );
     
