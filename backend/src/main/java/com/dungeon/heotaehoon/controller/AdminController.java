@@ -2,7 +2,7 @@ package com.dungeon.heotaehoon.controller;
 
 import com.dungeon.heotaehoon.entity.*;
 import com.dungeon.heotaehoon.repository.*;
-import com.dungeon.heotaehoon.service.AIQuizGenerationService;
+import com.dungeon.heotaehoon.service.AiQuizGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +24,7 @@ public class AdminController {
     private final InstructorRepository instructorRepository;
     private final QuizRepository quizRepository;
     private final StudentGroupRepository studentGroupRepository;
-    private final AIQuizGenerationService aiQuizGenerationService;
+    private final AiQuizGenerationService aiQuizGenerationService;
 
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getAdminStats() {
