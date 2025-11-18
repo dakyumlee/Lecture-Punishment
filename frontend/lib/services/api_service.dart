@@ -517,8 +517,20 @@ class ApiService {
   }
 
   static Future<List<dynamic>> getAvailableDungeons(String studentId) async {
-    final response = await http.get(Uri.parse('$baseUrl/dungeons/student/$studentId'));
-    return jsonDecode(response.body) as List;
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/dungeons/student/$studentId'));
+      print('Dungeons API Response: ${response.statusCode}');
+      print('Dungeons API Body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as List;
+      } else {
+        throw Exception('Failed to load dungeons: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error in getAvailableDungeons: $e');
+      rethrow;
+    }
   }
 
   static Future<Map<String, dynamic>> getDungeonEntrance(String lessonId) async {
