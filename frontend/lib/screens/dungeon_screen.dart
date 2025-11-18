@@ -23,13 +23,21 @@ class _DungeonScreenState extends State<DungeonScreen> {
 
   Future<void> _loadDungeons() async {
     try {
+      print('Loading dungeons for student: ${widget.student.id}');
       final dungeons = await ApiService.getAvailableDungeons(widget.student.id);
+      print('Loaded dungeons: ${dungeons.length} items');
+      print('Dungeons data: $dungeons');
+      
       setState(() {
         _dungeons = dungeons;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error loading dungeons: $e');
+      print('Stack trace: $stackTrace');
+      
       setState(() => _isLoading = false);
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('던전 목록을 불러올 수 없습니다: $e')),
