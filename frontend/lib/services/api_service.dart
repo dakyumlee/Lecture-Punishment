@@ -435,10 +435,7 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<Map<String, dynamic>> getRandomRage() async {
-    final response = await http.get(Uri.parse('$baseUrl/game/rage/random'));
-    return Map<String, dynamic>.from(jsonDecode(response.body));
-  }
+
 
   static Future<Student> getStudentByUsername(String username) async {
     final response = await http.get(Uri.parse('$baseUrl/game/student/$username'));
@@ -555,6 +552,46 @@ class ApiService {
       body: jsonEncode({'exp': exp}),
     );
     return jsonDecode(response.body);
+  }
+
+
+  static Future<Map<String, dynamic>> getRageDialogue({
+    required String dialogueType,
+    String? studentName,
+    String? question,
+    String? wrongAnswer,
+    String? correctAnswer,
+    int combo = 0,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/quizzes/rage-dialogue'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'dialogueType': dialogueType,
+          'studentName': studentName,
+          'question': question,
+          'wrongAnswer': wrongAnswer,
+          'correctAnswer': correctAnswer,
+          'combo': combo,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      
+      return {
+        'dialogue': '복습 좀 해라',
+        'dialogueType': dialogueType,
+      };
+    } catch (e) {
+      print('Rage dialogue error: $e');
+      return {
+        'dialogue': '복습 좀 해라',
+        'dialogueType': dialogueType,
+      };
+    }
   }
 
   static Future<Map<String, dynamic>> addInstructorRage(int rage) async {

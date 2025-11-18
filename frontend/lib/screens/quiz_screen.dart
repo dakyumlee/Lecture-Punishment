@@ -472,6 +472,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
       bool correct = selectedAnswer == quiz.correctAnswer;
       
       if (correct) {
+        int oldCombo = combo;
         combo++;
         
         final expResult = await ApiService.addStudentExp(_student!.id, 10);
@@ -497,14 +498,35 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
           _student!.level = expResult['student']['level'];
         });
         
+        if (combo >= 3) {
+          final praise = await ApiService.getRageDialogue(
+            dialogueType: 'combo_3',
+            studentName: _student!.name,
+            combo: combo,
+          );
+          rageMessage = praise['dialogue'];
+        }
+        
         if (expResult['leveledUp']) {
           _showLevelUpDialog(expResult['oldLevel'], expResult['newLevel']);
         }
       } else {
+        int oldCombo = combo;
         combo = 0;
         await ApiService.updateStudentStats(_student!.id, false);
-        final rage = await ApiService.getRandomRage();
-        rageMessage = rage['message'];
+        
+        String dialogueType = oldCombo >= 3 ? 'combo_broken' : 'wrong_answer';
+        
+        final rage = await ApiService.getRageDialogue(
+          dialogueType: dialogueType,
+          studentName: _student!.name,
+          question: quiz.question,
+          wrongAnswer: selectedAnswer ?? '',
+          correctAnswer: quiz.correctAnswer,
+          combo: oldCombo,
+        );
+        
+        rageMessage = rage['dialogue'];
         _shakeController.forward(from: 0);
         earnedPoints = 0;
       }
@@ -514,6 +536,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
         isCorrect = correct;
       });
     } catch (e) {
+      print('Submit answer error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('제출 실패: $e')),
