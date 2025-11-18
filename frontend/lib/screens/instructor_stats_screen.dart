@@ -21,6 +21,21 @@ class _InstructorStatsScreenState extends State<InstructorStatsScreen> {
     _loadInstructorData();
   }
 
+  Future<void> _loadData() async {
+    try {
+      final stats = await ApiService.getInstructorStats();
+      final evolutionCheck = await ApiService.checkEvolution();
+      setState(() {
+        _stats = stats;
+        _evolutionCheck = evolutionCheck;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+
   Future<void> _loadInstructorData() async {
     try {
       final instructor = await ApiService.getInstructor();

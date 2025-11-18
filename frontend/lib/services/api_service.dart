@@ -660,8 +660,6 @@ class ApiService {
     }
   }
 
-}
-
   static Future<Map<String, dynamic>> checkEvolution() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/instructor/evolution/check'));
@@ -683,6 +681,22 @@ class ApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
+      return {'evolved': false};
+    } catch (e) {
+      print('Error auto evolving: $e');
+      return {'evolved': false};
+    }
+  }
+
+}
+
+      return {'canEvolve': false};
+    } catch (e) {
+      print('Error checking evolution: $e');
+      return {'canEvolve': false};
+    }
+  }
+
       return {'evolved': false};
     } catch (e) {
       print('Error auto evolving: $e');
