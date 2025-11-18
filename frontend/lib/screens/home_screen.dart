@@ -6,6 +6,7 @@ import 'worksheet_list_screen.dart';
 import 'ranking_screen.dart';
 import 'shop_screen.dart';
 import 'my_page_screen.dart';
+import 'instructor_stats_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Student initialStudent;
@@ -49,6 +50,16 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         backgroundColor: const Color(0xFF595048),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.school, color: Color(0xFFD9D4D2)),
+            tooltip: '강사 정보',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const InstructorStatsScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.person, color: Color(0xFFD9D4D2)),
             onPressed: () async {
@@ -154,6 +165,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                         _refreshStudent();
                       },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildMenuButton(
+                      context,
+                      '😤 강사 정보',
+                      '허태훈 강사의 현재 상태',
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const InstructorStatsScreen(),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     _buildMenuButton(
