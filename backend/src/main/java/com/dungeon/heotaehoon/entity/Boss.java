@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "bosses")
@@ -21,6 +22,10 @@ public class Boss {
     @JoinColumn(name = "lesson_id")
     @JsonIgnore
     private Lesson lesson;
+
+    @OneToMany(mappedBy = "boss", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Quiz> quizzes;
 
     @Column(name = "boss_name", nullable = false)
     private String bossName;
