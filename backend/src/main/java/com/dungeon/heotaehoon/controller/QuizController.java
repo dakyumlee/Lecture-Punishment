@@ -69,3 +69,23 @@ public class QuizController {
         return ResponseEntity.ok(quizzes);
     }
 }
+
+    @PostMapping("/rage-dialogue")
+    public ResponseEntity<Map<String, String>> getRageDialogue(@RequestBody Map<String, Object> request) {
+        String dialogueType = (String) request.get("dialogueType");
+        String studentName = (String) request.getOrDefault("studentName", "학생");
+        String question = (String) request.getOrDefault("question", "");
+        String wrongAnswer = (String) request.getOrDefault("wrongAnswer", "");
+        String correctAnswer = (String) request.getOrDefault("correctAnswer", "");
+        Integer combo = (Integer) request.getOrDefault("combo", 0);
+        
+        String dialogue = aiServiceClient.generateRageDialogue(
+            dialogueType, studentName, question, wrongAnswer, correctAnswer, combo
+        );
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("dialogue", dialogue);
+        response.put("dialogueType", dialogueType);
+        
+        return ResponseEntity.ok(response);
+    }
