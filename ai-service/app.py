@@ -7,7 +7,7 @@ import random
 app = Flask(__name__)
 CORS(app)
 
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY', 'dummy-key'))
 
 LEGENDARY_RAGE_QUOTES = [
     "너는 복습을 했니? 했으면 이럴 리가 없지 ㅋㅋ",
