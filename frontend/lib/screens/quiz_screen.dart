@@ -4,6 +4,7 @@ import '../models/quiz.dart';
 import '../models/student.dart';
 import '../models/boss.dart';
 import '../services/api_service.dart';
+import 'mental_recovery_screen.dart';
 
 class QuizScreen extends StatefulWidget {
   final String? bossId;
@@ -71,6 +72,127 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
         );
       }
     }
+  }
+
+
+  void _showMentalRecoveryDialog() {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF595048),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Colors.red, width: 3),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red, size: 32),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '⚠️ 멘탈 붕괴 위험!',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontFamily: 'JoseonGulim',
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D0D0D),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '멘탈 게이지: ${_student!.mentalGauge}/100',
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontFamily: 'JoseonGulim',
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '멘탈이 너무 낮습니다!\n회복 미션을 진행하세요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFFD9D4D2),
+                fontFamily: 'JoseonGulim',
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              '나중에',
+              style: TextStyle(
+                color: Color(0xFF736A63),
+                fontFamily: 'JoseonGulim',
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MentalRecoveryScreen(student: _student!),
+                ),
+              );
+              
+              if (result == true && mounted) {
+                final updatedStudent = await ApiService().getStudent(_student!.id);
+                setState(() {
+                  _student = updatedStudent;
+                });
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        '멘탈이 회복되었습니다!',
+                        style: TextStyle(fontFamily: 'JoseonGulim'),
+                      ),
+                      backgroundColor: Color(0xFF4CAF50),
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4CAF50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              '회복 미션 시작',
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'JoseonGulim',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
