@@ -100,6 +100,8 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                           const SizedBox(height: 12),
                           if (_boss != null) _buildBossHpBar(),
                           const SizedBox(height: 12),
+                          if (_student != null) _buildMentalGaugeBar(),
+                          const SizedBox(height: 12),
                           if (combo >= 3) _buildComboIndicator(),
                           const SizedBox(height: 20),
                           _buildQuestionCard(_quizzes[currentQuestionIndex]),
@@ -302,6 +304,125 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
               );
             },
           ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildMentalGaugeBar() {
+    final mental = _student!.mentalGauge;
+    final mentalPercent = mental / 100;
+    
+    Color gaugeColor;
+    String status;
+    
+    if (mental >= 80) {
+      gaugeColor = const Color(0xFF4CAF50);
+      status = '😊 양호';
+    } else if (mental >= 60) {
+      gaugeColor = const Color(0xFF8BC34A);
+      status = '😐 보통';
+    } else if (mental >= 40) {
+      gaugeColor = const Color(0xFFFF9800);
+      status = '😰 불안';
+    } else if (mental >= 30) {
+      gaugeColor = const Color(0xFFFF5722);
+      status = '😱 위험';
+    } else {
+      gaugeColor = const Color(0xFFD32F2F);
+      status = '💀 붕괴';
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D0D0D),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: mental < 30 ? Colors.red : const Color(0xFF736A63),
+          width: mental < 30 ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.favorite, color: Color(0xFFD9D4D2), size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    '멘탈 게이지',
+                    style: TextStyle(
+                      color: Color(0xFFD9D4D2),
+                      fontFamily: 'JoseonGulim',
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                status,
+                style: TextStyle(
+                  color: gaugeColor,
+                  fontFamily: 'JoseonGulim',
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: mentalPercent,
+              minHeight: 12,
+              backgroundColor: const Color(0xFF595048),
+              valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$mental / 100',
+            style: const TextStyle(
+              color: Color(0xFF736A63),
+              fontFamily: 'JoseonGulim',
+              fontSize: 12,
+            ),
+          ),
+          if (mental < 30)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red, width: 1),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.red, size: 16),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '멘탈이 붕괴 직전입니다! 회복 미션을 진행하세요.',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontFamily: 'JoseonGulim',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

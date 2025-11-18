@@ -5,6 +5,7 @@ class Student {
   int exp;
   int level;
   final int points;
+  final int mentalGauge;
   final bool isProfileComplete;
   final int? totalCorrect;
   final int? totalWrong;
@@ -20,6 +21,7 @@ class Student {
     required this.exp,
     required this.level,
     required this.points,
+    required this.mentalGauge,
     required this.isProfileComplete,
     this.totalCorrect,
     this.totalWrong,
@@ -37,6 +39,7 @@ class Student {
       exp: json['exp'] ?? 0,
       level: json['level'] ?? 1,
       points: json['points'] ?? 0,
+      mentalGauge: json['mentalGauge'] ?? 100,
       isProfileComplete: json['isProfileComplete'] ?? false,
       totalCorrect: json['totalCorrect'],
       totalWrong: json['totalWrong'],
