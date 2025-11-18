@@ -21,27 +21,31 @@ public class InstructorService {
     }
 
     @Transactional
-    public Map<String, Object> addInstructorExp(int expAmount) {
-        Instructor instructor = getInstructor();
+    public Map<String, Object> addInstructorExp(String instructorId, int expAmount) {
+        Instructor instructor = instructorRepository.findById(instructorId)
+                .orElseGet(() -> getInstructor());
         
         int oldLevel = instructor.getLevel();
         int oldExp = instructor.getExp();
+        int newExp = oldExp + expAmount;
         
-        instructor.setExp(oldExp + expAmount);
-        
-        int newLevel = oldLevel;
+        int expForNextLevel = oldLevel * 100;
         boolean leveledUp = false;
+        int newLevel = oldLevel;
         
-        while (instructor.getExp() >= 100) {
-            instructor.setExp(instructor.getExp() - 100);
+        while (newExp >= expForNextLevel) {
+            newExp -= expForNextLevel;
             newLevel++;
+            expForNextLevel = newLevel * 100;
             leveledUp = true;
-            
-            instructor.setRageGauge(Math.max(0, instructor.getRageGauge() - 10));
         }
         
+        instructor.setExp(newExp);
+        instructor.setLevel(newLevel);
+        
         if (leveledUp) {
-            instructor.setLevel(newLevel);
+            instructor.setCurrentTitle(getTitleForLevel(newLevel));
+            instructor.setRageGauge(Math.max(0, instructor.getRageGauge() - 10));
         }
         
         instructorRepository.save(instructor);
@@ -52,7 +56,6 @@ public class InstructorService {
         result.put("oldLevel", oldLevel);
         result.put("newLevel", newLevel);
         result.put("expGained", expAmount);
-        result.put("rageReduced", leveledUp);
         
         return result;
     }
@@ -107,6 +110,9 @@ public class InstructorService {
         stats.put("rageGauge", instructor.getRageGauge());
         stats.put("isEvolved", instructor.getIsEvolved());
         stats.put("evolutionStage", instructor.getEvolutionStage());
+        stats.put("totalStudents", 0);
+        stats.put("averageCorrectRate", 0);
+        stats.put("totalQuizzes", 0);
         
         String statusMessage = getStatusMessage(instructor);
         stats.put("statusMessage", statusMessage);
@@ -132,45 +138,6 @@ public class InstructorService {
         } else {
             return "평온한 상태";
         }
-    }
-}
-
-    public Map<String, Object> addInstructorExp(String instructorId, int expAmount) {
-        Instructor instructor = instructorRepository.findById(instructorId)
-                .orElseThrow(() -> new RuntimeException("Instructor not found"));
-        
-        int oldLevel = instructor.getLevel();
-        int oldExp = instructor.getExp();
-        int newExp = oldExp + expAmount;
-        
-        int expForNextLevel = oldLevel * 100;
-        boolean leveledUp = false;
-        int newLevel = oldLevel;
-        
-        while (newExp >= expForNextLevel) {
-            newExp -= expForNextLevel;
-            newLevel++;
-            expForNextLevel = newLevel * 100;
-            leveledUp = true;
-        }
-        
-        instructor.setExp(newExp);
-        instructor.setLevel(newLevel);
-        
-        if (leveledUp) {
-            instructor.setCurrentTitle(getTitleForLevel(newLevel));
-        }
-        
-        instructorRepository.save(instructor);
-        
-        Map<String, Object> result = new HashMap<>();
-        result.put("instructor", instructor);
-        result.put("leveledUp", leveledUp);
-        result.put("oldLevel", oldLevel);
-        result.put("newLevel", newLevel);
-        result.put("expGained", expAmount);
-        
-        return result;
     }
     
     private String getTitleForLevel(int level) {

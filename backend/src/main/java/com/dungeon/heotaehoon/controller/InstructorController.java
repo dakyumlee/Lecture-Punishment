@@ -26,9 +26,12 @@ public class InstructorController {
     }
 
     @PostMapping("/exp")
-    public ResponseEntity<Map<String, Object>> addExp(@RequestBody Map<String, Integer> request) {
-        Integer expAmount = request.get("exp");
-        Map<String, Object> result = instructorService.addInstructorExp(expAmount != null ? expAmount : 1);
+    public ResponseEntity<Map<String, Object>> addInstructorExp(@RequestBody Map<String, Object> request) {
+        String instructorId = (String) request.getOrDefault("instructorId", "default-instructor");
+        Integer exp = (Integer) request.getOrDefault("exp", 5);
+        
+        Map<String, Object> result = instructorService.addInstructorExp(instructorId, exp);
+        
         return ResponseEntity.ok(result);
     }
 
@@ -50,16 +53,5 @@ public class InstructorController {
     public ResponseEntity<Instructor> evolveToFather() {
         Instructor instructor = instructorService.evolveToFather();
         return ResponseEntity.ok(instructor);
-    }
-}
-
-    @PostMapping("/exp")
-    public ResponseEntity<Map<String, Object>> addInstructorExp(@RequestBody Map<String, Object> request) {
-        String instructorId = (String) request.getOrDefault("instructorId", "default-instructor");
-        Integer exp = (Integer) request.getOrDefault("exp", 5);
-        
-        Map<String, Object> result = instructorService.addInstructorExp(instructorId, exp);
-        
-        return ResponseEntity.ok(result);
     }
 }

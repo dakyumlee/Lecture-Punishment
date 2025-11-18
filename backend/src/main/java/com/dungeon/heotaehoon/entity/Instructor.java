@@ -37,10 +37,6 @@ public class Instructor {
     private String currentTitle;
 
     @Builder.Default
-    @Column(nullable = false)
-    private Integer exp = 0;
-
-    @Builder.Default
     @Column(name = "rage_gauge", nullable = false)
     private Integer rageGauge = 0;
 
