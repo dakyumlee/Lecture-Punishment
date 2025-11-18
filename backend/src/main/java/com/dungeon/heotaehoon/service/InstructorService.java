@@ -134,3 +134,50 @@ public class InstructorService {
         }
     }
 }
+
+    public Map<String, Object> addInstructorExp(String instructorId, int expAmount) {
+        Instructor instructor = instructorRepository.findById(instructorId)
+                .orElseThrow(() -> new RuntimeException("Instructor not found"));
+        
+        int oldLevel = instructor.getLevel();
+        int oldExp = instructor.getExp();
+        int newExp = oldExp + expAmount;
+        
+        int expForNextLevel = oldLevel * 100;
+        boolean leveledUp = false;
+        int newLevel = oldLevel;
+        
+        while (newExp >= expForNextLevel) {
+            newExp -= expForNextLevel;
+            newLevel++;
+            expForNextLevel = newLevel * 100;
+            leveledUp = true;
+        }
+        
+        instructor.setExp(newExp);
+        instructor.setLevel(newLevel);
+        
+        if (leveledUp) {
+            instructor.setCurrentTitle(getTitleForLevel(newLevel));
+        }
+        
+        instructorRepository.save(instructor);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("instructor", instructor);
+        result.put("leveledUp", leveledUp);
+        result.put("oldLevel", oldLevel);
+        result.put("newLevel", newLevel);
+        result.put("expGained", expAmount);
+        
+        return result;
+    }
+    
+    private String getTitleForLevel(int level) {
+        if (level >= 10) return "Lv." + level + " — 아빠 허태훈 (부성애 각성)";
+        if (level >= 7) return "Lv." + level + " — 분노 게이지 안정화됨";
+        if (level >= 5) return "Lv." + level + " — 독설의 달인";
+        if (level >= 3) return "Lv." + level + " — 엄격한 교육자";
+        return "Lv." + level + " — 신입 강사";
+    }
+}
