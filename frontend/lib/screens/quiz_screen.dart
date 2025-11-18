@@ -23,7 +23,6 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
   int currentQuestionIndex = 0;
   String? selectedAnswer;
   bool showResult = false;
-  bool showFireEffect = false;
   bool isCorrect = false;
   String? rageMessage;
   int combo = 0;
@@ -86,10 +85,8 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
         backgroundColor: const Color(0xFF595048),
         iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
       ),
-      body: Stack(
-        children: [
-          _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFFD9D4D2)))
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFD9D4D2)))
           : _quizzes.isEmpty
               ? _buildEmptyState()
               : SafeArea(
@@ -152,14 +149,6 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
-        ],
-      ),
-          if (showFireEffect)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: FireEffect(),
-              ),
-            ),
         ],
       ),
     );
@@ -540,18 +529,6 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
         rageMessage = rage['dialogue'];
         _shakeController.forward(from: 0);
         earnedPoints = 0;
-        
-        setState(() {
-          showFireEffect = true;
-        });
-        
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (mounted) {
-            setState(() {
-              showFireEffect = false;
-            });
-          }
-        });
       }
       
       setState(() {
@@ -872,77 +849,4 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
       ),
     );
   }
-}
-
-
-class FireEffect extends StatefulWidget {
-  const FireEffect({super.key});
-
-  @override
-  State<FireEffect> createState() => _FireEffectState();
-}
-
-class _FireEffectState extends State<FireEffect> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    )..forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return CustomPaint(
-          size: Size(MediaQuery.of(context).size.width, 200),
-          painter: FirePainter(_controller.value),
-        );
-      },
-    );
-  }
-}
-
-class FirePainter extends CustomPainter {
-  final double progress;
-
-  FirePainter(this.progress);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (progress >= 1.0) return;
-
-    final random = Random();
-    for (int i = 0; i < 20; i++) {
-      final x = random.nextDouble() * size.width;
-      final y = size.height - (progress * size.height);
-      final opacity = (1.0 - progress).clamp(0.0, 1.0);
-      
-      final paint = Paint()
-        ..color = i % 2 == 0 
-            ? Colors.orange.withOpacity(opacity) 
-            : Colors.red.withOpacity(opacity)
-        ..style = PaintingStyle.fill;
-      
-      canvas.drawCircle(
-        Offset(x, y + random.nextDouble() * 20),
-        random.nextDouble() * 15 + 5,
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(FirePainter oldDelegate) => true;
 }
