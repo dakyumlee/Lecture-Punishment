@@ -46,12 +46,12 @@ public class Boss {
     @Column(name = "current_hp")
     private Integer currentHp;
 
-    @Builder.Default
     @Column(name = "damage_per_correct", nullable = false)
-    private Integer damagePerCorrect = 200;
+    private Integer damagePerCorrect;
 
+    @Builder.Default
     @Column(name = "is_defeated")
-    private Boolean isDefeated;
+    private Boolean isDefeated = false;
 
     @Column(name = "defeat_reward_exp")
     private Integer defeatRewardExp;
@@ -88,6 +88,16 @@ public class Boss {
         }
         if (defeatRewardPoints == null) {
             defeatRewardPoints = calculatePointsByDifficulty(difficulty);
+        }
+        
+        if (bossName == null || bossName.isEmpty()) {
+            bossName = "보스";
+        }
+        if (bossSubtitle == null || bossSubtitle.isEmpty()) {
+            bossSubtitle = "지식의 수호자";
+        }
+        if (specialAbility == null) {
+            specialAbility = getDefaultSpecialAbility(difficulty);
         }
     }
 
@@ -135,11 +145,26 @@ public class Boss {
         }
     }
 
+    private String getDefaultSpecialAbility(Integer diff) {
+        switch (diff) {
+            case 1: return "없음";
+            case 2: return "압박: 틀리면 다음 문제 시간 -10초";
+            case 3: return "분노 폭발: 3문제 연속 틀리면 HP 10% 회복";
+            case 4: return "광폭화: HP 50% 이하 시 데미지 2배 필요";
+            case 5: return "허태훈의 진노: 모든 패널티 + HP 30% 회복";
+            default: return "없음";
+        }
+    }
+
     public String getDifficultyStars() {
         StringBuilder stars = new StringBuilder();
         for (int i = 0; i < difficulty; i++) {
             stars.append("⭐");
         }
         return stars.toString();
+    }
+    
+    public String getName() {
+        return bossName != null ? bossName : "알 수 없는 보스";
     }
 }

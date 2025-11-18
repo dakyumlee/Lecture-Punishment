@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -47,18 +46,30 @@ public class DungeonController {
                 
                 if (boss != null) {
                     dungeon.put("bossId", boss.getId());
-                    dungeon.put("bossName", boss.getBossName());
-                    dungeon.put("bossSubtitle", boss.getBossSubtitle());
-                    dungeon.put("totalHp", boss.getTotalHp());
-                    dungeon.put("currentHp", boss.getCurrentHp());
-                    dungeon.put("isDefeated", boss.getIsDefeated());
+                    dungeon.put("bossName", boss.getName());
+                    dungeon.put("bossSubtitle", boss.getBossSubtitle() != null ? boss.getBossSubtitle() : "지식의 수호자");
+                    dungeon.put("difficulty", boss.getDifficulty() != null ? boss.getDifficulty() : 3);
+                    dungeon.put("difficultyStars", boss.getDifficultyStars());
+                    dungeon.put("specialAbility", boss.getSpecialAbility() != null ? boss.getSpecialAbility() : "없음");
+                    dungeon.put("totalHp", boss.getTotalHp() != null ? boss.getTotalHp() : 1000);
+                    dungeon.put("currentHp", boss.getCurrentHp() != null ? boss.getCurrentHp() : 1000);
+                    dungeon.put("damagePerCorrect", boss.getDamagePerCorrect() != null ? boss.getDamagePerCorrect() : 200);
+                    dungeon.put("isDefeated", boss.getIsDefeated() != null ? boss.getIsDefeated() : false);
+                    dungeon.put("defeatRewardExp", boss.getDefeatRewardExp() != null ? boss.getDefeatRewardExp() : 30);
+                    dungeon.put("defeatRewardPoints", boss.getDefeatRewardPoints() != null ? boss.getDefeatRewardPoints() : 150);
                 } else {
                     dungeon.put("bossId", null);
                     dungeon.put("bossName", "오늘의 보스: " + lesson.getSubject());
                     dungeon.put("bossSubtitle", "지식의 수호자");
+                    dungeon.put("difficulty", 3);
+                    dungeon.put("difficultyStars", "⭐⭐⭐");
+                    dungeon.put("specialAbility", "없음");
                     dungeon.put("totalHp", 1000);
                     dungeon.put("currentHp", 1000);
+                    dungeon.put("damagePerCorrect", 200);
                     dungeon.put("isDefeated", false);
+                    dungeon.put("defeatRewardExp", 30);
+                    dungeon.put("defeatRewardPoints", 150);
                 }
                 
                 dungeons.add(dungeon);
@@ -90,15 +101,23 @@ public class DungeonController {
             
             if (boss != null) {
                 entrance.put("bossId", boss.getId());
-                entrance.put("bossName", boss.getBossName());
-                entrance.put("bossSubtitle", boss.getBossSubtitle());
-                entrance.put("totalHp", boss.getTotalHp());
-                entrance.put("currentHp", boss.getCurrentHp());
+                entrance.put("bossName", boss.getName());
+                entrance.put("bossSubtitle", boss.getBossSubtitle() != null ? boss.getBossSubtitle() : "지식의 수호자");
+                entrance.put("difficulty", boss.getDifficulty() != null ? boss.getDifficulty() : 3);
+                entrance.put("difficultyStars", boss.getDifficultyStars());
+                entrance.put("specialAbility", boss.getSpecialAbility() != null ? boss.getSpecialAbility() : "없음");
+                entrance.put("totalHp", boss.getTotalHp() != null ? boss.getTotalHp() : 1000);
+                entrance.put("currentHp", boss.getCurrentHp() != null ? boss.getCurrentHp() : 1000);
+                entrance.put("damagePerCorrect", boss.getDamagePerCorrect() != null ? boss.getDamagePerCorrect() : 200);
             } else {
                 entrance.put("bossName", "오늘의 보스: " + lesson.getSubject());
                 entrance.put("bossSubtitle", "지식의 수호자");
+                entrance.put("difficulty", 3);
+                entrance.put("difficultyStars", "⭐⭐⭐");
+                entrance.put("specialAbility", "없음");
                 entrance.put("totalHp", 1000);
                 entrance.put("currentHp", 1000);
+                entrance.put("damagePerCorrect", 200);
             }
             
             entrance.put("entranceDialogue", entranceDialogue);
