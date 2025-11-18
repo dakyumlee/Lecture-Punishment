@@ -265,38 +265,42 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             ),
           ),
           const SizedBox(height: 8),
-          Stack(
-            children: [
-              Container(
-                height: 24,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF595048),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                height: 24,
-                width: MediaQuery.of(context).size.width * 0.8 * hpPercent,
-                decoration: BoxDecoration(
-                  color: hpPercent > 0.5 ? Colors.red : Colors.orange,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              Container(
-                height: 24,
-                alignment: Alignment.center,
-                child: Text(
-                  '${_boss!.hpCurrent} / ${_boss!.hpTotal}',
-                  style: const TextStyle(
-                    color: Color(0xFFD9D4D2),
-                    fontSize: 12,
-                    fontFamily: 'JoseonGulim',
-                    fontWeight: FontWeight.bold,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Stack(
+                children: [
+                  Container(
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF595048),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                ),
-              ),
-            ],
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 500),
+                    height: 24,
+                    width: constraints.maxWidth * hpPercent,
+                    decoration: BoxDecoration(
+                      color: hpPercent > 0.5 ? Colors.red : Colors.orange,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  Container(
+                    height: 24,
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${_boss!.hpCurrent} / ${_boss!.hpTotal}',
+                      style: const TextStyle(
+                        color: Color(0xFFD9D4D2),
+                        fontSize: 12,
+                        fontFamily: 'JoseonGulim',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
