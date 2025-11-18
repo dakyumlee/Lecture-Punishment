@@ -501,7 +501,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
         if (combo >= 3) {
           final praise = await ApiService.getRageDialogue(
             dialogueType: 'combo_3',
-            studentName: _student!.name,
+            studentName: _student!.displayName,
             combo: combo,
           );
           rageMessage = praise['dialogue'];
@@ -519,7 +519,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
         
         final rage = await ApiService.getRageDialogue(
           dialogueType: dialogueType,
-          studentName: _student!.name,
+          studentName: _student!.displayName,
           question: quiz.question,
           wrongAnswer: selectedAnswer ?? '',
           correctAnswer: quiz.correctAnswer,

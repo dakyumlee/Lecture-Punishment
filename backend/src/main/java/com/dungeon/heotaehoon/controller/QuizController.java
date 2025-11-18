@@ -3,11 +3,13 @@ package com.dungeon.heotaehoon.controller;
 import com.dungeon.heotaehoon.entity.Quiz;
 import com.dungeon.heotaehoon.service.QuizService;
 import com.dungeon.heotaehoon.service.AiQuizGenerationService;
+import com.dungeon.heotaehoon.service.AiServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +21,7 @@ public class QuizController {
     
     private final QuizService quizService;
     private final AiQuizGenerationService aiQuizGenerationService;
+    private final AiServiceClient aiServiceClient;
 
     @GetMapping("/boss/{bossId}")
     public ResponseEntity<List<Quiz>> getQuizzesByBoss(@PathVariable String bossId) {
@@ -68,7 +71,6 @@ public class QuizController {
         List<Quiz> quizzes = aiQuizGenerationService.generateQuizzesForBoss(bossId, topic, count);
         return ResponseEntity.ok(quizzes);
     }
-}
 
     @PostMapping("/rage-dialogue")
     public ResponseEntity<Map<String, String>> getRageDialogue(@RequestBody Map<String, Object> request) {
@@ -89,3 +91,4 @@ public class QuizController {
         
         return ResponseEntity.ok(response);
     }
+}
