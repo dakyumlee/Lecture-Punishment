@@ -97,9 +97,13 @@ public class StudentController {
             pointsEarned = 5;
             student.setPoints(student.getPoints() + pointsEarned);
             studentService.updateProfile(studentId, null, null, null, null);
-            instructorService.addInstructorExp(1);
+            
+            try {
+                instructorService.addInstructorExp("default-instructor", 5);
+            } catch (Exception e) {
+                System.err.println("Failed to add instructor exp: " + e.getMessage());
+            }
         } else {
-            instructorService.addRage(5);
             mentalResult = studentService.reduceMental(studentId, 10);
             student = (Student) mentalResult.get("student");
         }

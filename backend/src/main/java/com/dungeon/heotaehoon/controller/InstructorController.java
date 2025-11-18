@@ -52,3 +52,14 @@ public class InstructorController {
         return ResponseEntity.ok(instructor);
     }
 }
+
+    @PostMapping("/exp")
+    public ResponseEntity<Map<String, Object>> addInstructorExp(@RequestBody Map<String, Object> request) {
+        String instructorId = (String) request.getOrDefault("instructorId", "default-instructor");
+        Integer exp = (Integer) request.getOrDefault("exp", 5);
+        
+        Map<String, Object> result = instructorService.addInstructorExp(instructorId, exp);
+        
+        return ResponseEntity.ok(result);
+    }
+}
