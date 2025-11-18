@@ -604,6 +604,39 @@ class ApiService {
   }
 }
 
+      return [];
+    } catch (e) {
+      print('Error fetching mental recovery missions: $e');
+      return [];
+    }
+  }
+
+  }
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/mental-recovery/complete'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'studentId': studentId,
+          'missionId': missionId,
+          'answer': answer,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'success': false};
+    } catch (e) {
+      print('Error completing mental mission: $e');
+      return {'success': false};
+    }
+  }
+  }
+
+  }
+
   static Future<List<Map<String, dynamic>>> getMentalRecoveryMissions() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/mental-recovery/missions'));
@@ -659,5 +692,8 @@ class ApiService {
       print('Error completing mental mission: $e');
       return {'success': false};
     }
+  }
+
+
   }
 }
