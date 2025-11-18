@@ -2,6 +2,10 @@ package com.dungeon.heotaehoon.service;
 
 import com.dungeon.heotaehoon.entity.Instructor;
 import com.dungeon.heotaehoon.repository.InstructorRepository;
+import com.dungeon.heotaehoon.repository.StudentRepository;
+import com.dungeon.heotaehoon.entity.Student;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +18,7 @@ import java.util.Map;
 public class InstructorService {
     
     private final InstructorRepository instructorRepository;
+    private final StudentRepository studentRepository;
 
     public Instructor getInstructor() {
         return instructorRepository.findByUsername("hth422")
@@ -147,4 +152,69 @@ public class InstructorService {
         if (level >= 3) return "Lv." + level + " — 엄격한 교육자";
         return "Lv." + level + " — 신입 강사";
     }
+    public Map<String, Object> checkEvolutionCondition() {
+        Instructor instructor = getInstructor();
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("canEvolve", false);
+        result.put("currentLevel", instructor.getLevel());
+        result.put("requiredLevel", 10);
+        result.put("reasons", new ArrayList<String>());
+        
+        List<String> reasons = (List<String>) result.get("reasons");
+        
+        if (instructor.getLevel() < 10) {
+            reasons.add("강사 레벨이 10 미만입니다");
+        }
+        
+        if (instructor.getRageGauge() > 20) {
+            reasons.add("분노 게이지가 너무 높습니다 (20 이하 필요)");
+        }
+        
+        List<Student> students = studentRepository.findAll();
+        if (!students.isEmpty()) {
+            long totalCorrect = students.stream()
+                .mapToLong(s -> s.getTotalCorrect() != null ? s.getTotalCorrect() : 0)
+                .sum();
+            long totalWrong = students.stream()
+                .mapToLong(s -> s.getTotalWrong() != null ? s.getTotalWrong() : 0)
+                .sum();
+            
+            double correctRate = totalCorrect + totalWrong > 0 
+                ? (double) totalCorrect / (totalCorrect + totalWrong) * 100 
+                : 0;
+            
+            result.put("studentCorrectRate", correctRate);
+            result.put("requiredCorrectRate", 70.0);
+            
+            if (correctRate < 70.0) {
+                reasons.add(String.format("학생 평균 정답률이 70%% 미만입니다 (현재: %.1f%%)", correctRate));
+            }
+        } else {
+            reasons.add("등록된 학생이 없습니다");
+        }
+        
+        boolean canEvolve = reasons.isEmpty() && !instructor.getIsEvolved();
+        result.put("canEvolve", canEvolve);
+        result.put("isAlreadyEvolved", instructor.getIsEvolved());
+        
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> tryAutoEvolve() {
+        Map<String, Object> condition = checkEvolutionCondition();
+        
+        if ((Boolean) condition.get("canEvolve")) {
+            Instructor evolved = evolveToFather();
+            condition.put("evolved", true);
+            condition.put("instructor", evolved);
+            condition.put("message", "축하합니다! 허태훈이 아빠로 진화했습니다!");
+        } else {
+            condition.put("evolved", false);
+        }
+        
+        return condition;
+    }
+
 }

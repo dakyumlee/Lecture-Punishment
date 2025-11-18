@@ -54,4 +54,16 @@ public class InstructorController {
         Instructor instructor = instructorService.evolveToFather();
         return ResponseEntity.ok(instructor);
     }
+    @GetMapping("/evolution/check")
+    public ResponseEntity<Map<String, Object>> checkEvolution() {
+        Map<String, Object> condition = instructorService.checkEvolutionCondition();
+        return ResponseEntity.ok(condition);
+    }
+
+    @PostMapping("/evolution/auto")
+    public ResponseEntity<Map<String, Object>> autoEvolve() {
+        Map<String, Object> result = instructorService.tryAutoEvolve();
+        return ResponseEntity.ok(result);
+    }
+
 }
