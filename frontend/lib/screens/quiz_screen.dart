@@ -90,25 +90,28 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
           : _quizzes.isEmpty
               ? _buildEmptyState()
               : SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildHeader(),
-                        const SizedBox(height: 12),
-                        if (_boss != null) _buildBossHpBar(),
-                        const SizedBox(height: 12),
-                        if (combo >= 3) _buildComboIndicator(),
-                        const SizedBox(height: 20),
-                        _buildQuestionCard(_quizzes[currentQuestionIndex]),
-                        const SizedBox(height: 30),
-                        if (!showResult) _buildOptions(_quizzes[currentQuestionIndex]),
-                        if (showResult) _buildResultMessage(),
-                        const SizedBox(height: 30),
-                        if (!showResult) _buildSubmitButton(_quizzes[currentQuestionIndex]),
-                        if (showResult) _buildNextButton(),
-                      ],
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildHeader(),
+                          const SizedBox(height: 12),
+                          if (_boss != null) _buildBossHpBar(),
+                          const SizedBox(height: 12),
+                          if (combo >= 3) _buildComboIndicator(),
+                          const SizedBox(height: 20),
+                          _buildQuestionCard(_quizzes[currentQuestionIndex]),
+                          const SizedBox(height: 30),
+                          if (!showResult) _buildOptions(_quizzes[currentQuestionIndex]),
+                          if (showResult) _buildResultMessage(),
+                          const SizedBox(height: 30),
+                          if (!showResult) _buildSubmitButton(_quizzes[currentQuestionIndex]),
+                          if (showResult) _buildNextButton(),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
                     ),
                   ),
                 ),
