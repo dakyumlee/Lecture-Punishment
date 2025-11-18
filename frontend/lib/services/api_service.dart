@@ -603,3 +603,61 @@ class ApiService {
     return jsonDecode(response.body);
   }
 }
+
+  static Future<List<Map<String, dynamic>>> getMentalRecoveryMissions() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/mental-recovery/missions'));
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> missions = jsonDecode(response.body);
+        return missions.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching mental recovery missions: $e');
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> getRandomMentalMission(String type) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/mental-recovery/missions/random/$type'),
+      );
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('Error fetching random mental mission: $e');
+      return {};
+    }
+  }
+
+  static Future<Map<String, dynamic>> completeMentalMission({
+    required String studentId,
+    required String missionId,
+    required String answer,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/mental-recovery/complete'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'studentId': studentId,
+          'missionId': missionId,
+          'answer': answer,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'success': false};
+    } catch (e) {
+      print('Error completing mental mission: $e');
+      return {'success': false};
+    }
+  }
+}
