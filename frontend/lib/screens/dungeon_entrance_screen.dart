@@ -133,7 +133,7 @@ class _DungeonEntranceScreenState extends State<DungeonEntranceScreen> {
                         Row(
                           children: [
                             ...List.generate(
-                              _entrance!['difficultyStars'] ?? 3,
+                              _entrance!['difficulty'] ?? 3,
                               (index) => const Icon(
                                 Icons.star,
                                 color: Color(0xFFD9D4D2),
