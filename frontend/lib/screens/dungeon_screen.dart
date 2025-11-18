@@ -176,7 +176,7 @@ class _DungeonScreenState extends State<DungeonScreen> {
                 Row(
                   children: [
                     ...List.generate(
-                      dungeon['difficultyStars'] ?? 3,
+                      dungeon['difficulty'] ?? 3,
                       (index) => Icon(
                         Icons.star,
                         color: Color(0xFFD9D4D2),
@@ -185,7 +185,7 @@ class _DungeonScreenState extends State<DungeonScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Lv.${dungeon['difficultyStars'] ?? 3}',
+                      'Lv.${dungeon['difficulty'] ?? 3}',
                       style: const TextStyle(
                         color: Color(0xFF736A63),
                         fontFamily: 'JoseonGulim',
