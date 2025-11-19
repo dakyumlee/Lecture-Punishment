@@ -3,7 +3,7 @@ import '../services/api_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/game_provider.dart';
 import 'home_screen.dart';
-import 'password_setup_screen.dart';
+import 'signup_screen.dart';
 import 'admin_login_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -13,14 +13,19 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _nameController = TextEditingController();
+  final _studentIdController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
 
   Future<void> _login() async {
-    if (_nameController.text.isEmpty) {
-      setState(() => _errorMessage = '이름을 입력해주세요');
+    if (_studentIdController.text.isEmpty) {
+      setState(() => _errorMessage = '학생ID를 입력해주세요');
+      return;
+    }
+
+    if (_passwordController.text.isEmpty) {
+      setState(() => _errorMessage = '비밀번호를 입력해주세요');
       return;
     }
 
@@ -30,33 +35,22 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final response = await ApiService.login(_nameController.text, _passwordController.text);
+      final response = await ApiService.login(
+        _studentIdController.text,
+        _passwordController.text,
+      );
       
       if (response['success'] == true) {
-        if (response['needsPassword'] == true) {
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PasswordSetupScreen(
-                  studentId: response['student']['id'],
-                  username: _nameController.text,
-                ),
-              ),
-            );
-          }
-        } else {
-          final provider = Provider.of<GameProvider>(context, listen: false);
-          provider.setCurrentStudent(response['student']);
-          
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => HomeScreen(initialStudent: provider.currentStudent!),
-              ),
-            );
-          }
+        final provider = Provider.of<GameProvider>(context, listen: false);
+        provider.setCurrentStudent(response['student']);
+        
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomeScreen(initialStudent: provider.currentStudent!),
+            ),
+          );
         }
       } else {
         setState(() => _errorMessage = response['message'] ?? '로그인 실패');
@@ -95,13 +89,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   children: [
                     TextField(
-                      controller: _nameController,
+                      controller: _studentIdController,
                       style: const TextStyle(
                         color: Color(0xFFD9D4D2),
                         fontFamily: 'JoseonGulim',
                       ),
                       decoration: InputDecoration(
-                        labelText: '이름',
+                        labelText: '학생ID (예: DGK001)',
                         labelStyle: const TextStyle(
                           color: Color(0xFF736A63),
                           fontFamily: 'JoseonGulim',
@@ -202,6 +196,21 @@ class _LoginScreenState extends State<LoginScreen> {
               TextButton(
                 onPressed: () => Navigator.push(
                   context,
+                  MaterialPageRoute(builder: (context) => const SignupScreen()),
+                ),
+                child: const Text(
+                  '회원가입 →',
+                  style: TextStyle(
+                    color: Color(0xFF736A63),
+                    fontFamily: 'JoseonGulim',
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.push(
+                  context,
                   MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
                 ),
                 child: const Text(
@@ -221,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _studentIdController.dispose();
     _passwordController.dispose();
     super.dispose();
   }

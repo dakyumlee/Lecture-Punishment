@@ -12,32 +12,22 @@ import '../config/env.dart';
 class ApiService {
   static String get baseUrl => Env.apiUrl;
 
-  static Future<Map<String, dynamic>> login(String username, String password) async {
+  static Future<Map<String, dynamic>> signup(String displayName, String birthDate, String password) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
+      Uri.parse('$baseUrl/auth/signup'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'username': username, 'password': password}),
+      body: jsonEncode({
+        'displayName': displayName,
+        'birthDate': birthDate,
+        'password': password,
+      }),
     );
     return jsonDecode(response.body);
   }
 
-  static Future<Map<String, dynamic>> loginWithAuth(Map<String, dynamic> credentials) async {
+  static Future<Map<String, dynamic>> login(String studentId, String password) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(credentials),
-    );
-    
-    if (response.statusCode == 400) {
-      return jsonDecode(response.body);
-    }
-    
-    return jsonDecode(response.body);
-  }
-
-  static Future<Map<String, dynamic>> setPassword(String studentId, String password) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/set-password'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'studentId': studentId,
@@ -435,13 +425,10 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-
-
   static Future<Student> getStudentByUsername(String username) async {
     final response = await http.get(Uri.parse('$baseUrl/game/student/$username'));
     return Student.fromJson(jsonDecode(response.body));
   }
-
 
   static Future<Map<String, dynamic>> createWorksheet(
     String title, 
@@ -549,7 +536,6 @@ class ApiService {
     );
     return jsonDecode(response.body);
   }
-
 
   static Future<Map<String, dynamic>> getRageDialogue({
     required String dialogueType,
@@ -683,6 +669,7 @@ class ApiService {
       return {'evolved': false};
     }
   }
+  
   static Future<Map<String, dynamic>> getRanking({String sortBy = 'points', int limit = 10}) async {
     try {
       final response = await http.get(
@@ -748,5 +735,4 @@ class ApiService {
       return {'isCorrect': false, 'damage': 0};
     }
   }
-
 }

@@ -35,6 +35,14 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
     }
   }
 
+  String _formatStudentInfo(dynamic student) {
+    final birthDate = student['birthDate'];
+    if (birthDate != null && birthDate.toString().isNotEmpty) {
+      return '${student['displayName']} ($birthDate)';
+    }
+    return '${student['displayName']} (${student['username']})';
+  }
+
   Future<void> _showCreateDialog() async {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
@@ -234,7 +242,7 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                       return DropdownMenuItem<String>(
                         value: student['id'],
                         child: Text(
-                          '${student['displayName']} (@${student['username']})',
+                          _formatStudentInfo(student),
                           style: const TextStyle(color: Color(0xFFD9D4D2)),
                         ),
                       );
@@ -393,12 +401,12 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                             return ListTile(
                               dense: true,
                               title: Text(
-                                student['displayName'] ?? student['username'],
+                                _formatStudentInfo(student),
                                 style: const TextStyle(color: Color(0xFFD9D4D2)),
                               ),
                               subtitle: Text(
-                                '@${student['username']}',
-                                style: const TextStyle(color: Color(0xFF736A63)),
+                                '학생ID: ${student['username']}',
+                                style: const TextStyle(color: Color(0xFF736A63), fontSize: 12),
                               ),
                               trailing: IconButton(
                                 icon: const Icon(Icons.remove_circle, color: Colors.red, size: 20),
