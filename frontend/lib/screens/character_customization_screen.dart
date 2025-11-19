@@ -21,7 +21,7 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
     {'emoji': '😎', 'name': '쿨함', 'price': 200},
     {'emoji': '🤓', 'name': '공부벌레', 'price': 300},
     {'emoji': '😤', 'name': '투지', 'price': 400},
-    {'emoji': '🥺', 'name': '애교', 'price': 500},
+    {'emoji': '🥺', 'name': '애고', 'price': 500},
     {'emoji': '😈', 'name': '악동', 'price': 600},
     {'emoji': '🤔', 'name': '생각중', 'price': 300},
     {'emoji': '😇', 'name': '천사', 'price': 700},
@@ -39,6 +39,7 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
 
   List<String> _ownedExpressions = ['😐'];
   List<String> _ownedOutfits = ['default'];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -47,10 +48,32 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
   }
 
   Future<void> _loadCustomization() async {
-    // TODO: API에서 소유 아이템 로드
-    setState(() {
-      _selectedExpression = widget.student.characterExpression ?? '😐';
-    });
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await ApiService.get(
+        '/student/customization?studentId=${widget.student.id}'
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final ownedItemIds = (data['ownedItemIds'] as List?)?.cast<int>() ?? [];
+        
+        setState(() {
+          _selectedExpression = widget.student.characterExpression ?? '😐';
+          _ownedExpressions = ['😐'];
+          _ownedOutfits = ['default'];
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showMessage('커스터마이징 로드 실패: $e', Colors.red);
+      }
+    }
   }
 
   Future<void> _purchaseItem(String type, dynamic item) async {
@@ -129,8 +152,14 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
 
   Future<void> _saveCustomization() async {
     try {
-      // TODO: API로 저장
-      if (mounted) {
+      final response = await ApiService.post('/student/customization/apply', {
+        'studentId': widget.student.id,
+        'customization': {
+          'expression': _selectedExpression,
+        },
+      });
+
+      if (response.statusCode == 200 && mounted) {
         _showMessage('저장되었습니다!', const Color(0xFF4CAF50));
       }
     } catch (e) {
@@ -155,6 +184,23 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF00010D),
+        appBar: AppBar(
+          title: const Text(
+            '🎭 캐릭터 커스터마이징',
+            style: TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2)),
+          ),
+          backgroundColor: const Color(0xFF595048),
+          iconTheme: const IconThemeData(color: Color(0xFFD9D4D2)),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(color: Color(0xFFD9D4D2)),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
       appBar: AppBar(
