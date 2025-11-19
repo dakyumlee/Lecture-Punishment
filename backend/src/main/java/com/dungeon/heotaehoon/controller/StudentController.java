@@ -139,4 +139,12 @@ public class StudentController {
             return ResponseEntity.ok(studentService.reduceMental(studentId, Math.abs(amount)));
         }
     }
+    @GetMapping("/ranking")
+    public ResponseEntity<Map<String, Object>> getRanking(
+            @RequestParam(defaultValue = "points") String sortBy,
+            @RequestParam(defaultValue = "10") int limit) {
+        Map<String, Object> ranking = studentService.getRanking(sortBy, limit);
+        return ResponseEntity.ok(ranking);
+    }
+
 }

@@ -687,4 +687,20 @@ class ApiService {
       return {'evolved': false};
     }
   }
+  static Future<Map<String, dynamic>> getRanking({String sortBy = 'points', int limit = 10}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/students/ranking?sortBy=$sortBy&limit=$limit'),
+      );
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'ranking': []};
+    } catch (e) {
+      print('Error fetching ranking: $e');
+      return {'ranking': []};
+    }
+  }
+
 }

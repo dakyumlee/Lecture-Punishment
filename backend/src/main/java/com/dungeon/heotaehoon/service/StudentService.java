@@ -12,7 +12,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 @Service
@@ -269,4 +272,71 @@ public class StudentService {
             return "위험 - 회복 필요!";
         }
     }
+    public Map<String, Object> getRanking(String sortBy, int limit) {
+        List<Student> allStudents = studentRepository.findAll();
+        
+        List<Student> rankedStudents;
+        
+        switch (sortBy) {
+            case "correctRate":
+                rankedStudents = allStudents.stream()
+                    .filter(s -> (s.getTotalCorrect() + s.getTotalWrong()) > 0)
+                    .sorted(Comparator.comparingDouble((Student s) -> {
+                        int total = s.getTotalCorrect() + s.getTotalWrong();
+                        return total > 0 ? (double) s.getTotalCorrect() / total : 0;
+                    }).reversed())
+                    .limit(limit)
+                    .collect(Collectors.toList());
+                break;
+            
+            case "level":
+                rankedStudents = allStudents.stream()
+                    .sorted(Comparator.comparingInt(Student::getLevel).reversed()
+                        .thenComparingInt(Student::getExp).reversed())
+                    .limit(limit)
+                    .collect(Collectors.toList());
+                break;
+            
+            case "points":
+            default:
+                rankedStudents = allStudents.stream()
+                    .sorted(Comparator.comparingInt(Student::getPoints).reversed())
+                    .limit(limit)
+                    .collect(Collectors.toList());
+                break;
+        }
+        
+        List<Map<String, Object>> rankingList = new ArrayList<>();
+        
+        for (int i = 0; i < rankedStudents.size(); i++) {
+            Student student = rankedStudents.get(i);
+            Map<String, Object> studentData = new HashMap<>();
+            
+            studentData.put("rank", i + 1);
+            studentData.put("id", student.getId());
+            studentData.put("displayName", student.getDisplayName());
+            studentData.put("level", student.getLevel());
+            studentData.put("exp", student.getExp());
+            studentData.put("points", student.getPoints());
+            studentData.put("totalCorrect", student.getTotalCorrect());
+            studentData.put("totalWrong", student.getTotalWrong());
+            
+            int total = student.getTotalCorrect() + student.getTotalWrong();
+            double correctRate = total > 0 ? (double) student.getTotalCorrect() / total * 100 : 0;
+            studentData.put("correctRate", Math.round(correctRate * 10) / 10.0);
+            
+            boolean hasBadge = correctRate >= 80 && student.getTotalCorrect() >= 50;
+            studentData.put("hasRageResistanceBadge", hasBadge);
+            
+            rankingList.add(studentData);
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("ranking", rankingList);
+        result.put("sortBy", sortBy);
+        result.put("total", allStudents.size());
+        
+        return result;
+    }
+
 }

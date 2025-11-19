@@ -229,12 +229,12 @@ def generate_quizzes():
 
 JSON 배열만 출력:
 [
-  {{
+    {{
     "question": "문제",
     "options": ["선택지A", "선택지B", "선택지C", "선택지D"],
     "correctAnswer": "선택지A",
     "explanation": "해설"
-  }}
+    }}
 ]
 
 JSON만 출력, 마크다운 없이:"""
