@@ -442,10 +442,6 @@ class ApiService {
     return Student.fromJson(jsonDecode(response.body));
   }
 
-  static Future<List<dynamic>> getRanking() async {
-    final response = await http.get(Uri.parse('$baseUrl/ranking'));
-    return jsonDecode(response.body) as List;
-  }
 
   static Future<Map<String, dynamic>> createWorksheet(
     String title, 
