@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/instructor")
@@ -64,6 +65,12 @@ public class InstructorController {
     public ResponseEntity<Map<String, Object>> autoEvolve() {
         Map<String, Object> result = instructorService.tryAutoEvolve();
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/rage-history")
+    public ResponseEntity<List<Map<String, Object>>> getRageHistory(@RequestParam(defaultValue = "20") int limit) {
+        List<Map<String, Object>> history = instructorService.getRageHistory(limit);
+        return ResponseEntity.ok(history);
     }
 
 }

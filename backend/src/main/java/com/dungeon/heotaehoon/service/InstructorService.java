@@ -3,6 +3,10 @@ package com.dungeon.heotaehoon.service;
 import com.dungeon.heotaehoon.entity.Instructor;
 import com.dungeon.heotaehoon.repository.InstructorRepository;
 import com.dungeon.heotaehoon.repository.StudentRepository;
+import com.dungeon.heotaehoon.repository.RageDialogueRepository;
+import com.dungeon.heotaehoon.entity.RageDialogue;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import com.dungeon.heotaehoon.entity.Student;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +23,7 @@ public class InstructorService {
     
     private final InstructorRepository instructorRepository;
     private final StudentRepository studentRepository;
+    private final RageDialogueRepository rageDialogueRepository;
 
     public Instructor getInstructor() {
         return instructorRepository.findByUsername("hth422")
@@ -215,6 +220,30 @@ public class InstructorService {
         }
         
         return condition;
+    }
+
+    public List<Map<String, Object>> getRageHistory(int limit) {
+        List<RageDialogue> dialogues = rageDialogueRepository.findAll(
+            PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"))
+        ).getContent();
+        
+        List<Map<String, Object>> history = new ArrayList<>();
+        
+        for (RageDialogue dialogue : dialogues) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", dialogue.getId());
+            item.put("dialogueType", dialogue.getDialogueType());
+            item.put("message", dialogue.getMessage());
+            item.put("createdAt", dialogue.getCreatedAt());
+            
+            if (dialogue.getStudent() != null) {
+                item.put("studentName", dialogue.getStudent().getDisplayName());
+            }
+            
+            history.add(item);
+        }
+        
+        return history;
     }
 
 }

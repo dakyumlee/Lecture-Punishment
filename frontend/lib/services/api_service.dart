@@ -699,4 +699,54 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> generateRaidQuiz({
+    required String topic,
+    required int difficulty,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/quiz/generate-raid'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'topic': topic,
+          'difficulty': difficulty,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('Error generating raid quiz: $e');
+      return {};
+    }
+  }
+
+  static Future<Map<String, dynamic>> checkRaidAnswer({
+    required String question,
+    required String answer,
+    required String correctAnswer,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/quiz/check-raid-answer'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'question': question,
+          'answer': answer,
+          'correctAnswer': correctAnswer,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'isCorrect': false, 'damage': 0};
+    } catch (e) {
+      print('Error checking raid answer: $e');
+      return {'isCorrect': false, 'damage': 0};
+    }
+  }
+
 }
