@@ -233,7 +233,7 @@ public class InstructorService {
             Map<String, Object> item = new HashMap<>();
             item.put("id", dialogue.getId());
             item.put("dialogueType", dialogue.getDialogueType());
-            item.put("message", dialogue.getMessage());
+            item.put("message", dialogue.getDialogueText());
             item.put("createdAt", dialogue.getCreatedAt());
             
             if (dialogue.getStudent() != null) {

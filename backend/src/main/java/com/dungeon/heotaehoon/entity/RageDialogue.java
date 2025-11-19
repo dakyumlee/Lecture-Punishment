@@ -24,6 +24,10 @@ public class RageDialogue {
     @JoinColumn(name = "instructor_id")
     private Instructor instructor;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "student_id")
+    private Student student;
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String dialogueText;
 
