@@ -687,19 +687,4 @@ class ApiService {
       return {'evolved': false};
     }
   }
-
 }
-
-      return {'canEvolve': false};
-    } catch (e) {
-      print('Error checking evolution: $e');
-      return {'canEvolve': false};
-    }
-  }
-
-      return {'evolved': false};
-    } catch (e) {
-      print('Error auto evolving: $e');
-      return {'evolved': false};
-    }
-  }
