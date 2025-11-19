@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,44 +21,43 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public Student studentLogin(String name, String birthDate, String phoneNumber) {
-        List<Student> students = studentRepository.findAllByDisplayName(name);
+    public Student studentSignup(String displayName, LocalDate birthDate, String password) {
+        String studentId = generateStudentId();
         
-        if (students.isEmpty()) {
-            Student newStudent = Student.builder()
-                    .username(generateUsername(name))
-                    .displayName(name)
-                    .level(1)
-                    .exp(0)
-                    .mentalGauge(100)
-                    .totalCorrect(0)
-                    .totalWrong(0)
-                    .characterExpression("😊")
-                    .characterOutfit("default")
-                    .points(0)
-                    .isProfileComplete(false)
-                    .build();
-            return studentRepository.save(newStudent);
+        Student newStudent = Student.builder()
+                .username(studentId)
+                .displayName(displayName)
+                .birthDate(birthDate)
+                .password(passwordEncoder.encode(password))
+                .level(1)
+                .exp(0)
+                .mentalGauge(100)
+                .totalCorrect(0)
+                .totalWrong(0)
+                .characterExpression("😊")
+                .characterOutfit("default")
+                .points(0)
+                .isProfileComplete(true)
+                .build();
+        
+        return studentRepository.save(newStudent);
+    }
+
+    @Transactional
+    public Optional<Student> studentLogin(String studentId, String password) {
+        Optional<Student> studentOpt = studentRepository.findByUsername(studentId);
+        
+        if (studentOpt.isEmpty()) {
+            return Optional.empty();
         }
         
-        if (students.size() == 1) {
-            return students.get(0);
+        Student student = studentOpt.get();
+        
+        if (password == null || !passwordEncoder.matches(password, student.getPassword())) {
+            return Optional.empty();
         }
         
-        if (birthDate != null || phoneNumber != null) {
-            for (Student student : students) {
-                boolean birthDateMatch = (birthDate == null || 
-                    (student.getBirthDate() != null && student.getBirthDate().toString().replace("-", "").equals(birthDate.replace("-", ""))));
-                boolean phoneMatch = (phoneNumber == null || 
-                    (student.getPhoneNumber() != null && student.getPhoneNumber().equals(phoneNumber)));
-                
-                if (birthDateMatch && phoneMatch) {
-                    return student;
-                }
-            }
-        }
-        
-        throw new RuntimeException("동명이인이 있습니다. 생년월일 또는 휴대폰 번호를 입력해주세요.");
+        return Optional.of(student);
     }
 
     public Optional<Instructor> instructorLogin(String username, String password) {
@@ -68,16 +68,26 @@ public class AuthService {
         return Optional.empty();
     }
 
-    private String generateUsername(String displayName) {
-        String baseUsername = displayName.replaceAll("\\s+", "");
-        String username = baseUsername;
+    private String generateStudentId() {
+        String prefix = "DGK";
         int counter = 1;
         
-        while (studentRepository.findByUsername(username).isPresent()) {
-            username = baseUsername + counter;
-            counter++;
+        List<Student> allStudents = studentRepository.findAll();
+        
+        for (Student student : allStudents) {
+            String username = student.getUsername();
+            if (username != null && username.startsWith(prefix)) {
+                try {
+                    String numberPart = username.substring(prefix.length());
+                    int number = Integer.parseInt(numberPart);
+                    if (number >= counter) {
+                        counter = number + 1;
+                    }
+                } catch (NumberFormatException e) {
+                }
+            }
         }
         
-        return username;
+        return String.format("%s%03d", prefix, counter);
     }
 }
