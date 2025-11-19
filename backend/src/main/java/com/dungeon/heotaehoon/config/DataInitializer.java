@@ -32,6 +32,9 @@ public class DataInitializer implements CommandLineRunner {
         instructorRepository.findByUsername("hth422").ifPresentOrElse(
             instructor -> {
                 instructor.setPassword(passwordEncoder.encode("password1234!"));
+                if (instructor.getCurrentTitle() == null || instructor.getCurrentTitle().isEmpty()) {
+                    instructor.setCurrentTitle("Lv." + instructor.getLevel() + " — 신입 강사");
+                }
                 instructorRepository.save(instructor);
                 System.out.println("✅ 허태훈 강사 비밀번호 업데이트 완료!");
             },
@@ -42,7 +45,10 @@ public class DataInitializer implements CommandLineRunner {
                         .password(passwordEncoder.encode("password1234!"))
                         .level(1)
                         .exp(0)
+                        .currentTitle("Lv.1 — 신입 강사")
                         .rageGauge(50)
+                        .isEvolved(false)
+                        .evolutionStage("normal")
                         .build();
                 
                 instructorRepository.save(instructor);

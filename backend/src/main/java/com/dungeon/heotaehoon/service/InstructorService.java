@@ -7,6 +7,7 @@ import com.dungeon.heotaehoon.repository.RageDialogueRepository;
 import com.dungeon.heotaehoon.entity.RageDialogue;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import com.dungeon.heotaehoon.entity.Student;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,10 +25,28 @@ public class InstructorService {
     private final InstructorRepository instructorRepository;
     private final StudentRepository studentRepository;
     private final RageDialogueRepository rageDialogueRepository;
+    private final PasswordEncoder passwordEncoder;
 
+    @Transactional
     public Instructor getInstructor() {
         return instructorRepository.findByUsername("hth422")
-                .orElseThrow(() -> new RuntimeException("허태훈 강사를 찾을 수 없습니다"));
+                .orElseGet(() -> createDefaultInstructor());
+    }
+
+    private Instructor createDefaultInstructor() {
+        Instructor instructor = Instructor.builder()
+                .username("hth422")
+                .password(passwordEncoder.encode("hth422"))
+                .name("허태훈")
+                .level(1)
+                .exp(0)
+                .currentTitle("Lv.1 — 신입 강사")
+                .rageGauge(0)
+                .isEvolved(false)
+                .evolutionStage("normal")
+                .build();
+        
+        return instructorRepository.save(instructor);
     }
 
     @Transactional
@@ -120,6 +139,7 @@ public class InstructorService {
         stats.put("rageGauge", instructor.getRageGauge());
         stats.put("isEvolved", instructor.getIsEvolved());
         stats.put("evolutionStage", instructor.getEvolutionStage());
+        stats.put("currentTitle", instructor.getCurrentTitle());
         stats.put("totalStudents", 0);
         stats.put("averageCorrectRate", 0);
         stats.put("totalQuizzes", 0);
@@ -157,6 +177,7 @@ public class InstructorService {
         if (level >= 3) return "Lv." + level + " — 엄격한 교육자";
         return "Lv." + level + " — 신입 강사";
     }
+    
     public Map<String, Object> checkEvolutionCondition() {
         Instructor instructor = getInstructor();
         
@@ -245,5 +266,4 @@ public class InstructorService {
         
         return history;
     }
-
 }
