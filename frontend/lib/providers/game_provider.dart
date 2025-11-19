@@ -28,35 +28,6 @@ class GameProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> studentLogin(String name, {String? birthDate, String? phoneNumber}) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final Map<String, dynamic> requestBody = {'username': name};
-      
-      if (birthDate != null && birthDate.isNotEmpty) {
-        requestBody['birthDate'] = birthDate.replaceAll('-', '');
-      }
-      if (phoneNumber != null && phoneNumber.isNotEmpty) {
-        requestBody['phoneNumber'] = phoneNumber;
-      }
-
-      final response = await ApiService.loginWithAuth(requestBody);
-      
-      if (response['success'] == true && response['student'] != null) {
-        _currentStudent = Student.fromJson(response['student']);
-      } else if (response['hasDuplicates'] == true) {
-        throw Exception('동명이인');
-      } else {
-        throw Exception(response['message'] ?? '로그인 실패');
-      }
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
   Future<void> instructorLogin(String username, String password) async {
     _isLoading = true;
     notifyListeners();
