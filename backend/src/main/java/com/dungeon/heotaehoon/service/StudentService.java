@@ -168,6 +168,14 @@ public class StudentService {
     }
 
     @Transactional
+    public Student addPoints(String studentId, int pointsAmount) {
+        Student student = getStudentById(studentId);
+        int currentPoints = student.getPoints() != null ? student.getPoints() : 0;
+        student.setPoints(currentPoints + pointsAmount);
+        return studentRepository.save(student);
+    }
+
+    @Transactional
     public Student updateQuizStats(String studentId, boolean isCorrect) {
         Student student = getStudentById(studentId);
         
@@ -272,6 +280,7 @@ public class StudentService {
             return "위험 - 회복 필요!";
         }
     }
+    
     public Map<String, Object> getRanking(String sortBy, int limit) {
         List<Student> allStudents = studentRepository.findAll();
         
@@ -338,5 +347,4 @@ public class StudentService {
         
         return result;
     }
-
 }

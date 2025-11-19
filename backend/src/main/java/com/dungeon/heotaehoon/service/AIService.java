@@ -152,3 +152,34 @@ public class AIService {
         record Message(String role, String content) {}
     }
 }
+
+    public String generateText(String prompt) {
+        try {
+            String requestBody = objectMapper.writeValueAsString(new OpenAIRequest(
+                model,
+                new OpenAIRequest.Message[]{
+                    new OpenAIRequest.Message("system", "당신은 엄격하지만 학생을 생각하는 허태훈 강사입니다."),
+                    new OpenAIRequest.Message("user", prompt)
+                },
+                100,
+                0.9
+            ));
+
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.openai.com/v1/chat/completions"))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            
+            JsonNode rootNode = objectMapper.readTree(response.body());
+            String content = rootNode.path("choices").get(0).path("message").path("content").asText();
+            
+            return content.trim();
+        } catch (Exception e) {
+            throw new RuntimeException("AI 텍스트 생성 실패: " + e.getMessage());
+        }
+    }
+}
