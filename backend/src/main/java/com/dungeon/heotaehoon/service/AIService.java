@@ -29,7 +29,7 @@ public class AIService {
     }
 
     public String generateQuiz(String lessonTitle, String lessonSubject, int difficulty, 
-                              String previousQuestion, String previousAnswer) {
+                            String previousQuestion, String previousAnswer) {
         String contextPrompt = "";
         
         if (previousQuestion != null && previousAnswer != null) {
@@ -151,7 +151,6 @@ public class AIService {
     record OpenAIRequest(String model, Message[] messages, int max_tokens, double temperature) {
         record Message(String role, String content) {}
     }
-}
 
     public String generateText(String prompt) {
         try {
