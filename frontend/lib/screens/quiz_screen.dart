@@ -26,6 +26,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
   bool showResult = false;
   bool isCorrect = false;
   String? rageMessage;
+  bool _isInstructorEvolved = false;
   int combo = 0;
   int currentPoints = 0;
   int earnedPoints = 0;
@@ -58,10 +59,12 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
     try {
       final quizzes = await ApiService.getQuizzes(widget.bossId!);
       final boss = await ApiService.getBoss(widget.bossId!);
+      final instructorStats = await ApiService.getInstructorStats();
       
       setState(() {
         _quizzes = quizzes;
         _boss = boss;
+        _isInstructorEvolved = instructorStats['isEvolved'] ?? false;
         _isLoading = false;
       });
     } catch (e) {

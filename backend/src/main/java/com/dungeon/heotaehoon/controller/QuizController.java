@@ -2,6 +2,7 @@ package com.dungeon.heotaehoon.controller;
 
 import com.dungeon.heotaehoon.entity.Quiz;
 import com.dungeon.heotaehoon.service.QuizService;
+import com.dungeon.heotaehoon.service.InstructorService;
 import com.dungeon.heotaehoon.service.AiQuizGenerationService;
 import com.dungeon.heotaehoon.service.AiServiceClient;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class QuizController {
     
     private final QuizService quizService;
+    private final InstructorService instructorService;
     private final AiQuizGenerationService aiQuizGenerationService;
     private final AiServiceClient aiServiceClient;
 
