@@ -31,12 +31,18 @@ public class BossController {
             Boss boss = bossRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("보스를 찾을 수 없습니다"));
             
+            Integer difficulty = boss.getDifficulty() != null ? boss.getDifficulty() : 3;
+            String difficultyStars = boss.getDifficultyStars();
+            if (difficultyStars == null || difficultyStars.isEmpty()) {
+                difficultyStars = "⭐".repeat(Math.max(1, Math.min(difficulty, 5)));
+            }
+            
             Map<String, Object> response = new HashMap<>();
             response.put("id", boss.getId());
             response.put("bossName", boss.getName());
             response.put("bossSubtitle", boss.getBossSubtitle() != null ? boss.getBossSubtitle() : "지식의 수호자");
-            response.put("difficulty", boss.getDifficulty() != null ? boss.getDifficulty() : 3);
-            response.put("difficultyStars", boss.getDifficultyStars());
+            response.put("difficulty", difficulty);
+            response.put("difficultyStars", difficultyStars);
             response.put("specialAbility", boss.getSpecialAbility() != null ? boss.getSpecialAbility() : "없음");
             response.put("totalHp", boss.getTotalHp() != null ? boss.getTotalHp() : 1000);
             response.put("currentHp", boss.getCurrentHp() != null ? boss.getCurrentHp() : 1000);
@@ -48,7 +54,9 @@ public class BossController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Failed to get boss: {}", id, e);
-            return ResponseEntity.status(500).body(new HashMap<>());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(500).body(errorResponse);
         }
     }
 
@@ -86,7 +94,9 @@ public class BossController {
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("Failed to update boss HP: {}", id, e);
-            return ResponseEntity.status(500).body(new HashMap<>());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(500).body(errorResponse);
         }
     }
 }

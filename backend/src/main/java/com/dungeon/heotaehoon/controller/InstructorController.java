@@ -12,6 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/instructor")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class InstructorController {
 
     private final InstructorService instructorService;
@@ -55,6 +56,7 @@ public class InstructorController {
         Instructor instructor = instructorService.evolveToFather();
         return ResponseEntity.ok(instructor);
     }
+    
     @GetMapping("/evolution/check")
     public ResponseEntity<Map<String, Object>> checkEvolution() {
         Map<String, Object> condition = instructorService.checkEvolutionCondition();
@@ -72,5 +74,4 @@ public class InstructorController {
         List<Map<String, Object>> history = instructorService.getRageHistory(limit);
         return ResponseEntity.ok(history);
     }
-
 }
