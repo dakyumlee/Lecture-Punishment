@@ -735,4 +735,40 @@ class ApiService {
       return {'isCorrect': false, 'damage': 0};
     }
   }
+
+  static Future<Map<String, dynamic>> submitQuizResult({
+    String? studentId,
+    required int correctCount,
+    required int totalQuestions,
+    String subject = '일반',
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/quiz/result'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'studentId': studentId,
+          'correctCount': correctCount,
+          'totalQuestions': totalQuestions,
+          'subject': subject,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {
+        'comment': '수고했다',
+        'rewards': {'exp': 10, 'points': 100},
+        'scorePercent': (correctCount / totalQuestions * 100).toDouble(),
+      };
+    } catch (e) {
+      print('Error submitting quiz result: $e');
+      return {
+        'comment': '수고했다',
+        'rewards': {'exp': 10, 'points': 100},
+        'scorePercent': (correctCount / totalQuestions * 100).toDouble(),
+      };
+    }
+  }
 }
