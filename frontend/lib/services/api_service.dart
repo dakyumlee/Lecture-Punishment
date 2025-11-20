@@ -1054,4 +1054,14 @@ class ApiService {
       return {};
     }
   }
+
+  static Future<bool> deleteAILecture(int lectureId) async {
+    try {
+      final response = await http.delete(Uri.parse('$baseUrl/build-maker/lectures/$lectureId'));
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error deleting lecture: $e');
+      return false;
+    }
+  }
 }

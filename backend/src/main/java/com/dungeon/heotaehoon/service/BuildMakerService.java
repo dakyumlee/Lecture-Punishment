@@ -86,19 +86,42 @@ public class BuildMakerService {
     
     private String generateLectureScript(String topic, String syllabus, int difficulty, String style, String studentAnalysis) {
         String prompt = String.format(
-            "너는 '%s' 스타일의 강사 AI야. 다음 조건으로 강의 스크립트를 생성해줘.\n\n" +
+            "너는 '%s' 스타일의 강사야. 다음 조건으로 상세한 강의를 작성해줘.\n\n" +
             "주제: %s\n" +
             "강의 계획:\n%s\n\n" +
             "난이도: %d/5\n" +
             "학생 분석: %s\n\n" +
-            "요구사항:\n" +
-            "1. 강사 스타일(%s)을 유지하며 강의 진행\n" +
-            "2. 도입 → 핵심 개념 → 예제 → 심화 → 정리 순서\n" +
-            "3. 각 섹션마다 학생 참여 유도 질문 포함\n" +
-            "4. 실생활 예시 활용\n" +
-            "5. 난이도에 맞는 설명 깊이\n" +
-            "6. 학생 수준에 맞춘 설명\n\n" +
-            "강의 스크립트를 생성해줘:",
+            "중요한 규칙:\n" +
+            "1. 마크다운 기호(#, ##, ###, *, -, >)를 절대 사용하지 마\n" +
+            "2. 일반 텍스트로만 작성할 것\n" +
+            "3. 섹션 구분은 [도입], [핵심개념], [예제], [실습], [심화], [정리]로 할 것\n" +
+            "4. 각 섹션마다 최소 5문장 이상 상세하게 설명\n" +
+            "5. 실제 코드 예제나 구체적인 사례를 반드시 포함\n" +
+            "6. 학생이 직접 따라할 수 있는 단계별 설명\n" +
+            "7. 강사 스타일(%s)을 유지하되 이해하기 쉽게\n" +
+            "8. 최소 2000자 이상 작성\n\n" +
+            "강의 구조:\n" +
+            "[도입]\n" +
+            "- 왜 이 주제가 중요한지\n" +
+            "- 실생활 예시\n" +
+            "- 학습 목표\n\n" +
+            "[핵심개념]\n" +
+            "- 기본 개념 상세 설명\n" +
+            "- 용어 정의\n" +
+            "- 주의사항\n\n" +
+            "[예제]\n" +
+            "- 구체적인 예제 코드나 사례\n" +
+            "- 단계별 설명\n\n" +
+            "[실습]\n" +
+            "- 학생이 직접 해볼 수 있는 문제\n" +
+            "- 힌트 제공\n\n" +
+            "[심화]\n" +
+            "- 더 깊은 내용\n" +
+            "- 실무 팁\n\n" +
+            "[정리]\n" +
+            "- 핵심 요약\n" +
+            "- 다음 학습 방향\n\n" +
+            "강의를 작성해줘:",
             style, topic, syllabus, difficulty, studentAnalysis, style
         );
         
@@ -111,23 +134,46 @@ public class BuildMakerService {
     
     private String generateDefaultScript(String topic, int difficulty) {
         return String.format(
-            "=== %s 강의 ===\n\n" +
+            "[도입]\n\n" +
             "안녕하세요, 오늘은 %s에 대해 배워보겠습니다.\n\n" +
-            "[도입]\n" +
-            "이 주제는 난이도 %d 수준으로, 차근차근 따라오면 충분히 이해할 수 있습니다.\n\n" +
-            "[핵심 개념]\n" +
-            "%s의 기본 개념부터 시작하겠습니다...\n\n" +
-            "[예제]\n" +
-            "실제 예제를 통해 이해해봅시다...\n\n" +
-            "[정리]\n" +
-            "오늘 배운 내용을 정리하면...",
-            topic, topic, difficulty, topic
+            "이 주제는 난이도 %d 수준으로, 차근차근 따라오면 충분히 이해할 수 있습니다. " +
+            "실무에서 자주 사용되는 중요한 개념이므로 집중해서 들어주세요.\n\n" +
+            "[핵심개념]\n\n" +
+            "%s의 기본 개념부터 시작하겠습니다.\n\n" +
+            "먼저 용어를 정의하면, %s란 프로그래밍에서 특정 목적을 달성하기 위해 사용하는 기법입니다. " +
+            "이를 이해하려면 먼저 기본적인 원리를 알아야 합니다.\n\n" +
+            "핵심 포인트는 다음과 같습니다:\n" +
+            "1. 기본 구조를 이해한다\n" +
+            "2. 실제 사용 사례를 본다\n" +
+            "3. 주의사항을 숙지한다\n\n" +
+            "[예제]\n\n" +
+            "실제 예제를 통해 이해해봅시다.\n\n" +
+            "예를 들어, 일상생활에서 %s를 사용한다면 어떻게 될까요? " +
+            "구체적인 코드로 보면 이렇습니다.\n\n" +
+            "단계 1: 먼저 기본 설정을 합니다\n" +
+            "단계 2: 핵심 로직을 작성합니다\n" +
+            "단계 3: 결과를 확인합니다\n\n" +
+            "[실습]\n\n" +
+            "이제 직접 해볼 차례입니다.\n\n" +
+            "다음 문제를 풀어보세요: %s를 활용해서 간단한 프로그램을 만들어보세요. " +
+            "힌트: 앞에서 배운 기본 구조를 그대로 따라하면 됩니다.\n\n" +
+            "[심화]\n\n" +
+            "조금 더 깊이 들어가봅시다.\n\n" +
+            "실무에서는 %s를 더 효율적으로 사용하는 방법이 있습니다. " +
+            "성능 최적화, 에러 처리, 확장성 등을 고려해야 합니다.\n\n" +
+            "[정리]\n\n" +
+            "오늘 배운 내용을 정리하면:\n" +
+            "1. %s의 기본 개념\n" +
+            "2. 실제 사용 방법\n" +
+            "3. 주의사항과 팁\n\n" +
+            "다음 시간에는 이를 바탕으로 더 복잡한 예제를 다뤄보겠습니다. 수고하셨습니다!",
+            topic, difficulty, topic, topic, topic, topic, topic, topic, topic
         );
     }
     
     private int calculateDuration(String script) {
         int wordCount = script.length();
-        return Math.max(10, wordCount / 100);
+        return Math.max(15, wordCount / 80);
     }
     
     @Transactional(readOnly = true)
@@ -228,5 +274,20 @@ public class BuildMakerService {
         }
         
         return response;
+    }
+
+    @Transactional
+    public boolean deleteLecture(Long lectureId) {
+        try {
+            AILecture lecture = aiLectureRepository.findById(lectureId)
+                .orElseThrow(() -> new RuntimeException("강의를 찾을 수 없습니다"));
+            
+            lecture.setIsActive(false);
+            aiLectureRepository.save(lecture);
+            
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

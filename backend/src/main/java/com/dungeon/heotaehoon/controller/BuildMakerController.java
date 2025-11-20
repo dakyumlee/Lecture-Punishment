@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/build-maker")
@@ -49,5 +50,13 @@ public class BuildMakerController {
     ) {
         Map<String, Object> progress = buildMakerService.getStudentProgress(studentId, lectureId);
         return ResponseEntity.ok(progress);
+    }
+
+    @DeleteMapping("/lectures/{lectureId}")
+    public ResponseEntity<Map<String, String>> deleteLecture(@PathVariable Long lectureId) {
+        boolean deleted = buildMakerService.deleteLecture(lectureId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", deleted ? "강의가 삭제되었습니다" : "삭제 실패");
+        return ResponseEntity.ok(response);
     }
 }
