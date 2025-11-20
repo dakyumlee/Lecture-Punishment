@@ -8,6 +8,9 @@ import 'shop_screen.dart';
 import 'my_page_screen.dart';
 import 'instructor_stats_screen.dart';
 import 'login_screen.dart';
+import 'raid_screen.dart';
+import 'mental_recovery_screen.dart';
+import 'rage_memory_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Student initialStudent;
@@ -189,6 +192,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 12),
                     _buildMenuButton(
                       context,
+                      '🎮 레이드 참여',
+                      '팀원들과 함께 거대 보스 토벌',
+                      () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RaidScreen(student: student),
+                          ),
+                        );
+                        _refreshStudent();
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildMenuButton(
+                      context,
                       '😤 강사 정보',
                       '허태훈 강사의 현재 상태',
                       () => Navigator.push(
@@ -207,6 +225,33 @@ class _HomeScreenState extends State<HomeScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => WorksheetListScreen(studentId: student.id),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildMenuButton(
+                      context,
+                      '💪 멘탈 회복',
+                      '힘들 땐 잠깐 쉬어가기',
+                      () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MentalRecoveryScreen(student: student),
+                          ),
+                        );
+                        _refreshStudent();
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildMenuButton(
+                      context,
+                      '📖 분노 로그북',
+                      '허태훈의 분노 기록 보기',
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RageMemoryScreen(),
                         ),
                       ),
                     ),
