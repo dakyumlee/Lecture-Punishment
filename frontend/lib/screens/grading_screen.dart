@@ -11,12 +11,20 @@ class GradingScreen extends StatefulWidget {
 class _GradingScreenState extends State<GradingScreen> {
   List<dynamic> _answers = [];
   bool _isLoading = true;
-  final Map<String, int> _pointsControllers = {};
+  final Map<String, TextEditingController> _pointsControllers = {};
 
   @override
   void initState() {
     super.initState();
     _loadAnswers();
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _pointsControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _loadAnswers() async {
@@ -26,14 +34,20 @@ class _GradingScreenState extends State<GradingScreen> {
         _answers = data['answers'] ?? [];
         _isLoading = false;
       });
+      
       for (var answer in _answers) {
-        _pointsControllers[answer['id']] = answer['pointsEarned'] ?? 0;
+        final points = answer['pointsEarned'] ?? 0;
+        _pointsControllers[answer['id']] = TextEditingController(text: points.toString());
       }
     } catch (e) {
+      print('Error loading answers: $e');
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('로드 실패: $e')),
+          SnackBar(
+            content: Text('로드 실패: $e'),
+            backgroundColor: const Color(0xFFCC0000),
+          ),
         );
       }
     }
@@ -45,14 +59,20 @@ class _GradingScreenState extends State<GradingScreen> {
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('채점 완료')),
+          const SnackBar(
+            content: Text('채점 완료', style: TextStyle(fontFamily: 'JoseonGulim')),
+            backgroundColor: Color(0xFF00CC00),
+          ),
         );
-        _loadAnswers();
+        await _loadAnswers();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('채점 실패: $e')),
+          SnackBar(
+            content: Text('채점 실패: $e', style: const TextStyle(fontFamily: 'JoseonGulim')),
+            backgroundColor: const Color(0xFFCC0000),
+          ),
         );
       }
     }
@@ -72,23 +92,34 @@ class _GradingScreenState extends State<GradingScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFFD9D4D2)))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _answers.length,
-              itemBuilder: (context, index) {
-                return _buildAnswerCard(_answers[index]);
-              },
-            ),
+          : _answers.isEmpty
+              ? const Center(
+                  child: Text(
+                    '채점할 답안이 없습니다',
+                    style: TextStyle(
+                      color: Color(0xFF736A63),
+                      fontFamily: 'JoseonGulim',
+                      fontSize: 18,
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _answers.length,
+                  itemBuilder: (context, index) {
+                    return _buildAnswerCard(_answers[index], index + 1);
+                  },
+                ),
     );
   }
 
-  Widget _buildAnswerCard(dynamic answer) {
-    final questionText = answer['question']?['questionText'] ?? '문제 없음';
+  Widget _buildAnswerCard(dynamic answer, int questionNumber) {
+    final questionText = answer['questionText'] ?? '문제 없음';
     final studentAnswer = answer['studentAnswer'] ?? '';
-    final correctAnswer = answer['question']?['correctAnswer'] ?? '';
+    final correctAnswer = answer['correctAnswer'] ?? '';
     final answerId = answer['id'];
     final isCorrect = answer['isCorrect'] ?? false;
-    final pointsEarned = _pointsControllers[answerId] ?? 0;
+    final controller = _pointsControllers[answerId];
 
     return Card(
       color: const Color(0xFF595048),
@@ -99,15 +130,62 @@ class _GradingScreenState extends State<GradingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '문제',
-              style: const TextStyle(
-                color: Color(0xFF736A63),
-                fontFamily: 'JoseonGulim',
-                fontSize: 14,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D0D0D),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '문제 $questionNumber',
+                    style: const TextStyle(
+                      color: Color(0xFFD9D4D2),
+                      fontFamily: 'JoseonGulim',
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                if (isCorrect)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00CC00),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      '✓ 정답',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'JoseonGulim',
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCC0000),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      '✗ 오답',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'JoseonGulim',
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Text(
               questionText,
               style: const TextStyle(
@@ -126,22 +204,52 @@ class _GradingScreenState extends State<GradingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '학생 답안: $studentAnswer',
-                    style: const TextStyle(
-                      color: Color(0xFFD9D4D2),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 14,
-                    ),
+                  Row(
+                    children: [
+                      const Text(
+                        '학생 답안: ',
+                        style: TextStyle(
+                          color: Color(0xFF736A63),
+                          fontFamily: 'JoseonGulim',
+                          fontSize: 14,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          studentAnswer,
+                          style: const TextStyle(
+                            color: Color(0xFFD9D4D2),
+                            fontFamily: 'JoseonGulim',
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    '정답: $correctAnswer',
-                    style: const TextStyle(
-                      color: Color(0xFF736A63),
-                      fontFamily: 'JoseonGulim',
-                      fontSize: 14,
-                    ),
+                  Row(
+                    children: [
+                      const Text(
+                        '정답: ',
+                        style: TextStyle(
+                          color: Color(0xFF736A63),
+                          fontFamily: 'JoseonGulim',
+                          fontSize: 14,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          correctAnswer,
+                          style: const TextStyle(
+                            color: Color(0xFF00CC00),
+                            fontFamily: 'JoseonGulim',
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -151,6 +259,7 @@ class _GradingScreenState extends State<GradingScreen> {
               children: [
                 Expanded(
                   child: TextField(
+                    controller: controller,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(
                       color: Color(0xFFD9D4D2),
@@ -169,20 +278,18 @@ class _GradingScreenState extends State<GradingScreen> {
                         borderSide: const BorderSide(color: Color(0xFF595048)),
                       ),
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        _pointsControllers[answerId] = int.tryParse(value) ?? 0;
-                      });
-                    },
-                    controller: TextEditingController(text: pointsEarned.toString()),
                   ),
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton(
-                  onPressed: () => _updateGrade(answerId, true, pointsEarned),
+                  onPressed: () {
+                    final points = int.tryParse(controller?.text ?? '0') ?? 0;
+                    _updateGrade(answerId, true, points);
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00CC00),
-                    foregroundColor: const Color(0xFFD9D4D2),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   child: const Text('정답', style: TextStyle(fontFamily: 'JoseonGulim')),
                 ),
@@ -191,7 +298,8 @@ class _GradingScreenState extends State<GradingScreen> {
                   onPressed: () => _updateGrade(answerId, false, 0),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFCC0000),
-                    foregroundColor: const Color(0xFFD9D4D2),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   child: const Text('오답', style: TextStyle(fontFamily: 'JoseonGulim')),
                 ),

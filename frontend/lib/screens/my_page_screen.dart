@@ -13,6 +13,7 @@ class MyPageScreen extends StatefulWidget {
 
 class _MyPageScreenState extends State<MyPageScreen> {
   Map<String, dynamic>? _myPageData;
+  Map<String, dynamic>? _inventoryData;
   bool _isLoading = true;
 
   @override
@@ -26,12 +27,15 @@ class _MyPageScreenState extends State<MyPageScreen> {
       final provider = Provider.of<GameProvider>(context, listen: false);
       if (provider.currentStudent != null) {
         final data = await ApiService.getMyPageData(provider.currentStudent!.id);
+        final inventory = await ApiService.getStudentInventory(provider.currentStudent!.id);
         setState(() {
           _myPageData = data;
+          _inventoryData = inventory;
           _isLoading = false;
         });
       }
     } catch (e) {
+      print('Error loading my page data: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -75,6 +79,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
     final totalCorrect = _myPageData?['totalCorrect'] ?? 0;
     final totalWrong = _myPageData?['totalWrong'] ?? 0;
     final accuracy = totalCorrect + totalWrong > 0 ? (totalCorrect / (totalCorrect + totalWrong) * 100).toStringAsFixed(1) : '0.0';
+    
+    final purchasedItems = _inventoryData?['items'] as List? ?? [];
+
     return Scaffold(
       backgroundColor: const Color(0xFF00010D),
       appBar: AppBar(
@@ -167,6 +174,62 @@ class _MyPageScreenState extends State<MyPageScreen> {
                           fontFamily: 'JoseonGulim',
                         ),
                       ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildInfoCard(
+                title: '🛍️ 내 아이템',
+                children: [
+                  if (purchasedItems.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        '구매한 아이템이 없습니다',
+                        style: TextStyle(
+                          color: Color(0xFF736A63),
+                          fontFamily: 'JoseonGulim',
+                        ),
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: purchasedItems.map((item) {
+                        return Container(
+                          width: 80,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0D0D0D),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFF736A63),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                item['imageUrl'] ?? '📦',
+                                style: const TextStyle(fontSize: 32),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                item['name'] ?? '',
+                                style: const TextStyle(
+                                  color: Color(0xFFD9D4D2),
+                                  fontFamily: 'JoseonGulim',
+                                  fontSize: 10,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     ),
                 ],
               ),
