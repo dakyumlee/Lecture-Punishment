@@ -15,6 +15,7 @@ public class DataInitializer implements CommandLineRunner {
     private final InstructorRepository instructorRepository;
     private final MentalRecoveryMissionRepository mentalRecoveryMissionRepository;
     private final RaidBossRepository raidBossRepository;
+    private final MultiverseInstructorRepository multiverseInstructorRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -26,6 +27,7 @@ public class DataInitializer implements CommandLineRunner {
         createMentalRecoveryMissions();
         raidBossRepository.deleteAll();
         createRaidBosses();
+        initializeMultiverses();
     }
 
     private void initializeInstructor() {
@@ -57,6 +59,51 @@ public class DataInitializer implements CommandLineRunner {
         );
         System.out.println("   아이디: hth422");
         System.out.println("   비밀번호: password1234!");
+    }
+
+    private void initializeMultiverses() {
+        if (multiverseInstructorRepository.count() == 0) {
+            multiverseInstructorRepository.save(MultiverseInstructor.builder()
+                .name("냉혈한 허태훈")
+                .universeType("COLD_BLOODED")
+                .description("감정이 없는 차가운 허태훈. 오답 시 데이터를 삭제하겠다고 위협한다.")
+                .personalityTrait("무자비함")
+                .difficultyMultiplier(1.5)
+                .rewardMultiplier(1.8)
+                .specialAbility("오답 3회 시 경험치 -50")
+                .isUnlocked(true)
+                .unlockCondition("기본 해금")
+                .avatarEmoji("🥶")
+                .build());
+
+            multiverseInstructorRepository.save(MultiverseInstructor.builder()
+                .name("자비로운 허태훈")
+                .universeType("MERCIFUL")
+                .description("따뜻한 마음을 가진 허태훈. 문제를 풀면 간식을 추천해준다.")
+                .personalityTrait("자비로움")
+                .difficultyMultiplier(0.8)
+                .rewardMultiplier(1.2)
+                .specialAbility("정답 시 추가 포인트 +20")
+                .isUnlocked(true)
+                .unlockCondition("레벨 5 달성")
+                .avatarEmoji("😇")
+                .build());
+
+            multiverseInstructorRepository.save(MultiverseInstructor.builder()
+                .name("사이보그 허태훈")
+                .universeType("CYBORG")
+                .description("기계와 융합한 허태훈. 인간의 뇌로 이해 가능하겠냐고 묻는다.")
+                .personalityTrait("논리적")
+                .difficultyMultiplier(2.0)
+                .rewardMultiplier(2.5)
+                .specialAbility("정답 시 EXP 2배, 오답 시 -30")
+                .isUnlocked(true)
+                .unlockCondition("레벨 10 달성")
+                .avatarEmoji("🤖")
+                .build());
+
+            System.out.println("✅ 허태훈 멀티버스 초기화 완료!");
+        }
     }
 
     private void createRaidBosses() {
@@ -208,304 +255,35 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void createShopItems() {
-        shopItemRepository.save(ShopItem.builder()
-            .name("기본 교복")
-            .description("평범한 학생 교복")
-            .itemType("outfit")
-            .price(0)
-            .rarity("common")
-            .imageUrl("👔")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("명품 양복")
-            .description("허태훈도 인정한 멋진 양복")
-            .itemType("outfit")
-            .price(500)
-            .rarity("rare")
-            .imageUrl("🤵")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("후드티")
-            .description("편안한 캐주얼룩")
-            .itemType("outfit")
-            .price(300)
-            .rarity("common")
-            .imageUrl("🧥")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("운동복")
-            .description("체육시간 필수템")
-            .itemType("outfit")
-            .price(200)
-            .rarity("common")
-            .imageUrl("👟")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("수험생 잠바")
-            .description("수험생의 상징")
-            .itemType("outfit")
-            .price(400)
-            .rarity("uncommon")
-            .imageUrl("🧤")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("코딩 후드티")
-            .description("Hello World 프린팅")
-            .itemType("outfit")
-            .price(350)
-            .rarity("uncommon")
-            .imageUrl("💻")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("넥타이 정장")
-            .description("취업 준비생 필수")
-            .itemType("outfit")
-            .price(600)
-            .rarity("rare")
-            .imageUrl("👨‍💼")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("허태훈 코스튬")
-            .description("허태훈이 되어보자")
-            .itemType("outfit")
-            .price(2000)
-            .rarity("legendary")
-            .imageUrl("👨‍🏫")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("😊 미소")
-            .description("기본 표정")
-            .itemType("expression")
-            .price(0)
-            .rarity("common")
-            .imageUrl("😊")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("😭 눈물")
-            .description("허태훈에게 맞았을 때")
-            .itemType("expression")
-            .price(100)
-            .rarity("common")
-            .imageUrl("😭")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("😡 분노")
-            .description("역으로 분노하기")
-            .itemType("expression")
-            .price(300)
-            .rarity("uncommon")
-            .imageUrl("😡")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("😎 자신감")
-            .description("만점 맞았을 때")
-            .itemType("expression")
-            .price(400)
-            .rarity("rare")
-            .imageUrl("😎")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("🤯 멘붕")
-            .description("시험 망했을 때")
-            .itemType("expression")
-            .price(200)
-            .rarity("common")
-            .imageUrl("🤯")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("😤 빡침")
-            .description("더 이상 못 참겠어")
-            .itemType("expression")
-            .price(250)
-            .rarity("uncommon")
-            .imageUrl("😤")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("🤔 고민")
-            .description("어떤 답이 맞지?")
-            .itemType("expression")
-            .price(150)
-            .rarity("common")
-            .imageUrl("🤔")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("😴 졸림")
-            .description("밤샘 공부의 결과")
-            .itemType("expression")
-            .price(180)
-            .rarity("common")
-            .imageUrl("😴")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("🤩 감탄")
-            .description("만점이다!")
-            .itemType("expression")
-            .price(500)
-            .rarity("rare")
-            .imageUrl("🤩")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("😈 악동")
-            .description("장난기 가득")
-            .itemType("expression")
-            .price(350)
-            .rarity("uncommon")
-            .imageUrl("😈")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("방어막")
-            .description("허태훈의 분노를 1회 막아줌")
-            .itemType("consumable")
-            .price(1000)
-            .rarity("rare")
-            .imageUrl("🛡️")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("힌트권")
-            .description("퀴즈 힌트 1개 제공")
-            .itemType("consumable")
-            .price(500)
-            .rarity("uncommon")
-            .imageUrl("💡")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("부활권")
-            .description("틀린 문제를 다시 풀 수 있음")
-            .itemType("consumable")
-            .price(800)
-            .rarity("rare")
-            .imageUrl("❤️‍🩹")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("EXP 부스터")
-            .description("경험치 2배 (1시간)")
-            .itemType("consumable")
-            .price(700)
-            .rarity("uncommon")
-            .imageUrl("⚡")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("포인트 부스터")
-            .description("포인트 2배 (1시간)")
-            .itemType("consumable")
-            .price(600)
-            .rarity("uncommon")
-            .imageUrl("💰")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("타임 프리즈")
-            .description("제한시간 30초 추가")
-            .itemType("consumable")
-            .price(400)
-            .rarity("uncommon")
-            .imageUrl("⏰")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("정답 공개권")
-            .description("문제 1개의 정답 공개")
-            .itemType("consumable")
-            .price(1500)
-            .rarity("epic")
-            .imageUrl("📝")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("분노 감소제")
-            .description("허태훈 분노 게이지 -20%")
-            .itemType("consumable")
-            .price(900)
-            .rarity("rare")
-            .imageUrl("🧘")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("스킬 북: 집중력")
-            .description("정답률 10% 상승 (영구)")
-            .itemType("consumable")
-            .price(3000)
-            .rarity("legendary")
-            .imageUrl("📚")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("복습 노트")
-            .description("틀린 문제 모아보기")
-            .itemType("consumable")
-            .price(200)
-            .rarity("common")
-            .imageUrl("📓")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("행운의 부적")
-            .description("랜덤 보상 2배")
-            .itemType("consumable")
-            .price(1200)
-            .rarity("epic")
-            .imageUrl("🍀")
-            .isAvailable(true)
-            .build());
-
-        shopItemRepository.save(ShopItem.builder()
-            .name("커피")
-            .description("졸음 방지 (30분)")
-            .itemType("consumable")
-            .price(50)
-            .rarity("common")
-            .imageUrl("☕")
-            .isAvailable(true)
-            .build());
+        shopItemRepository.save(ShopItem.builder().name("기본 교복").description("평범한 학생 교복").itemType("outfit").price(0).rarity("common").imageUrl("👔").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("명품 양복").description("허태훈도 인정한 멋진 양복").itemType("outfit").price(500).rarity("rare").imageUrl("🤵").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("후드티").description("편안한 캐주얼룩").itemType("outfit").price(300).rarity("common").imageUrl("🧥").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("운동복").description("체육시간 필수템").itemType("outfit").price(200).rarity("common").imageUrl("👟").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("수험생 잠바").description("수험생의 상징").itemType("outfit").price(400).rarity("uncommon").imageUrl("🧤").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("코딩 후드티").description("Hello World 프린팅").itemType("outfit").price(350).rarity("uncommon").imageUrl("💻").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("넥타이 정장").description("취업 준비생 필수").itemType("outfit").price(600).rarity("rare").imageUrl("👨‍💼").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("허태훈 코스튬").description("허태훈이 되어보자").itemType("outfit").price(2000).rarity("legendary").imageUrl("👨‍🏫").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("😊 미소").description("기본 표정").itemType("expression").price(0).rarity("common").imageUrl("😊").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("😭 눈물").description("허태훈에게 맞았을 때").itemType("expression").price(100).rarity("common").imageUrl("😭").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("😡 분노").description("역으로 분노하기").itemType("expression").price(300).rarity("uncommon").imageUrl("😡").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("😎 자신감").description("만점 맞았을 때").itemType("expression").price(400).rarity("rare").imageUrl("😎").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("🤯 멘붕").description("시험 망했을 때").itemType("expression").price(200).rarity("common").imageUrl("🤯").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("😤 빡침").description("더 이상 못 참겠어").itemType("expression").price(250).rarity("uncommon").imageUrl("😤").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("🤔 고민").description("어떤 답이 맞지?").itemType("expression").price(150).rarity("common").imageUrl("🤔").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("😴 졸림").description("밤샘 공부의 결과").itemType("expression").price(180).rarity("common").imageUrl("😴").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("🤩 감탄").description("만점이다!").itemType("expression").price(500).rarity("rare").imageUrl("🤩").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("😈 악동").description("장난기 가득").itemType("expression").price(350).rarity("uncommon").imageUrl("😈").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("방어막").description("허태훈의 분노를 1회 막아줌").itemType("consumable").price(1000).rarity("rare").imageUrl("🛡️").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("힌트권").description("퀴즈 힌트 1개 제공").itemType("consumable").price(500).rarity("uncommon").imageUrl("💡").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("부활권").description("틀린 문제를 다시 풀 수 있음").itemType("consumable").price(800).rarity("rare").imageUrl("❤️‍🩹").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("EXP 부스터").description("경험치 2배 (1시간)").itemType("consumable").price(700).rarity("uncommon").imageUrl("⚡").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("포인트 부스터").description("포인트 2배 (1시간)").itemType("consumable").price(600).rarity("uncommon").imageUrl("💰").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("타임 프리즈").description("제한시간 30초 추가").itemType("consumable").price(400).rarity("uncommon").imageUrl("⏰").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("정답 공개권").description("문제 1개의 정답 공개").itemType("consumable").price(1500).rarity("epic").imageUrl("📝").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("분노 감소제").description("허태훈 분노 게이지 -20%").itemType("consumable").price(900).rarity("rare").imageUrl("🧘").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("스킬 북: 집중력").description("정답률 10% 상승 (영구)").itemType("consumable").price(3000).rarity("legendary").imageUrl("📚").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("복습 노트").description("틀린 문제 모아보기").itemType("consumable").price(200).rarity("common").imageUrl("📓").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("행운의 부적").description("랜덤 보상 2배").itemType("consumable").price(1200).rarity("epic").imageUrl("🍀").isAvailable(true).build());
+        shopItemRepository.save(ShopItem.builder().name("커피").description("졸음 방지 (30분)").itemType("consumable").price(50).rarity("common").imageUrl("☕").isAvailable(true).build());
     }
 }
