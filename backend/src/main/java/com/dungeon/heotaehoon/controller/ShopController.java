@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +39,29 @@ public class ShopController {
         return ResponseEntity.ok(shopItemRepository.findByItemType(type));
     }
 
+    @GetMapping("/inventory/{studentId}")
+    public ResponseEntity<Map<String, Object>> getInventory(@PathVariable String studentId) {
+        try {
+            Student student = studentRepository.findById(studentId)
+                    .orElseThrow(() -> new RuntimeException("학생을 찾을 수 없습니다"));
+
+            List<String> purchasedItemIds = student.getPurchasedItems();
+            List<ShopItem> purchasedItems = shopItemRepository.findAllById(purchasedItemIds);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("points", student.getPoints());
+            result.put("items", purchasedItems);
+            result.put("characterExpression", student.getCharacterExpression());
+            result.put("characterOutfit", student.getCharacterOutfit());
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", e.getMessage()
+            ));
+        }
+    }
+
     @PostMapping("/buy")
     public ResponseEntity<?> purchaseItem(@RequestBody Map<String, String> request) {
         try {
@@ -57,6 +81,13 @@ public class ShopController {
                 ));
             }
 
+            if (student.getPurchasedItems().contains(itemId)) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "이미 구매한 아이템입니다"
+                ));
+            }
+
             if (student.getPoints() < item.getPrice()) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
@@ -65,6 +96,7 @@ public class ShopController {
             }
 
             student.setPoints(student.getPoints() - item.getPrice());
+            student.getPurchasedItems().add(itemId);
             
             if ("expression".equals(item.getItemType())) {
                 student.setCharacterExpression(item.getImageUrl());

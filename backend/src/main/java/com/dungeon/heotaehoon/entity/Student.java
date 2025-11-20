@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "students")
@@ -74,6 +76,12 @@ public class Student {
     @Column(name = "character_outfit", length = 255)
     private String characterOutfit;
 
+    @ElementCollection
+    @CollectionTable(name = "student_purchased_items", joinColumns = @JoinColumn(name = "student_id"))
+    @Column(name = "item_id")
+    @Builder.Default
+    private List<String> purchasedItems = new ArrayList<>();
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -84,6 +92,9 @@ public class Student {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (purchasedItems == null) {
+            purchasedItems = new ArrayList<>();
+        }
     }
 
     @PreUpdate

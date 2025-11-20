@@ -4,7 +4,9 @@ import com.dungeon.heotaehoon.entity.Instructor;
 import com.dungeon.heotaehoon.repository.InstructorRepository;
 import com.dungeon.heotaehoon.repository.StudentRepository;
 import com.dungeon.heotaehoon.repository.RageDialogueRepository;
+import com.dungeon.heotaehoon.repository.StudentSubmissionRepository;
 import com.dungeon.heotaehoon.entity.RageDialogue;
+import com.dungeon.heotaehoon.entity.StudentSubmission;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +27,7 @@ public class InstructorService {
     private final InstructorRepository instructorRepository;
     private final StudentRepository studentRepository;
     private final RageDialogueRepository rageDialogueRepository;
+    private final StudentSubmissionRepository submissionRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -131,6 +134,20 @@ public class InstructorService {
     public Map<String, Object> getInstructorStats() {
         Instructor instructor = getInstructor();
         
+        List<Student> allStudents = studentRepository.findAll();
+        List<StudentSubmission> allSubmissions = submissionRepository.findAll();
+        
+        long totalCorrect = allStudents.stream()
+            .mapToLong(s -> s.getTotalCorrect() != null ? s.getTotalCorrect() : 0)
+            .sum();
+        long totalWrong = allStudents.stream()
+            .mapToLong(s -> s.getTotalWrong() != null ? s.getTotalWrong() : 0)
+            .sum();
+        
+        double averageCorrectRate = totalCorrect + totalWrong > 0 
+            ? (double) totalCorrect / (totalCorrect + totalWrong) * 100 
+            : 0;
+        
         Map<String, Object> stats = new HashMap<>();
         stats.put("id", instructor.getId());
         stats.put("name", instructor.getName());
@@ -140,9 +157,9 @@ public class InstructorService {
         stats.put("isEvolved", instructor.getIsEvolved());
         stats.put("evolutionStage", instructor.getEvolutionStage());
         stats.put("currentTitle", instructor.getCurrentTitle());
-        stats.put("totalStudents", 0);
-        stats.put("averageCorrectRate", 0);
-        stats.put("totalQuizzes", 0);
+        stats.put("totalStudents", allStudents.size());
+        stats.put("averageCorrectRate", Math.round(averageCorrectRate * 10) / 10.0);
+        stats.put("totalQuizzes", allSubmissions.size());
         
         String statusMessage = getStatusMessage(instructor);
         stats.put("statusMessage", statusMessage);
