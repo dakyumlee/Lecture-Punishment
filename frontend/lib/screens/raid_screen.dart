@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../services/api_service.dart';
+import '../models/student.dart';
 
 class RaidScreen extends StatefulWidget {
-  const RaidScreen({super.key});
+  final Student student;
+  const RaidScreen({super.key, required this.student});
 
   @override
   State<RaidScreen> createState() => _RaidScreenState();
@@ -107,7 +109,7 @@ class _RaidScreenState extends State<RaidScreen> {
       setState(() {
         _questionsAnswered++;
         if (isCorrect && damage > 0) {
-          _bossHp = (_bossHp - damage).clamp(0, _totalHp);
+          _bossHp = ((_bossHp - damage).clamp(0, _totalHp)).toInt();
         }
       });
 

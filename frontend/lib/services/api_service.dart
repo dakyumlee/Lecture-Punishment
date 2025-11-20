@@ -779,4 +779,88 @@ class ApiService {
       };
     }
   }
+
+  static Future<List<Map<String, dynamic>>> getRageHistory({int limit = 50}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/instructor/rage-history?limit=$limit'),
+      );
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching rage history: $e');
+      return [];
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getMultiverseUniverses(String studentId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/multiverse/universes/$studentId'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching multiverse universes: $e');
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> obtainSoulFragment({
+    required String studentId,
+    required String multiverseInstructorId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/multiverse/fragment/obtain'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'studentId': studentId,
+          'multiverseInstructorId': multiverseInstructorId,
+        }),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'success': false};
+    } catch (e) {
+      print('Error obtaining soul fragment: $e');
+      return {'success': false};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getMultiverseProgress(String studentId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/multiverse/progress/$studentId'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('Error fetching multiverse progress: $e');
+      return {};
+    }
+  }
+
+  static Future<Map<String, dynamic>> unlockSpecialEnding(String studentId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/multiverse/ending/unlock'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'studentId': studentId}),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'success': false};
+    } catch (e) {
+      print('Error unlocking special ending: $e');
+      return {'success': false};
+    }
+  }
 }

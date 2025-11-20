@@ -11,6 +11,7 @@ import 'login_screen.dart';
 import 'raid_screen.dart';
 import 'mental_recovery_screen.dart';
 import 'rage_memory_screen.dart';
+import 'multiverse_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Student initialStudent;
@@ -254,6 +255,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           builder: (context) => const RageMemoryScreen(),
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildMenuButton(
+                      context,
+                      '🌌 멀티버스',
+                      '평행세계의 허태훈 탐험',
+                      () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MultiverseScreen(student: student),
+                          ),
+                        );
+                        _refreshStudent();
+                      },
                     ),
                     const SizedBox(height: 12),
                     _buildMenuButton(
