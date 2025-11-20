@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @Slf4j
 @Service
@@ -72,5 +74,43 @@ public class StudentGroupService {
     public void permanentlyDeleteGroup(String id) {
         studentGroupRepository.deleteById(id);
         log.info("Permanently deleted group: {}", id);
+    }
+
+    @Transactional
+    public StudentGroup evolveGroup(String groupId) {
+        StudentGroup group = studentGroupRepository.findById(groupId)
+            .orElseThrow(() -> new RuntimeException("그룹을 찾을 수 없습니다"));
+        
+        group.setIsEvolved(true);
+        group.setEvolutionStage("father");
+        group.setEvolutionDate(LocalDateTime.now());
+        
+        return studentGroupRepository.save(group);
+    }
+
+    @Transactional
+    public StudentGroup resetGroupEvolution(String groupId) {
+        StudentGroup group = studentGroupRepository.findById(groupId)
+            .orElseThrow(() -> new RuntimeException("그룹을 찾을 수 없습니다"));
+        
+        group.setIsEvolved(false);
+        group.setEvolutionStage("normal");
+        group.setEvolutionDate(null);
+        
+        return studentGroupRepository.save(group);
+    }
+
+    public Map<String, Object> getGroupEvolutionStatus(String groupId) {
+        StudentGroup group = studentGroupRepository.findById(groupId)
+            .orElseThrow(() -> new RuntimeException("그룹을 찾을 수 없습니다"));
+        
+        Map<String, Object> status = new HashMap<>();
+        status.put("groupId", group.getId());
+        status.put("groupName", group.getGroupName());
+        status.put("isEvolved", group.getIsEvolved());
+        status.put("evolutionStage", group.getEvolutionStage());
+        status.put("evolutionDate", group.getEvolutionDate());
+        
+        return status;
     }
 }

@@ -562,6 +562,11 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
+                              icon: const Icon(Icons.auto_awesome, color: Color(0xFF4CAF50)),
+                              onPressed: () => _showEvolutionDialog(group),
+                              tooltip: '아빠 모드',
+                            ),
+                            IconButton(
                               icon: const Icon(Icons.info, color: Color(0xFFD9D4D2)),
                               onPressed: () => _showGroupDetail(group),
                             ),
@@ -575,6 +580,66 @@ class _GroupManageScreenState extends State<GroupManageScreen> {
                     );
                   },
                 ),
+    );
+  }
+
+  Future<void> _showEvolutionDialog(Map<String, dynamic> group) async {
+    final status = await ApiService.getGroupEvolutionStatus(group['id']);
+    final isEvolved = status['isEvolved'] ?? false;
+    
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF595048),
+        title: Text(
+          isEvolved ? '🎯 진화 초기화' : '👨 아빠 모드로 진화',
+          style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+        ),
+        content: Text(
+          isEvolved
+              ? '${group['groupName']} 그룹을 분노 모드로 되돌리시겠습니까?'
+              : '${group['groupName']} 그룹을 아빠 허태훈 모드로 진화시키시겠습니까?\n\n이 그룹의 학생들은 따뜻한 아빠 허태훈을 만나게 됩니다.',
+          style: const TextStyle(color: Color(0xFFD9D4D2), fontFamily: 'JoseonGulim'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소', style: TextStyle(color: Color(0xFF736A63))),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final success = isEvolved
+                  ? await ApiService.resetGroupEvolution(group['id'])
+                  : await ApiService.evolveGroup(group['id']);
+              
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? (isEvolved ? '분노 모드로 되돌렸습니다' : '아빠 모드로 진화했습니다! 🎉')
+                          : '진화 실패',
+                      style: const TextStyle(fontFamily: 'JoseonGulim'),
+                    ),
+                    backgroundColor: success ? const Color(0xFF4CAF50) : Colors.red,
+                  ),
+                );
+                _loadGroups();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isEvolved ? Colors.orange : const Color(0xFF4CAF50),
+            ),
+            child: Text(
+              isEvolved ? '초기화' : '진화',
+              style: const TextStyle(color: Colors.white, fontFamily: 'JoseonGulim'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

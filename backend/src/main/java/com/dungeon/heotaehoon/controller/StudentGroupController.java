@@ -240,4 +240,22 @@ public class StudentGroupController {
             return ResponseEntity.status(500).body(error);
         }
     }
+
+    @PostMapping("/{groupId}/evolve")
+    public ResponseEntity<StudentGroup> evolveGroup(@PathVariable String groupId) {
+        StudentGroup evolved = studentGroupService.evolveGroup(groupId);
+        return ResponseEntity.ok(evolved);
+    }
+
+    @PostMapping("/{groupId}/reset-evolution")
+    public ResponseEntity<StudentGroup> resetEvolution(@PathVariable String groupId) {
+        StudentGroup reset = studentGroupService.resetGroupEvolution(groupId);
+        return ResponseEntity.ok(reset);
+    }
+
+    @GetMapping("/{groupId}/evolution-status")
+    public ResponseEntity<Map<String, Object>> getEvolutionStatus(@PathVariable String groupId) {
+        Map<String, Object> status = studentGroupService.getGroupEvolutionStatus(groupId);
+        return ResponseEntity.ok(status);
+    }
 }

@@ -33,4 +33,13 @@ public class StudentGroup {
     
     @Builder.Default
     private Boolean isActive = true;
+    @Column(name = "is_evolved")
+    private Boolean isEvolved = false;
+
+    @Column(name = "evolution_stage")
+    private String evolutionStage = "normal";
+
+    @Column(name = "evolution_date")
+    private LocalDateTime evolutionDate;
+
 }

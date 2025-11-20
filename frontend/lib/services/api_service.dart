@@ -1021,4 +1021,37 @@ class ApiService {
       return {};
     }
   }
+
+  static Future<bool> evolveGroup(String groupId) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/groups/$groupId/evolve'));
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error evolving group: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> resetGroupEvolution(String groupId) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/groups/$groupId/reset-evolution'));
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error resetting evolution: $e');
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> getGroupEvolutionStatus(String groupId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/groups/$groupId/evolution-status'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('Error getting evolution status: $e');
+      return {};
+    }
+  }
 }
