@@ -47,7 +47,12 @@ public class GradingController {
                 
                 return data;
             })
-            .sorted((a, b) -> ((Date) b.get("submittedAt")).compareTo((Date) a.get("submittedAt")))
+            .sorted((a, b) -> {
+                Object aDate = a.get("submittedAt");
+                Object bDate = b.get("submittedAt");
+                if (aDate == null || bDate == null) return 0;
+                return ((Comparable) bDate).compareTo(aDate);
+            })
             .collect(Collectors.toList());
         
         return ResponseEntity.ok(result);
@@ -77,7 +82,7 @@ public class GradingController {
             answerData.put("studentAnswer", answer.getStudentAnswer());
             answerData.put("correctAnswer", answer.getQuestion().getCorrectAnswer());
             answerData.put("isCorrect", answer.getIsCorrect());
-            answerData.put("score", answer.getScore());
+            answerData.put("pointsEarned", answer.getPointsEarned());
             return answerData;
         }).collect(Collectors.toList()));
         
@@ -98,14 +103,14 @@ public class GradingController {
                 .orElseThrow(() -> new RuntimeException("답안을 찾을 수 없습니다"));
         
         answer.setIsCorrect(isCorrect);
-        answer.setScore(score);
+        answer.setPointsEarned(score);
         answerRepository.save(answer);
         
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
         result.put("answerId", answerId);
         result.put("isCorrect", isCorrect);
-        result.put("score", score);
+        result.put("pointsEarned", score);
         
         return ResponseEntity.ok(result);
     }
