@@ -122,8 +122,16 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> getStudentInventory(String studentId) async {
-    final response = await http.get(Uri.parse('$baseUrl/shop/inventory/$studentId'));
-    return {'points': 100, 'items': jsonDecode(response.body)};
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/shop/inventory/$studentId'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'points': 0, 'items': [], 'characterExpression': '😊', 'characterOutfit': null};
+    } catch (e) {
+      print('Error fetching inventory: $e');
+      return {'points': 0, 'items': [], 'characterExpression': '😊', 'characterOutfit': null};
+    }
   }
 
   static Future<Map<String, dynamic>> buyItem({required String studentId, required String itemId}) async {
