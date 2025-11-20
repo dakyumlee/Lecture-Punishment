@@ -54,7 +54,7 @@ public class BuildMakerService {
     }
     
     private String analyzeStudentPerformance(String topic) {
-        List<QuizResult> recentResults = quizResultRepository.findTop10ByOrderByCreatedAtDesc();
+        List<QuizResult> recentResults = quizResultRepository.findTop10ByOrderBySubmittedAtDesc();
         
         if (recentResults.isEmpty()) {
             return "학생 데이터 없음 - 일반적인 강의 진행";

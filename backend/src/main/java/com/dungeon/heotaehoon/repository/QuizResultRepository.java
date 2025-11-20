@@ -11,5 +11,5 @@ public interface QuizResultRepository extends JpaRepository<QuizResult, String> 
     List<QuizResult> findByStudentId(String studentId);
     List<QuizResult> findByQuizId(String quizId);
     List<QuizResult> findByStudentIdAndIsCorrect(String studentId, Boolean isCorrect);
-    List<QuizResult> findTop10ByOrderByCreatedAtDesc();
+    List<QuizResult> findTop10ByOrderBySubmittedAtDesc();
 }
