@@ -14,7 +14,7 @@ public class MentalBreakerService {
     
     private final MentalStateRepository mentalStateRepository;
     private final StudentRepository studentRepository;
-    private final OpenAIService openAIService;
+    private final AIService aiService;
     
     @Transactional
     public Map<String, Object> processMentalBreak(String studentId, boolean isCorrect) {
@@ -140,7 +140,7 @@ public class MentalBreakerService {
         );
         
         try {
-            return openAIService.generateText(prompt, 150);
+            return aiService.generateText(prompt);
         } catch (Exception e) {
             return getDefaultDialogue(dialogueType);
         }
@@ -172,8 +172,8 @@ public class MentalBreakerService {
     private String getDefaultDialogue(String dialogueType) {
         return switch (dialogueType) {
             case "destruction" -> "아니야 네가 못한 게 아니라 세상이 널 버린 거야";
-            case "pressure" -> "이 정도 문제도 못 푸는데 어떻게 살아갈 거니?";
-            case "doubt" -> "너는 복습을 했니? 했으면 이럴 리가 없지 ㅋㅋ";
+            case "pressure" -> "이 정도 문제도 못 푸는데 어떻게 살아갈 거냐?";
+            case "doubt" -> "너는 복습을 했냐? 했으면 이럴 리가 없지...";
             case "light" -> "또 틀렸네? 집중력이 문제인가?";
             default -> "다시 생각해봐";
         };

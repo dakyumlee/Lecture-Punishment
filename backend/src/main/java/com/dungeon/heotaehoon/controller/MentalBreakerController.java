@@ -37,7 +37,7 @@ public class MentalBreakerController {
         String studentId = (String) request.get("studentId");
         Integer recoveryAmount = (Integer) request.get("recoveryAmount");
         
-        Map<String, Object> result = mentalBreakerService.completRecoveryMission(studentId, recoveryAmount);
+        Map<String, Object> result = mentalBreakerService.completeRecoveryMission(studentId, recoveryAmount);
         return ResponseEntity.ok(result);
     }
 }

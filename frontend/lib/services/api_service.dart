@@ -863,7 +863,6 @@ class ApiService {
       return {'success': false};
     }
   }
-}
 
   static Future<Map<String, dynamic>> processMentalBreak({
     required String studentId,
