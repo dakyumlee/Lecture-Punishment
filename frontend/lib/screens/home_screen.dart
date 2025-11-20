@@ -13,6 +13,7 @@ import 'mental_recovery_screen.dart';
 import 'rage_memory_screen.dart';
 import 'multiverse_screen.dart';
 import 'mental_breaker_screen.dart';
+import 'build_maker_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Student initialStudent;
@@ -282,6 +283,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => MentalBreakerScreen(student: student),
+                          ),
+                        );
+                        _refreshStudent();
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildMenuButton(
+                      context,
+                      '🤖 빌드메이커',
+                      'AI 맞춤 강의',
+                      () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BuildMakerScreen(student: student),
                           ),
                         );
                         _refreshStudent();

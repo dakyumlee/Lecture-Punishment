@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'worksheet_manage_screen.dart';
 import 'group_manage_screen.dart';
 import 'grading_screen.dart';
+import 'admin/build_maker_admin_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -137,6 +138,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => const WorksheetManageScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'AI 강의',
+                    style: TextStyle(
+                      color: Color(0xFFD9D4D2),
+                      fontFamily: 'JoseonGulim',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionButton(
+                    '🤖 AI 강의 생성',
+                    '빌드메이커로 맞춤형 강의 자동 생성',
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BuildMakerAdminScreen(),
                         ),
                       );
                     },

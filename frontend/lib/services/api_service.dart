@@ -924,4 +924,101 @@ class ApiService {
       return {};
     }
   }
+
+  static Future<Map<String, dynamic>> generateAILecture({
+    required String topic,
+    required String syllabus,
+    int difficulty = 3,
+    String instructorStyle = '허태훈',
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/build-maker/generate'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'topic': topic,
+          'syllabus': syllabus,
+          'difficulty': difficulty,
+          'instructorStyle': instructorStyle,
+        }),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('Error generating AI lecture: $e');
+      return {};
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getAILectures() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/build-maker/lectures'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching AI lectures: $e');
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAILectureDetail(int lectureId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/build-maker/lectures/$lectureId'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('Error fetching lecture detail: $e');
+      return {};
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateLectureProgress({
+    required String studentId,
+    required int lectureId,
+    required int currentSection,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/build-maker/progress/update'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'studentId': studentId,
+          'lectureId': lectureId,
+          'currentSection': currentSection,
+        }),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('Error updating lecture progress: $e');
+      return {};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getLectureProgress({
+    required String studentId,
+    required int lectureId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/build-maker/progress/$studentId/$lectureId'),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('Error fetching lecture progress: $e');
+      return {};
+    }
+  }
 }
