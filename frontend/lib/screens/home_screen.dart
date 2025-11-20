@@ -7,6 +7,7 @@ import 'ranking_screen.dart';
 import 'shop_screen.dart';
 import 'my_page_screen.dart';
 import 'instructor_stats_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Student initialStudent;
@@ -39,6 +40,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _logout() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(fontFamily: 'JoseonGulim', color: Color(0xFFD9D4D2)),
         ),
         backgroundColor: const Color(0xFF595048),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.school, color: Color(0xFFD9D4D2)),
@@ -76,7 +86,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.logout, color: Color(0xFFD9D4D2)),
-            onPressed: () => Navigator.pop(context),
+            tooltip: '로그아웃',
+            onPressed: _logout,
           ),
         ],
       ),
@@ -100,10 +111,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Column(
                         children: [
-                          const CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Color(0xFF00010D),
-                            child: Icon(Icons.person, size: 60, color: Color(0xFFD9D4D2)),
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0D0D0D),
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                            child: Center(
+                              child: Text(
+                                student.characterExpression ?? '😊',
+                                style: const TextStyle(fontSize: 50),
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -195,12 +215,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       context,
                       '🛒 상점',
                       '포인트로 아이템 구매',
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ShopScreen(student: student),
-                        ),
-                      ),
+                      () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ShopScreen(student: student),
+                          ),
+                        );
+                        _refreshStudent();
+                      },
                     ),
                     const SizedBox(height: 12),
                     _buildMenuButton(
