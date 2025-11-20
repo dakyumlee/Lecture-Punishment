@@ -13,6 +13,7 @@ import 'mental_recovery_screen.dart';
 import 'rage_memory_screen.dart';
 import 'multiverse_screen.dart';
 import 'mental_breaker_screen.dart';
+import 'ending_credits_screen.dart';
 import 'build_maker_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -31,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     student = widget.initialStudent;
     _refreshStudent();
+    _checkEvolution();
   }
 
   Future<void> _refreshStudent() async {
@@ -52,6 +54,23 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (context) => const LoginScreen()),
       (route) => false,
     );
+  }
+
+  Future<void> _checkEvolution() async {
+    try {
+      final result = await ApiService.autoEvolve();
+      if (result['evolved'] == true && mounted) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const EndingCreditsScreen(),
+          ),
+        );
+        _refreshStudent();
+      }
+    } catch (e) {
+      print('Evolution check error: $e');
+    }
   }
 
   @override
