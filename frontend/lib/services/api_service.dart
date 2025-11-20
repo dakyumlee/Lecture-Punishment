@@ -864,3 +864,65 @@ class ApiService {
     }
   }
 }
+
+  static Future<Map<String, dynamic>> processMentalBreak({
+    required String studentId,
+    required bool isCorrect,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/mental-breaker/process'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'studentId': studentId,
+          'isCorrect': isCorrect,
+        }),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('Error processing mental break: $e');
+      return {};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getMentalState(String studentId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/mental-breaker/state/$studentId'),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('Error fetching mental state: $e');
+      return {};
+    }
+  }
+
+  static Future<Map<String, dynamic>> completeRecoveryMission({
+    required String studentId,
+    required int recoveryAmount,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/mental-breaker/recovery/complete'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'studentId': studentId,
+          'recoveryAmount': recoveryAmount,
+        }),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('Error completing recovery mission: $e');
+      return {};
+    }
+  }
+}
