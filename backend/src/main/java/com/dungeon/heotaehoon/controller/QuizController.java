@@ -1,5 +1,6 @@
 package com.dungeon.heotaehoon.controller;
 
+import com.dungeon.heotaehoon.entity.Quiz;
 import com.dungeon.heotaehoon.service.QuizService;
 import com.dungeon.heotaehoon.service.AIService;
 import com.dungeon.heotaehoon.service.InstructorService;
@@ -10,11 +11,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/quiz")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class QuizController {
@@ -24,7 +26,18 @@ public class QuizController {
     private final InstructorService instructorService;
     private final StudentService studentService;
 
-    @PostMapping("/result")
+    @GetMapping("/quizzes/boss/{bossId}")
+    public ResponseEntity<List<Quiz>> getQuizzesByBoss(@PathVariable String bossId) {
+        try {
+            List<Quiz> quizzes = quizService.getQuizzesByBossId(bossId);
+            return ResponseEntity.ok(quizzes);
+        } catch (Exception e) {
+            log.error("Failed to get quizzes for boss: {}", bossId, e);
+            return ResponseEntity.status(500).body(List.of());
+        }
+    }
+
+    @PostMapping("/quiz/result")
     public ResponseEntity<Map<String, Object>> submitQuizResult(@RequestBody Map<String, Object> request) {
         try {
             String studentId = (String) request.get("studentId");
