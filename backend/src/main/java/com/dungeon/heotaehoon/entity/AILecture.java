@@ -23,21 +23,22 @@ public class AILecture {
     @Column(nullable = false)
     private String topic;
     
-    @Column(length = 2000)
+    @Column(columnDefinition = "TEXT")
     private String syllabus;
     
     @Column(nullable = false)
     private Integer difficulty;
     
-    @Column(length = 5000)
+    @Column(columnDefinition = "TEXT")
     private String generatedScript;
     
     @Column(nullable = false)
     private String instructorStyle;
     
+    @Column(columnDefinition = "TEXT")
     private String baseTranscript;
     
-    @Column(length = 2000)
+    @Column(columnDefinition = "TEXT")
     private String studentAnalysis;
     
     private Integer estimatedDuration;
