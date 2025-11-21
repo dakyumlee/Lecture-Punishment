@@ -3,6 +3,7 @@ package com.dungeon.heotaehoon.controller;
 import com.dungeon.heotaehoon.entity.Quiz;
 import com.dungeon.heotaehoon.service.QuizService;
 import com.dungeon.heotaehoon.service.AIService;
+import com.dungeon.heotaehoon.service.AiServiceClient;
 import com.dungeon.heotaehoon.service.InstructorService;
 import com.dungeon.heotaehoon.service.StudentService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class QuizController {
 
     private final QuizService quizService;
     private final AIService aiService;
+    private final AiServiceClient aiServiceClient;
     private final InstructorService instructorService;
     private final StudentService studentService;
 
@@ -34,6 +36,34 @@ public class QuizController {
         } catch (Exception e) {
             log.error("Failed to get quizzes for boss: {}", bossId, e);
             return ResponseEntity.status(500).body(List.of());
+        }
+    }
+
+    @PostMapping("/quizzes/rage-dialogue")
+    public ResponseEntity<Map<String, Object>> getRageDialogue(@RequestBody Map<String, Object> request) {
+        try {
+            String dialogueType = (String) request.get("dialogueType");
+            String studentName = (String) request.getOrDefault("studentName", "학생");
+            String question = (String) request.getOrDefault("question", "");
+            String wrongAnswer = (String) request.getOrDefault("wrongAnswer", "");
+            String correctAnswer = (String) request.getOrDefault("correctAnswer", "");
+            Integer combo = (Integer) request.getOrDefault("combo", 0);
+            
+            String dialogue = aiServiceClient.generateRageDialogue(
+                dialogueType, studentName, question, wrongAnswer, correctAnswer, combo
+            );
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("dialogue", dialogue);
+            response.put("dialogueType", dialogueType);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Rage dialogue 생성 실패", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("dialogue", "복습 좀 해라");
+            errorResponse.put("dialogueType", request.get("dialogueType"));
+            return ResponseEntity.ok(errorResponse);
         }
     }
 

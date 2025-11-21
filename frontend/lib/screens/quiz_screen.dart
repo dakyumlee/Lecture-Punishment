@@ -77,6 +77,99 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
     }
   }
 
+  Future<void> _submitAnswer(Quiz quiz) async {
+    if (_student == null || widget.bossId == null) return;
+    
+    try {
+      bool correct = selectedAnswer == quiz.correctAnswer;
+      
+      if (correct) {
+        int oldCombo = combo;
+        combo++;
+        
+        final expResult = await ApiService.addStudentExp(_student!.id, 10);
+        final statsResult = await ApiService.updateStudentStats(_student!.id, true);
+        
+        earnedPoints = statsResult['pointsEarned'] ?? 5;
+        currentPoints += earnedPoints;
+        
+        if (_boss != null) {
+          final bossResult = await ApiService.updateBossHp(widget.bossId!, 200);
+          setState(() {
+            _boss!.hpCurrent = bossResult['currentHp'];
+            _boss!.isDefeated = bossResult['isDefeated'];
+          });
+          
+          if (_boss!.isDefeated) {
+            _showBossDefeatedDialog();
+          }
+        }
+        
+        setState(() {
+          _student!.exp = expResult['student']['exp'];
+          _student!.level = expResult['student']['level'];
+        });
+        
+        if (combo >= 3) {
+          try {
+            final praise = await ApiService.getRageDialogue(
+              dialogueType: 'combo_3',
+              studentName: _student!.displayName,
+              combo: combo,
+            );
+            rageMessage = praise['dialogue'];
+          } catch (e) {
+            print('Failed to get praise dialogue: $e');
+            rageMessage = '오, 제대로 공부했네? 계속 이렇게 해';
+          }
+        }
+        
+        if (expResult['leveledUp']) {
+          _showLevelUpDialog(expResult['oldLevel'], expResult['newLevel']);
+        }
+      } else {
+        int oldCombo = combo;
+        combo = 0;
+        await ApiService.updateStudentStats(_student!.id, false);
+        
+        String dialogueType = oldCombo >= 3 ? 'combo_broken' : 'wrong_answer';
+        
+        try {
+          final rage = await ApiService.getRageDialogue(
+            dialogueType: dialogueType,
+            studentName: _student!.displayName,
+            question: quiz.question,
+            wrongAnswer: selectedAnswer ?? '',
+            correctAnswer: quiz.correctAnswer,
+            combo: oldCombo,
+          );
+          rageMessage = rage['dialogue'];
+        } catch (e) {
+          print('Failed to get rage dialogue: $e');
+          if (oldCombo >= 3) {
+            rageMessage = '콤보가 끊겼잖아! 집중 좀 해!';
+          } else {
+            rageMessage = '복습 좀 해라!';
+          }
+        }
+        
+        _shakeController.forward(from: 0);
+        earnedPoints = 0;
+      }
+      
+      setState(() {
+        showResult = true;
+        isCorrect = correct;
+      });
+    } catch (e) {
+      print('Submit answer error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('제출 실패: $e')),
+        );
+      }
+    }
+  }
 
   void _showMentalRecoveryDialog() {
     if (!mounted) return;
@@ -434,7 +527,6 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
     );
   }
 
-
   Widget _buildMentalGaugeBar() {
     final mental = _student!.mentalGauge;
     final mentalPercent = mental / 100;
@@ -709,86 +801,6 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
         ),
       ),
     );
-  }
-
-  Future<void> _submitAnswer(Quiz quiz) async {
-    if (_student == null || widget.bossId == null) return;
-    
-    try {
-      bool correct = selectedAnswer == quiz.correctAnswer;
-      
-      if (correct) {
-        int oldCombo = combo;
-        combo++;
-        
-        final expResult = await ApiService.addStudentExp(_student!.id, 10);
-        final statsResult = await ApiService.updateStudentStats(_student!.id, true);
-        
-        earnedPoints = statsResult['pointsEarned'] ?? 5;
-        currentPoints += earnedPoints;
-        
-        if (_boss != null) {
-          final bossResult = await ApiService.updateBossHp(widget.bossId!, 200);
-          setState(() {
-            _boss!.hpCurrent = bossResult['currentHp'];
-            _boss!.isDefeated = bossResult['isDefeated'];
-          });
-          
-          if (_boss!.isDefeated) {
-            _showBossDefeatedDialog();
-          }
-        }
-        
-        setState(() {
-          _student!.exp = expResult['student']['exp'];
-          _student!.level = expResult['student']['level'];
-        });
-        
-        if (combo >= 3) {
-          final praise = await ApiService.getRageDialogue(
-            dialogueType: 'combo_3',
-            studentName: _student!.displayName,
-            combo: combo,
-          );
-          rageMessage = praise['dialogue'];
-        }
-        
-        if (expResult['leveledUp']) {
-          _showLevelUpDialog(expResult['oldLevel'], expResult['newLevel']);
-        }
-      } else {
-        int oldCombo = combo;
-        combo = 0;
-        await ApiService.updateStudentStats(_student!.id, false);
-        
-        String dialogueType = oldCombo >= 3 ? 'combo_broken' : 'wrong_answer';
-        
-        final rage = await ApiService.getRageDialogue(
-          dialogueType: dialogueType,
-          studentName: _student!.displayName,
-          question: quiz.question,
-          wrongAnswer: selectedAnswer ?? '',
-          correctAnswer: quiz.correctAnswer,
-          combo: oldCombo,
-        );
-        
-        rageMessage = rage['dialogue'];
-        _shakeController.forward(from: 0);
-        earnedPoints = 0;
-      }
-      
-      setState(() {
-        showResult = true;
-        isCorrect = correct;
-      });
-    } catch (e) {
-      print('Submit answer error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('제출 실패: $e')),
-        );
-      }
-    }
   }
 
   void _showLevelUpDialog(int oldLevel, int newLevel) {
