@@ -160,7 +160,7 @@ public class AIService {
                     new OpenAIRequest.Message("system", "당신은 엄격하지만 학생을 생각하는 허태훈 강사입니다."),
                     new OpenAIRequest.Message("user", prompt)
                 },
-                100,
+                4000,
                 0.9
             ));
 
