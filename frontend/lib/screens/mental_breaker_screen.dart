@@ -148,40 +148,44 @@ class _MentalBreakerScreenState extends State<MentalBreakerScreen> with SingleTi
                   ),
                 ),
                 const SizedBox(height: 24),
-                Stack(
-                  children: [
-                    Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0D0D0D),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      height: 40,
-                      width: MediaQuery.of(context).size.width * 0.7 * (gauge / 100),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [color.withOpacity(0.7), color],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    Container(
-                      height: 40,
-                      alignment: Alignment.center,
-                      child: Text(
-                        '$gauge / 100',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontFamily: 'JoseonGulim',
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.7,
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 40,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D0D0D),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-                    ),
-                  ],
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 500),
+                        height: 40,
+                        width: MediaQuery.of(context).size.width * 0.7 * (gauge / 100),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [color.withOpacity(0.7), color],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      Container(
+                        height: 40,
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$gauge / 100',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'JoseonGulim',
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
