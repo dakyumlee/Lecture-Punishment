@@ -286,7 +286,7 @@ class _MentalBreakerScreenState extends State<MentalBreakerScreen> with SingleTi
             '- 멘탈 회복 미션으로 회복 가능\n'
             '- 정답 시 멘탈 자동 회복',
             style: TextStyle(
-              color: Color(0xFF736A63),
+              color: Color(0xFFD9D4D2),
               fontFamily: 'JoseonGulim',
               fontSize: 14,
               height: 1.5,

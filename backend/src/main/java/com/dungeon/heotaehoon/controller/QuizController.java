@@ -6,6 +6,7 @@ import com.dungeon.heotaehoon.service.AIService;
 import com.dungeon.heotaehoon.service.AiServiceClient;
 import com.dungeon.heotaehoon.service.InstructorService;
 import com.dungeon.heotaehoon.service.StudentService;
+import com.dungeon.heotaehoon.service.MentalBreakerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,7 @@ public class QuizController {
     private final AiServiceClient aiServiceClient;
     private final InstructorService instructorService;
     private final StudentService studentService;
+    private final MentalBreakerService mentalBreakerService;
 
     @GetMapping("/quizzes/boss/{bossId}")
     public ResponseEntity<List<Quiz>> getQuizzesByBoss(@PathVariable String bossId) {
@@ -80,6 +82,7 @@ public class QuizController {
             }
             
             double scorePercent = (double) correctCount / totalQuestions * 100;
+            int wrongCount = totalQuestions - correctCount;
             
             String comment = generateComment(scorePercent, subject, correctCount, totalQuestions);
             Map<String, Integer> rewards = calculateRewards(scorePercent);
@@ -90,6 +93,18 @@ public class QuizController {
                     studentService.addPoints(studentId, rewards.get("points"));
                 } catch (Exception e) {
                     log.error("학생 보상 지급 실패: {}", e.getMessage());
+                }
+                
+                try {
+                    for (int i = 0; i < correctCount; i++) {
+                        mentalBreakerService.processMentalBreak(studentId, true);
+                    }
+                    for (int i = 0; i < wrongCount; i++) {
+                        mentalBreakerService.processMentalBreak(studentId, false);
+                    }
+                    log.info("멘탈 시스템 업데이트: {} 정답, {} 오답", correctCount, wrongCount);
+                } catch (Exception e) {
+                    log.error("멘탈 시스템 업데이트 실패: {}", e.getMessage());
                 }
             }
             
