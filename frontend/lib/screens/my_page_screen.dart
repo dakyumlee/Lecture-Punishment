@@ -15,6 +15,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
   Map<String, dynamic>? _myPageData;
   Map<String, dynamic>? _inventoryData;
   bool _isLoading = true;
+  String? _currentExpression;
+  String? _currentOutfit;
 
   @override
   void initState() {
@@ -31,6 +33,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
         setState(() {
           _myPageData = data;
           _inventoryData = inventory;
+          _currentExpression = inventory['characterExpression'];
+          _currentOutfit = inventory['characterOutfit'];
           _isLoading = false;
         });
       }
@@ -48,6 +52,48 @@ class _MyPageScreenState extends State<MyPageScreen> {
     if (result == true) {
       _loadMyPageData();
     }
+  }
+
+  Future<void> _applyItem(String itemId, String itemType, String imageUrl) async {
+    try {
+      final provider = Provider.of<GameProvider>(context, listen: false);
+      await ApiService.changeExpression(provider.currentStudent!.id, imageUrl);
+      
+      setState(() {
+        if (itemType == 'expression') {
+          _currentExpression = imageUrl;
+        } else if (itemType == 'outfit') {
+          _currentOutfit = imageUrl;
+        }
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('적용 완료!', style: TextStyle(fontFamily: 'JoseonGulim')),
+            backgroundColor: Color(0xFF4CAF50),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('적용 실패: $e', style: const TextStyle(fontFamily: 'JoseonGulim')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  bool _isApplied(String itemType, String? imageUrl) {
+    if (itemType == 'expression') {
+      return _currentExpression == imageUrl;
+    } else if (itemType == 'outfit') {
+      return _currentOutfit == imageUrl;
+    }
+    return false;
   }
 
   @override
@@ -115,7 +161,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          student.characterExpression ?? '😊',
+                          _currentExpression ?? student.characterExpression ?? '😊',
                           style: const TextStyle(fontSize: 60),
                         ),
                       ),
@@ -197,36 +243,80 @@ class _MyPageScreenState extends State<MyPageScreen> {
                       spacing: 12,
                       runSpacing: 12,
                       children: purchasedItems.map((item) {
-                        return Container(
-                          width: 80,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0D0D0D),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xFF736A63),
-                              width: 1,
+                        final itemId = item['id'] ?? '';
+                        final itemType = item['itemType'] ?? '';
+                        final imageUrl = item['imageUrl'] ?? '📦';
+                        final name = item['name'] ?? '';
+                        final isApplied = _isApplied(itemType, imageUrl);
+                        
+                        return GestureDetector(
+                          onTap: (itemType == 'expression' || itemType == 'outfit') && !isApplied
+                              ? () => _applyItem(itemId, itemType, imageUrl)
+                              : null,
+                          child: Container(
+                            width: 100,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0D0D0D),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isApplied ? Colors.green : const Color(0xFF736A63),
+                                width: isApplied ? 2 : 1,
+                              ),
                             ),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                item['imageUrl'] ?? '📦',
-                                style: const TextStyle(fontSize: 32),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                item['name'] ?? '',
-                                style: const TextStyle(
-                                  color: Color(0xFFD9D4D2),
-                                  fontFamily: 'JoseonGulim',
-                                  fontSize: 10,
+                            child: Column(
+                              children: [
+                                Stack(
+                                  children: [
+                                    Text(
+                                      imageUrl,
+                                      style: const TextStyle(fontSize: 32),
+                                    ),
+                                    if (isApplied)
+                                      Positioned(
+                                        top: -5,
+                                        right: -5,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.green,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.check,
+                                            color: Colors.white,
+                                            size: 12,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                                const SizedBox(height: 8),
+                                Text(
+                                  name,
+                                  style: const TextStyle(
+                                    color: Color(0xFFD9D4D2),
+                                    fontFamily: 'JoseonGulim',
+                                    fontSize: 10,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (itemType == 'expression' || itemType == 'outfit') ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    isApplied ? '적용중' : '탭하여 적용',
+                                    style: TextStyle(
+                                      color: isApplied ? Colors.green : const Color(0xFF736A63),
+                                      fontFamily: 'JoseonGulim',
+                                      fontSize: 8,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
                         );
                       }).toList(),
