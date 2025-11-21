@@ -221,21 +221,30 @@ def generate_quizzes():
 
 {topic}에 대한 난이도 {difficulty} 수준의 객관식 퀴즈를 {count}개 생성해.
 
-**중요:**
+**매우 중요:**
 - 난이도 {difficulty}에 맞는 문제 출제
-- 선택지는 A, B, C, D 네 개
-- 정답은 반드시 하나만
+- 선택지는 정확히 4개
+- correctAnswer는 반드시 "A", "B", "C", "D" 중 하나만 사용
+- 절대 "1", "2", "3", "4"나 실제 답 텍스트를 넣지 말것
 - 해설은 구체적으로
 
 JSON 배열만 출력:
 [
     {{
-    "question": "문제",
-    "options": ["선택지A", "선택지B", "선택지C", "선택지D"],
-    "correctAnswer": "선택지A",
-    "explanation": "해설"
+        "question": "문제 내용",
+        "options": ["첫번째 선택지", "두번째 선택지", "세번째 선택지", "네번째 선택지"],
+        "correctAnswer": "A",
+        "explanation": "정답 해설"
     }}
 ]
+
+예시:
+{{
+    "question": "Java의 기본 타입이 아닌 것은?",
+    "options": ["int", "boolean", "String", "char"],
+    "correctAnswer": "C",
+    "explanation": "String은 참조 타입입니다."
+}}
 
 JSON만 출력, 마크다운 없이:"""
 
