@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/student.dart';
 import '../services/api_service.dart';
+import 'ending_credits_screen.dart';
 
 class MultiverseScreen extends StatefulWidget {
   final Student student;
@@ -206,13 +207,19 @@ class _MultiverseScreenState extends State<MultiverseScreen> {
         ),
         actions: [
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
               Navigator.pop(context);
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EndingCreditsScreen(),
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
             child: const Text(
-              '확인',
+              '엔딩 보기',
               style: TextStyle(
                 color: Color(0xFF4CAF50),
                 fontFamily: 'JoseonGulim',
