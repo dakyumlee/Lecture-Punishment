@@ -185,16 +185,27 @@ public class MentalBreakerService {
             .orElseThrow(() -> new RuntimeException("학생을 찾을 수 없습니다"));
         
         MentalState mentalState = mentalStateRepository.findByStudent(student)
-            .orElseGet(() -> createInitialMentalState(student));
+            .orElse(null);
         
         Map<String, Object> response = new HashMap<>();
-        response.put("mentalGauge", mentalState.getMentalGauge());
-        response.put("mood", mentalState.getCurrentMood());
-        response.put("isInCrisis", mentalState.getIsInCrisis());
-        response.put("consecutiveWrongs", mentalState.getConsecutiveWrongs());
-        response.put("consecutiveCorrects", mentalState.getConsecutiveCorrects());
-        response.put("totalBreakdowns", mentalState.getTotalBreakdowns());
-        response.put("totalRecoveries", mentalState.getTotalRecoveries());
+        
+        if (mentalState == null) {
+            response.put("mentalGauge", 100);
+            response.put("mood", "보통");
+            response.put("isInCrisis", false);
+            response.put("consecutiveWrongs", 0);
+            response.put("consecutiveCorrects", 0);
+            response.put("totalBreakdowns", 0);
+            response.put("totalRecoveries", 0);
+        } else {
+            response.put("mentalGauge", mentalState.getMentalGauge());
+            response.put("mood", mentalState.getCurrentMood());
+            response.put("isInCrisis", mentalState.getIsInCrisis());
+            response.put("consecutiveWrongs", mentalState.getConsecutiveWrongs());
+            response.put("consecutiveCorrects", mentalState.getConsecutiveCorrects());
+            response.put("totalBreakdowns", mentalState.getTotalBreakdowns());
+            response.put("totalRecoveries", mentalState.getTotalRecoveries());
+        }
         
         return response;
     }
