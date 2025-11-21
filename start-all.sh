@@ -14,7 +14,7 @@ else
     exit 1
 fi
 
-export DATABASE_URL="postgresql://$DB_HOST:$DB_PORT/$DB_NAME?user=$DB_USER&password=$DB_PASSWORD"
+export DATABASE_URL="jdbc:postgresql://$DB_HOST:$DB_PORT/$DB_NAME"
 
 OS_TYPE=$(uname -s)
 
@@ -66,14 +66,14 @@ echo "3단계: 백엔드 시작"
 echo "===================================="
 
 if [[ "$OS_TYPE" == "Darwin" ]]; then
-    osascript -e 'tell application "Terminal" to do script "cd \"'$(pwd)'/backend\" && export DATABASE_URL=postgresql://'$DB_HOST':'$DB_PORT'/'$DB_NAME'?user='$DB_USER'\\&password='$DB_PASSWORD' && export OPENAI_API_KEY='$OPENAI_API_KEY' && export AI_SERVICE_URL='$AI_SERVICE_URL' && mvn spring-boot:run"' 2>/dev/null
+    osascript -e 'tell application "Terminal" to do script "cd \"'$(pwd)'/backend\" && export DATABASE_URL=jdbc:postgresql://'$DB_HOST':'$DB_PORT'/'$DB_NAME' && export DB_USER='$DB_USER' && export DB_PASSWORD='$DB_PASSWORD' && export OPENAI_API_KEY='$OPENAI_API_KEY' && export AI_SERVICE_URL='$AI_SERVICE_URL' && mvn spring-boot:run"' 2>/dev/null
     echo "✅ 백엔드 새 터미널에서 시작됨"
 elif [[ "$OS_TYPE" == "Linux" ]]; then
     if command -v gnome-terminal &> /dev/null; then
-        gnome-terminal -- bash -c "cd $(pwd)/backend && export DATABASE_URL=postgresql://$DB_HOST:$DB_PORT/$DB_NAME?user=$DB_USER\\&password=$DB_PASSWORD && export OPENAI_API_KEY=$OPENAI_API_KEY && export AI_SERVICE_URL=$AI_SERVICE_URL && mvn spring-boot:run; exec bash" 2>/dev/null
+        gnome-terminal -- bash -c "cd $(pwd)/backend && export DATABASE_URL=jdbc:postgresql://$DB_HOST:$DB_PORT/$DB_NAME && export DB_USER=$DB_USER && export DB_PASSWORD=$DB_PASSWORD && export OPENAI_API_KEY=$OPENAI_API_KEY && export AI_SERVICE_URL=$AI_SERVICE_URL && mvn spring-boot:run; exec bash" 2>/dev/null
         echo "✅ 백엔드 새 터미널에서 시작됨"
     elif command -v xterm &> /dev/null; then
-        xterm -e "cd $(pwd)/backend && export DATABASE_URL=postgresql://$DB_HOST:$DB_PORT/$DB_NAME?user=$DB_USER\\&password=$DB_PASSWORD && export OPENAI_API_KEY=$OPENAI_API_KEY && export AI_SERVICE_URL=$AI_SERVICE_URL && mvn spring-boot:run; exec bash" &
+        xterm -e "cd $(pwd)/backend && export DATABASE_URL=jdbc:postgresql://$DB_HOST:$DB_PORT/$DB_NAME && export DB_USER=$DB_USER && export DB_PASSWORD=$DB_PASSWORD && export OPENAI_API_KEY=$OPENAI_API_KEY && export AI_SERVICE_URL=$AI_SERVICE_URL && mvn spring-boot:run; exec bash" &
         echo "✅ 백엔드 새 터미널에서 시작됨"
     else
         echo "⚠️  새 터미널을 열 수 없습니다. 수동으로 백엔드를 시작하세요."

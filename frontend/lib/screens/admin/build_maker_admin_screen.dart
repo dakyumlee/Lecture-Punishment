@@ -310,62 +310,65 @@ class _BuildMakerAdminScreenState extends State<BuildMakerAdminScreen> {
               Expanded(
                 child: Scrollbar(
                   controller: scrollController,
-                  thumbVisibility: true,
+                  thumbVisibility: false,
                   child: SingleChildScrollView(
                     controller: scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: _parseScript(detail['script'] ?? '').map((section) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 24),
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF595048),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _getSectionColor(section['title']!).withOpacity(0.3),
-                              width: 2,
+                      children: [
+                        ..._parseScript(detail['script'] ?? '').map((section) {
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 24),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF595048),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _getSectionColor(section['title']!).withOpacity(0.3),
+                                width: 2,
+                              ),
                             ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    _getSectionIcon(section['title']!),
-                                    color: _getSectionColor(section['title']!),
-                                    size: 28,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      section['title']!,
-                                      style: TextStyle(
-                                        color: _getSectionColor(section['title']!),
-                                        fontFamily: 'JoseonGulim',
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      _getSectionIcon(section['title']!),
+                                      color: _getSectionColor(section['title']!),
+                                      size: 28,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        section['title']!,
+                                        style: TextStyle(
+                                          color: _getSectionColor(section['title']!),
+                                          fontFamily: 'JoseonGulim',
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                section['content']!,
-                                style: const TextStyle(
-                                  color: Color(0xFFD9D4D2),
-                                  fontFamily: 'JoseonGulim',
-                                  fontSize: 16,
-                                  height: 1.8,
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
+                                const SizedBox(height: 16),
+                                Text(
+                                  section['content']!,
+                                  style: const TextStyle(
+                                    color: Color(0xFFD9D4D2),
+                                    fontFamily: 'JoseonGulim',
+                                    fontSize: 16,
+                                    height: 1.8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
                     ),
                   ),
                 ),

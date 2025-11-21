@@ -21,7 +21,7 @@ for /f "tokens=1,2 delims==" %%a in (.env) do (
 
 echo ✅ 환경변수 로드 완료
 
-set DATABASE_URL=postgresql://%DB_HOST%:%DB_PORT%/%DB_NAME%?user=%DB_USER%^&password=%DB_PASSWORD%
+set DATABASE_URL=jdbc:postgresql://%DB_HOST%:%DB_PORT%/%DB_NAME%
 
 echo.
 echo 1단계: 로컬 PostgreSQL 시작
@@ -48,7 +48,7 @@ timeout /t 3 /nobreak > nul
 echo.
 echo 3단계: 백엔드 시작
 echo ====================================
-start "백엔드" cmd /k "cd backend && set DATABASE_URL=%DATABASE_URL% && set OPENAI_API_KEY=%OPENAI_API_KEY% && set AI_SERVICE_URL=%AI_SERVICE_URL% && mvn spring-boot:run"
+start "백엔드" cmd /k "cd backend && set DATABASE_URL=%DATABASE_URL% && set DB_USER=%DB_USER% && set DB_PASSWORD=%DB_PASSWORD% && set OPENAI_API_KEY=%OPENAI_API_KEY% && set AI_SERVICE_URL=%AI_SERVICE_URL% && mvn spring-boot:run"
 echo ✅ 백엔드 새 창에서 시작됨
 
 timeout /t 10 /nobreak > nul
