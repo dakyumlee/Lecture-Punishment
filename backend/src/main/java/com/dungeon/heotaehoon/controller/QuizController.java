@@ -29,7 +29,7 @@ public class QuizController {
     @GetMapping("/quizzes/boss/{bossId}")
     public ResponseEntity<List<Quiz>> getQuizzesByBoss(@PathVariable String bossId) {
         try {
-            List<Quiz> quizzes = quizService.getQuizzesByBossId(bossId);
+            List<Quiz> quizzes = quizService.getQuizzesByBoss(bossId);
             return ResponseEntity.ok(quizzes);
         } catch (Exception e) {
             log.error("Failed to get quizzes for boss: {}", bossId, e);
