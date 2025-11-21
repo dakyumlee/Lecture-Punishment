@@ -10,6 +10,7 @@ class Student {
   final int? totalCorrect;
   final int? totalWrong;
   final String? characterExpression;
+  final String? characterOutfit;
   final String? birthDate;
   final String? phoneNumber;
   final String? studentIdNumber;
@@ -26,6 +27,7 @@ class Student {
     this.totalCorrect,
     this.totalWrong,
     this.characterExpression,
+    this.characterOutfit,
     this.birthDate,
     this.phoneNumber,
     this.studentIdNumber,
@@ -44,6 +46,7 @@ class Student {
       totalCorrect: json['totalCorrect'],
       totalWrong: json['totalWrong'],
       characterExpression: json['characterExpression'],
+      characterOutfit: json['characterOutfit'],
       birthDate: json['birthDate'],
       phoneNumber: json['phoneNumber'],
       studentIdNumber: json['studentIdNumber'],
