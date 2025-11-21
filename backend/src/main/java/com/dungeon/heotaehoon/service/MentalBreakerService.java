@@ -14,6 +14,8 @@ public class MentalBreakerService {
     
     private final MentalStateRepository mentalStateRepository;
     private final StudentRepository studentRepository;
+    private final InstructorRepository instructorRepository;
+    private final RageDialogueRepository rageDialogueRepository;
     private final AIService aiService;
     
     @Transactional
@@ -27,7 +29,7 @@ public class MentalBreakerService {
         if (isCorrect) {
             return handleCorrectAnswer(mentalState);
         } else {
-            return handleWrongAnswer(mentalState);
+            return handleWrongAnswer(mentalState, student);
         }
     }
     
@@ -69,7 +71,7 @@ public class MentalBreakerService {
         return response;
     }
     
-    private Map<String, Object> handleWrongAnswer(MentalState mentalState) {
+    private Map<String, Object> handleWrongAnswer(MentalState mentalState, Student student) {
         mentalState.setConsecutiveWrongs(mentalState.getConsecutiveWrongs() + 1);
         mentalState.setConsecutiveCorrects(0);
         
@@ -78,6 +80,7 @@ public class MentalBreakerService {
         
         String dialogueType;
         boolean triggerBreaker = false;
+        int intensityLevel;
         
         if (mentalState.getMentalGauge() <= 20) {
             mentalState.setCurrentMood("멘탈붕괴");
@@ -85,21 +88,27 @@ public class MentalBreakerService {
             mentalState.setTotalBreakdowns(mentalState.getTotalBreakdowns() + 1);
             mentalState.setLastBreakerTime(LocalDateTime.now());
             dialogueType = "destruction";
+            intensityLevel = 4;
             triggerBreaker = true;
         } else if (mentalState.getMentalGauge() <= 40) {
             mentalState.setCurrentMood("위기");
             dialogueType = "pressure";
+            intensityLevel = 3;
         } else if (mentalState.getMentalGauge() <= 70) {
             mentalState.setCurrentMood("불안");
             dialogueType = "doubt";
+            intensityLevel = 2;
         } else {
             mentalState.setCurrentMood("보통");
             dialogueType = "light";
+            intensityLevel = 1;
         }
         
         mentalStateRepository.save(mentalState);
         
         String breakerMessage = generateAIDialogue(dialogueType, mentalState.getMentalGauge(), mentalState.getConsecutiveWrongs());
+        
+        saveRageDialogue(student, breakerMessage, dialogueType, intensityLevel);
         
         Map<String, Object> response = new HashMap<>();
         response.put("mentalGauge", mentalState.getMentalGauge());
@@ -111,6 +120,25 @@ public class MentalBreakerService {
         response.put("consecutiveWrongs", mentalState.getConsecutiveWrongs());
         
         return response;
+    }
+    
+    private void saveRageDialogue(Student student, String message, String dialogueType, int intensityLevel) {
+        try {
+            Instructor instructor = instructorRepository.findAll().stream()
+                .findFirst()
+                .orElse(null);
+            
+            RageDialogue dialogue = RageDialogue.builder()
+                .instructor(instructor)
+                .student(student)
+                .dialogueText(message)
+                .dialogueType(dialogueType)
+                .intensityLevel(intensityLevel)
+                .build();
+            
+            rageDialogueRepository.save(dialogue);
+        } catch (Exception e) {
+        }
     }
     
     private int calculateMentalDamage(int consecutiveWrongs) {
