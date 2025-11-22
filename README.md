@@ -89,7 +89,7 @@ AI 기반 강사 캐릭터 "허태훈"이 학생의 성과에 따라 격려부�
 
 #### 1. 저장소 클론
 ```bash
-git clone https://github.com/your-username/lecture-punishment.git
+git clone https://github.com/dakyumlee/Lecture-Punishment.git
 cd lecture-punishment
 ```
 
