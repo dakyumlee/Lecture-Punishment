@@ -2,13 +2,17 @@ FROM ghcr.io/cirruslabs/flutter:stable AS build
 
 WORKDIR /app
 
-# env.dart를 빌드 시 생성
-COPY lib/config/env.dart.production lib/config/env.dart
-
 COPY pubspec.* ./
 RUN flutter pub get
 
 COPY . .
+
+# env.dart 동적 생성
+RUN echo "class Env {" > lib/config/env.dart && \
+    echo "  static const String apiUrl = 'https://lecture-punishment-production.up.railway.app';" >> lib/config/env.dart && \
+    echo "  static const String baseUrl = apiUrl;" >> lib/config/env.dart && \
+    echo "}" >> lib/config/env.dart
+
 RUN flutter build web --release
 
 FROM nginx:alpine
