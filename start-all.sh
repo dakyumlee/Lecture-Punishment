@@ -1,8 +1,17 @@
 #!/bin/bash
 
 echo "===================================="
-echo "허태훈의 분노 던전 (로컬 실행)"
+echo "허태훈의 분노 던전 (로컬)"
 echo "===================================="
+echo ""
+echo "📦 로컬 DB 정보:"
+echo "   컨테이너: heotaehoon-local"
+echo "   Database: heotaehoon_local"
+echo "   Username: postgres"
+echo "   Password: postgres123"
+echo "   Host: localhost:5432"
+echo ""
+echo "💡 DB 접속: docker exec -it heotaehoon-local psql -U postgres -d heotaehoon_local"
 echo ""
 
 if [ ! -f .env ]; then
@@ -10,13 +19,21 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
-export $(cat .env | grep -v '^#' | xargs)
+export $(cat .env | grep -v '^#' | grep OPENAI_API_KEY | xargs)
 
-echo "1️⃣  PostgreSQL 도커 시작 (로컬용)..."
-docker-compose -f docker-compose.local.yml up -d
-echo "⏳ DB 준비 대기 중..."
-sleep 5
-echo "✅ PostgreSQL 도커 실행 완료"
+echo "1️⃣  PostgreSQL 도커 확인..."
+if ! docker ps | grep heotaehoon-local > /dev/null; then
+    echo "📦 DB 컨테이너 시작 중..."
+    docker start heotaehoon-local 2>/dev/null || docker run -d \
+      --name heotaehoon-local \
+      -e POSTGRES_DB=heotaehoon_local \
+      -e POSTGRES_USER=postgres \
+      -e POSTGRES_PASSWORD=postgres123 \
+      -p 5432:5432 \
+      postgres:16
+    sleep 5
+fi
+echo "✅ PostgreSQL 실행 중"
 
 echo ""
 echo "2️⃣  AI 서비스 시작..."
@@ -25,7 +42,7 @@ sleep 3
 
 echo ""
 echo "3️⃣  백엔드 시작..."
-osascript -e 'tell application "Terminal" to do script "cd \"'$(pwd)'/backend\" && export DATABASE_URL=\"jdbc:postgresql://localhost:5432/heotaehoon_dungeon\" && export DB_USER=postgres && export DB_PASSWORD=postgres && export OPENAI_API_KEY='$OPENAI_API_KEY' && export AI_SERVICE_URL=http://localhost:5000 && mvn spring-boot:run"'
+osascript -e 'tell application "Terminal" to do script "cd \"'$(pwd)'/backend\" && export OPENAI_API_KEY='$OPENAI_API_KEY' && mvn spring-boot:run"'
 sleep 10
 
 echo ""
@@ -37,7 +54,11 @@ echo "===================================="
 echo "✅ 실행 완료!"
 echo "===================================="
 echo "📍 백엔드: http://localhost:8080"
-echo "📍 DB (도커): localhost:5432"
+echo "📍 DB: localhost:5432/heotaehoon_local"
 echo ""
-echo "💡 종료: ./stop-all.sh"
+echo "🔐 관리자 계정:"
+echo "   ID: hth422"
+echo "   PW: password1234!"
+echo ""
+echo "🛑 종료: docker stop heotaehoon-local"
 echo ""

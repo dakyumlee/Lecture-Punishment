@@ -1,11 +1,25 @@
-backend/target/
-backend/.mvn/
-backend/*.log
-frontend/build/
-frontend/.dart_tool/
-.DS_Store
-*.env
+# Dependencies
+node_modules/
+.dart_tool/
+.packages
+build/
+target/
 
-# Local application properties
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local development configs (커밋ㄴㄴ)
+.env
+frontend/lib/config/env.dart
 backend/src/main/resources/application.properties
-backend/src/main/resources/application-local.properties
+
+# Keep example files
+!*.example
+!*.production

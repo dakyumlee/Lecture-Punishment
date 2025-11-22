@@ -14,7 +14,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> signup(String displayName, String birthDate, String password) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/auth/signup'),
+      Uri.parse('$baseUrl/api/auth/signup'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'displayName': displayName,
@@ -27,7 +27,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> login(String studentId, String password) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
+      Uri.parse('$baseUrl/api/auth/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'studentId': studentId,
@@ -38,13 +38,13 @@ class ApiService {
   }
 
   Future<Student> getStudent(String id) async {
-    final response = await http.get(Uri.parse('$baseUrl/students/$id'));
+    final response = await http.get(Uri.parse('$baseUrl/api/students/$id'));
     return Student.fromJson(jsonDecode(response.body));
   }
 
   static Future<Map<String, dynamic>> adminLogin(String username, String password) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/auth/admin/login'),
+      Uri.parse('$baseUrl/api/auth/admin/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'username': username, 'password': password}),
     );
@@ -52,13 +52,13 @@ class ApiService {
   }
 
   static Future<List<Quiz>> getQuizzes(String bossId) async {
-    final response = await http.get(Uri.parse('$baseUrl/quizzes/boss/$bossId'));
+    final response = await http.get(Uri.parse('$baseUrl/api/quizzes/boss/$bossId'));
     final data = jsonDecode(response.body) as List;
     return data.map((json) => Quiz.fromJson(json)).toList();
   }
 
   static Future<Boss> getBoss(String bossId) async {
-    final response = await http.get(Uri.parse('$baseUrl/bosses/$bossId'));
+    final response = await http.get(Uri.parse('$baseUrl/api/bosses/$bossId'));
     return Boss.fromJson(jsonDecode(response.body));
   }
 
@@ -70,7 +70,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> addStudentExp(String studentId, int exp) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/students/$studentId/exp'),
+      Uri.parse('$baseUrl/api/students/$studentId/exp'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'exp': exp}),
     );
@@ -79,7 +79,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> updateStudentStats(String studentId, bool isCorrect) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/students/$studentId/stats'),
+      Uri.parse('$baseUrl/api/students/$studentId/stats'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'isCorrect': isCorrect}),
     );
@@ -88,7 +88,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> updateBossHp(String bossId, int damage) async {
     final response = await http.put(
-      Uri.parse('$baseUrl/bosses/$bossId/hp'),
+      Uri.parse('$baseUrl/api/bosses/$bossId/hp'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'damage': damage}),
     );
@@ -102,12 +102,12 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> getWorksheetsGrouped() async {
-    final response = await http.get(Uri.parse('$baseUrl/worksheets/grouped'));
+    final response = await http.get(Uri.parse('$baseUrl/api/worksheets/grouped'));
     return jsonDecode(response.body);
   }
 
   static Future<Map<String, dynamic>> getShopItems() async {
-    final response = await http.get(Uri.parse('$baseUrl/shop/items'));
+    final response = await http.get(Uri.parse('$baseUrl/api/shop/items'));
     final data = jsonDecode(response.body) as List;
     return {
       'items': data,
@@ -116,14 +116,14 @@ class ApiService {
   }
 
   Future<List<Student>> getTopStudents() async {
-    final response = await http.get(Uri.parse('$baseUrl/students/top'));
+    final response = await http.get(Uri.parse('$baseUrl/api/students/top'));
     final data = jsonDecode(response.body) as List;
     return data.map((json) => Student.fromJson(json)).toList();
   }
 
   static Future<Map<String, dynamic>> getStudentInventory(String studentId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/shop/inventory/$studentId'));
+      final response = await http.get(Uri.parse('$baseUrl/api/shop/inventory/$studentId'));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -136,7 +136,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> buyItem({required String studentId, required String itemId}) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/shop/buy'),
+      Uri.parse('$baseUrl/api/shop/buy'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'studentId': studentId, 'itemId': itemId}),
     );
@@ -144,12 +144,12 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> getAdminStats() async {
-    final response = await http.get(Uri.parse('$baseUrl/admin/stats'));
+    final response = await http.get(Uri.parse('$baseUrl/api/admin/stats'));
     return jsonDecode(response.body);
   }
 
   static Future<List<dynamic>> getActiveGroups() async {
-    final response = await http.get(Uri.parse('$baseUrl/groups/active'));
+    final response = await http.get(Uri.parse('$baseUrl/api/groups/active'));
     return jsonDecode(response.body) as List;
   }
 
@@ -160,7 +160,7 @@ class ApiService {
     int? difficulty,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/admin/lessons'),
+      Uri.parse('$baseUrl/api/admin/lessons'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'title': title, 
@@ -177,27 +177,27 @@ class ApiService {
   }
 
   static Future<List<dynamic>> getAdminLessons() async {
-    final response = await http.get(Uri.parse('$baseUrl/admin/lessons'));
+    final response = await http.get(Uri.parse('$baseUrl/api/admin/lessons'));
     return jsonDecode(response.body) as List;
   }
 
   static Future<bool> deleteLesson(String id) async {
-    final response = await http.delete(Uri.parse('$baseUrl/admin/lessons/$id'));
+    final response = await http.delete(Uri.parse('$baseUrl/api/admin/lessons/$id'));
     return response.statusCode == 200;
   }
 
   static Future<List<dynamic>> getAdminStudents() async {
-    final response = await http.get(Uri.parse('$baseUrl/admin/students'));
+    final response = await http.get(Uri.parse('$baseUrl/api/admin/students'));
     return jsonDecode(response.body) as List;
   }
 
   static Future<List<dynamic>> getAllStudents() async {
-    final response = await http.get(Uri.parse('$baseUrl/admin/students'));
+    final response = await http.get(Uri.parse('$baseUrl/api/admin/students'));
     return jsonDecode(response.body) as List;
   }
 
   static Future<bool> deleteStudent(String id) async {
-    final response = await http.delete(Uri.parse('$baseUrl/admin/students/$id'));
+    final response = await http.delete(Uri.parse('$baseUrl/api/admin/api/students/$id'));
     return response.statusCode == 200;
   }
 
@@ -207,7 +207,7 @@ class ApiService {
     String? groupId,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/admin/students'),
+      Uri.parse('$baseUrl/api/admin/students'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'username': username,
@@ -226,7 +226,7 @@ class ApiService {
     required String studentId,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/groups/$groupId/students/$studentId'),
+      Uri.parse('$baseUrl/api/groups/$groupId/api/students/$studentId'),
       headers: {'Content-Type': 'application/json'},
     );
     if (response.statusCode != 200) {
@@ -236,7 +236,7 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> getWorksheetWithQuestions(String id) async {
-    final response = await http.get(Uri.parse('$baseUrl/worksheets/$id'));
+    final response = await http.get(Uri.parse('$baseUrl/api/worksheets/$id'));
     return jsonDecode(response.body);
   }
 
@@ -264,7 +264,7 @@ class ApiService {
     required List<int> fileBytes,
     required String fileName,
   }) async {
-    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/worksheets/pdf'));
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/api/worksheets/pdf'));
     request.fields['title'] = title;
     request.fields['description'] = description;
     request.fields['category'] = category;
@@ -279,7 +279,7 @@ class ApiService {
 
   static Future<bool> addQuestionToWorksheet(String worksheetId, Map<String, dynamic> questionData) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/worksheets/$worksheetId/questions'),
+      Uri.parse('$baseUrl/api/worksheets/$worksheetId/questions'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(questionData),
     );
@@ -313,20 +313,20 @@ class ApiService {
   }
 
   static Future<void> deleteGroup(String groupId) async {
-    await http.delete(Uri.parse('$baseUrl/groups/$groupId'));
+    await http.delete(Uri.parse('$baseUrl/api/groups/$groupId'));
   }
 
   static Future<List<dynamic>> getGroupStudents(String groupId) async {
-    final response = await http.get(Uri.parse('$baseUrl/groups/$groupId/students'));
+    final response = await http.get(Uri.parse('$baseUrl/api/groups/$groupId/students'));
     return jsonDecode(response.body) as List;
   }
 
   static Future<void> removeStudentFromGroup({required String groupId, required String studentId}) async {
-    await http.delete(Uri.parse('$baseUrl/groups/$groupId/students/$studentId'));
+    await http.delete(Uri.parse('$baseUrl/api/groups/$groupId/api/students/$studentId'));
   }
 
   static Future<void> downloadGroupExcel(String groupId, String groupName) async {
-    final response = await http.get(Uri.parse('$baseUrl/excel/groups/$groupId'));
+    final response = await http.get(Uri.parse('$baseUrl/api/excel/api/groups/$groupId'));
     final bytes = response.bodyBytes;
     final blob = html.Blob([bytes]);
     final url = html.Url.createObjectUrlFromBlob(blob);
@@ -337,7 +337,7 @@ class ApiService {
   }
 
   static Future<void> downloadAllStudentsExcel() async {
-    final response = await http.get(Uri.parse('$baseUrl/excel/students/all'));
+    final response = await http.get(Uri.parse('$baseUrl/api/excel/api/students/all'));
     final bytes = response.bodyBytes;
     final blob = html.Blob([bytes]);
     final url = html.Url.createObjectUrlFromBlob(blob);
@@ -349,7 +349,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> completeProfile(String studentId, Map<String, String> profileData) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/students/$studentId/profile'),
+      Uri.parse('$baseUrl/api/students/$studentId/profile'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(profileData),
     );
@@ -357,13 +357,13 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> getMyPageData(String studentId) async {
-    final response = await http.get(Uri.parse('$baseUrl/students/$studentId/mypage'));
+    final response = await http.get(Uri.parse('$baseUrl/api/students/$studentId/mypage'));
     return jsonDecode(response.body);
   }
 
   static Future<Map<String, dynamic>> updateProfile(String studentId, Map<String, String> profileData) async {
     final response = await http.put(
-      Uri.parse('$baseUrl/students/$studentId/profile'),
+      Uri.parse('$baseUrl/api/students/$studentId/profile'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(profileData),
     );
@@ -376,23 +376,23 @@ class ApiService {
   }
 
   static Future<bool> deleteWorksheet(String worksheetId) async {
-    final response = await http.delete(Uri.parse('$baseUrl/worksheets/$worksheetId'));
+    final response = await http.delete(Uri.parse('$baseUrl/api/worksheets/$worksheetId'));
     return response.statusCode == 200;
   }
 
   static Future<List<dynamic>> getAllSubmissions() async {
-    final response = await http.get(Uri.parse('$baseUrl/grading/submissions'));
+    final response = await http.get(Uri.parse('$baseUrl/api/grading/submissions'));
     return jsonDecode(response.body) as List;
   }
 
   static Future<Map<String, dynamic>> getSubmissionDetail(String submissionId) async {
-    final response = await http.get(Uri.parse('$baseUrl/grading/submissions/$submissionId'));
+    final response = await http.get(Uri.parse('$baseUrl/api/grading/submissions/$submissionId'));
     return jsonDecode(response.body);
   }
 
   static Future<bool> gradeAnswer(String answerId, bool isCorrect, int score) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/grading/answers/$answerId/grade'),
+      Uri.parse('$baseUrl/api/grading/answers/$answerId/grade'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'isCorrect': isCorrect, 'score': score}),
     );
@@ -401,7 +401,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> changeExpression(String studentId, String expression) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/students/$studentId/expression'),
+      Uri.parse('$baseUrl/api/students/$studentId/expression'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'expression': expression}),
     );
@@ -410,7 +410,7 @@ class ApiService {
 
   static Future<bool> addQuestion(String worksheetId, Map<String, dynamic> questionData) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/worksheets/$worksheetId/questions'),
+      Uri.parse('$baseUrl/api/worksheets/$worksheetId/questions'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(questionData),
     );
@@ -423,7 +423,7 @@ class ApiService {
     required String selectedAnswer,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/quizzes/$quizId/submit'),
+      Uri.parse('$baseUrl/api/quizzes/$quizId/submit'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'studentId': studentId,
@@ -434,7 +434,7 @@ class ApiService {
   }
 
   static Future<Student> getStudentByUsername(String username) async {
-    final response = await http.get(Uri.parse('$baseUrl/game/student/$username'));
+    final response = await http.get(Uri.parse('$baseUrl/api/game/student/$username'));
     return Student.fromJson(jsonDecode(response.body));
   }
 
@@ -474,7 +474,7 @@ class ApiService {
     required List<int> fileBytes,
     required String fileName,
   }) async {
-    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/ocr/extract'));
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/api/ocr/extract'));
     request.files.add(http.MultipartFile.fromBytes('file', fileBytes, filename: fileName));
     var streamedResponse = await request.send();
     var response = await http.Response.fromStream(streamedResponse);
@@ -506,7 +506,7 @@ class ApiService {
 
   static Future<List<dynamic>> getAvailableDungeons(String studentId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/dungeons/student/$studentId'));
+      final response = await http.get(Uri.parse('$baseUrl/api/dungeons/student/$studentId'));
       print('Dungeons API Response: ${response.statusCode}');
       print('Dungeons API Body: ${response.body}');
       
@@ -522,23 +522,23 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> getDungeonEntrance(String lessonId) async {
-    final response = await http.get(Uri.parse('$baseUrl/dungeons/lesson/$lessonId/entrance'));
+    final response = await http.get(Uri.parse('$baseUrl/api/dungeons/lesson/$lessonId/entrance'));
     return jsonDecode(response.body);
   }
 
   static Future<Map<String, dynamic>> getInstructor() async {
-    final response = await http.get(Uri.parse('$baseUrl/instructor'));
+    final response = await http.get(Uri.parse('$baseUrl/api/instructor'));
     return jsonDecode(response.body);
   }
 
   static Future<Map<String, dynamic>> getInstructorStats() async {
-    final response = await http.get(Uri.parse('$baseUrl/instructor/stats'));
+    final response = await http.get(Uri.parse('$baseUrl/api/instructor/stats'));
     return jsonDecode(response.body);
   }
 
   static Future<Map<String, dynamic>> addInstructorExp(int exp) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/instructor/exp'),
+      Uri.parse('$baseUrl/api/instructor/exp'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'exp': exp}),
     );
@@ -555,7 +555,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/quizzes/rage-dialogue'),
+        Uri.parse('$baseUrl/api/quizzes/rage-dialogue'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'dialogueType': dialogueType,
@@ -586,7 +586,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> addInstructorRage(int rage) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/instructor/rage/add'),
+      Uri.parse('$baseUrl/api/instructor/rage/add'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'rage': rage}),
     );
@@ -595,7 +595,7 @@ class ApiService {
 
   static Future<List<Map<String, dynamic>>> getMentalRecoveryMissions() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/mental-recovery/missions'));
+      final response = await http.get(Uri.parse('$baseUrl/api/mental-recovery/missions'));
       
       if (response.statusCode == 200) {
         final List<dynamic> missions = jsonDecode(response.body);
@@ -611,7 +611,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getRandomMentalMission(String type) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/mental-recovery/missions/random/$type'),
+        Uri.parse('$baseUrl/api/mental-recovery/missions/random/$type'),
       );
       
       if (response.statusCode == 200) {
@@ -631,7 +631,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/mental-recovery/complete'),
+        Uri.parse('$baseUrl/api/mental-recovery/complete'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'studentId': studentId,
@@ -652,7 +652,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> checkEvolution() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/instructor/evolution/check'));
+      final response = await http.get(Uri.parse('$baseUrl/api/instructor/evolution/check'));
       
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -666,7 +666,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> autoEvolve() async {
     try {
-      final response = await http.post(Uri.parse('$baseUrl/instructor/evolution/auto'));
+      final response = await http.post(Uri.parse('$baseUrl/api/instructor/evolution/auto'));
       
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -681,7 +681,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getRanking({String sortBy = 'points', int limit = 10}) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/students/ranking?sortBy=$sortBy&limit=$limit'),
+        Uri.parse('$baseUrl/api/students/ranking?sortBy=$sortBy&limit=$limit'),
       );
       
       if (response.statusCode == 200) {
@@ -700,7 +700,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/quiz/generate-raid'),
+        Uri.parse('$baseUrl/api/quiz/generate-raid'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'topic': topic,
@@ -725,7 +725,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/quiz/check-raid-answer'),
+        Uri.parse('$baseUrl/api/quiz/check-raid-answer'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'question': question,
@@ -752,7 +752,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/quiz/result'),
+        Uri.parse('$baseUrl/api/quiz/result'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'studentId': studentId,
@@ -783,7 +783,7 @@ class ApiService {
   static Future<List<Map<String, dynamic>>> getRageHistory({int limit = 50}) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/instructor/rage-history?limit=$limit'),
+        Uri.parse('$baseUrl/api/instructor/rage-history?limit=$limit'),
       );
       
       if (response.statusCode == 200) {
@@ -799,7 +799,7 @@ class ApiService {
 
   static Future<List<Map<String, dynamic>>> getMultiverseUniverses(String studentId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/multiverse/universes/$studentId'));
+      final response = await http.get(Uri.parse('$baseUrl/api/multiverse/universes/$studentId'));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data.cast<Map<String, dynamic>>();
@@ -817,7 +817,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/multiverse/fragment/obtain'),
+        Uri.parse('$baseUrl/api/multiverse/fragment/obtain'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'studentId': studentId,
@@ -836,7 +836,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getMultiverseProgress(String studentId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/multiverse/progress/$studentId'));
+      final response = await http.get(Uri.parse('$baseUrl/api/multiverse/progress/$studentId'));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -850,7 +850,7 @@ class ApiService {
   static Future<Map<String, dynamic>> unlockSpecialEnding(String studentId) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/multiverse/ending/unlock'),
+        Uri.parse('$baseUrl/api/multiverse/ending/unlock'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'studentId': studentId}),
       );
@@ -870,7 +870,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/mental-breaker/process'),
+        Uri.parse('$baseUrl/api/mental-breaker/process'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'studentId': studentId,
@@ -890,7 +890,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getMentalState(String studentId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/mental-breaker/state/$studentId'),
+        Uri.parse('$baseUrl/api/mental-breaker/state/$studentId'),
       );
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -908,7 +908,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/mental-breaker/recovery/complete'),
+        Uri.parse('$baseUrl/api/mental-breaker/recovery/complete'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'studentId': studentId,
@@ -933,7 +933,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/build-maker/generate'),
+        Uri.parse('$baseUrl/api/build-maker/generate'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'topic': topic,
@@ -954,7 +954,7 @@ class ApiService {
 
   static Future<List<Map<String, dynamic>>> getAILectures() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/build-maker/lectures'));
+      final response = await http.get(Uri.parse('$baseUrl/api/build-maker/lectures'));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data.cast<Map<String, dynamic>>();
@@ -968,7 +968,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getAILectureDetail(int lectureId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/build-maker/lectures/$lectureId'));
+      final response = await http.get(Uri.parse('$baseUrl/api/build-maker/lectures/$lectureId'));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -986,7 +986,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/build-maker/progress/update'),
+        Uri.parse('$baseUrl/api/build-maker/progress/update'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'studentId': studentId,
@@ -1010,7 +1010,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/build-maker/progress/$studentId/$lectureId'),
+        Uri.parse('$baseUrl/api/build-maker/progress/$studentId/$lectureId'),
       );
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -1024,7 +1024,7 @@ class ApiService {
 
   static Future<bool> evolveGroup(String groupId) async {
     try {
-      final response = await http.post(Uri.parse('$baseUrl/groups/$groupId/evolve'));
+      final response = await http.post(Uri.parse('$baseUrl/api/groups/$groupId/evolve'));
       return response.statusCode == 200;
     } catch (e) {
       print('Error evolving group: $e');
@@ -1034,7 +1034,7 @@ class ApiService {
 
   static Future<bool> resetGroupEvolution(String groupId) async {
     try {
-      final response = await http.post(Uri.parse('$baseUrl/groups/$groupId/reset-evolution'));
+      final response = await http.post(Uri.parse('$baseUrl/api/groups/$groupId/reset-evolution'));
       return response.statusCode == 200;
     } catch (e) {
       print('Error resetting evolution: $e');
@@ -1044,7 +1044,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getGroupEvolutionStatus(String groupId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/groups/$groupId/evolution-status'));
+      final response = await http.get(Uri.parse('$baseUrl/api/groups/$groupId/evolution-status'));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -1057,7 +1057,7 @@ class ApiService {
 
   static Future<bool> deleteAILecture(int lectureId) async {
     try {
-      final response = await http.delete(Uri.parse('$baseUrl/build-maker/lectures/$lectureId'));
+      final response = await http.delete(Uri.parse('$baseUrl/api/build-maker/lectures/$lectureId'));
       return response.statusCode == 200;
     } catch (e) {
       print('Error deleting lecture: $e');
