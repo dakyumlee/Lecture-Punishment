@@ -15,11 +15,9 @@ target/
 .DS_Store
 Thumbs.db
 
-# Local development configs (커밋ㄴㄴ)
+# Local development configs only
 .env
-frontend/lib/config/env.dart
-backend/src/main/resources/application.properties
 
-# Keep example files
+# Keep production configs and examples
 !*.example
 !*.production
