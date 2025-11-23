@@ -1,6 +1,7 @@
 FROM ghcr.io/cirruslabs/flutter:stable AS build
 
-ARG BACKEND_URL=https://lecture-punishment-production.up.railway.app
+ARG BACKEND_URL
+ENV BACKEND_URL=${BACKEND_URL:-https://lecture-punishment-production.up.railway.app}
 
 WORKDIR /app
 
@@ -9,7 +10,6 @@ RUN flutter pub get
 
 COPY . .
 
-# env.dart 동적 생성 (ARG 사용)
 RUN echo "class Env {" > lib/config/env.dart && \
     echo "  static const String apiUrl = '${BACKEND_URL}';" >> lib/config/env.dart && \
     echo "  static const String baseUrl = apiUrl;" >> lib/config/env.dart && \
