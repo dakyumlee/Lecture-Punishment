@@ -6,15 +6,19 @@ import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFPicture;
+import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,28 +30,88 @@ public class OcrService {
     public List<QuestionData> extractQuestionsFromPdf(MultipartFile file) throws IOException, TesseractException {
         List<QuestionData> questions = new ArrayList<>();
         
+        log.info("Starting OCR extraction for file: {}", file.getOriginalFilename());
+        
         try (InputStream inputStream = file.getInputStream();
-            PDDocument document = PDDocument.load(inputStream)) {
+             PDDocument document = PDDocument.load(inputStream)) {
             
             PDFRenderer pdfRenderer = new PDFRenderer(document);
             Tesseract tesseract = new Tesseract();
             
-            String tessdataPath = System.getenv("TESSDATA_PREFIX");
-            if (tessdataPath == null || tessdataPath.isEmpty()) {
-                tessdataPath = "/usr/share/tesseract-ocr/5/tessdata";
-            }
-            tesseract.setDatapath(tessdataPath);
+            tesseract.setDatapath("/usr/share/tessdata");
             tesseract.setLanguage("kor+eng");
             
             StringBuilder fullText = new StringBuilder();
             
             for (int page = 0; page < document.getNumberOfPages(); page++) {
-                BufferedImage image = pdfRenderer.renderImageWithDPI(page, 300);
-                String pageText = tesseract.doOCR(image);
-                fullText.append(pageText).append("\n");
+                try {
+                    BufferedImage image = pdfRenderer.renderImageWithDPI(page, 300);
+                    String pageText = tesseract.doOCR(image);
+                    fullText.append(pageText).append("\n");
+                } catch (Exception e) {
+                    log.error("Failed to process page {}", page + 1, e);
+                }
             }
             
-            questions = parseQuestions(fullText.toString());
+            String extractedText = fullText.toString();
+            questions = parseQuestions(extractedText);
+            
+        } catch (Exception e) {
+            log.error("OCR extraction failed", e);
+            throw new RuntimeException("OCR 처리 중 오류가 발생했습니다: " + e.getMessage(), e);
+        }
+        
+        return questions;
+    }
+
+    public List<QuestionData> extractQuestionsFromDocx(MultipartFile file) throws IOException {
+        List<QuestionData> questions = new ArrayList<>();
+        
+        log.info("Starting DOCX extraction for file: {}", file.getOriginalFilename());
+        
+        try (InputStream inputStream = file.getInputStream();
+             XWPFDocument document = new XWPFDocument(inputStream)) {
+            
+            StringBuilder fullText = new StringBuilder();
+            Tesseract tesseract = new Tesseract();
+            tesseract.setDatapath("/usr/share/tessdata");
+            tesseract.setLanguage("kor+eng");
+            
+            for (XWPFParagraph paragraph : document.getParagraphs()) {
+                String text = paragraph.getText();
+                if (text != null && !text.trim().isEmpty()) {
+                    fullText.append(text).append("\n");
+                }
+                
+                for (XWPFRun run : paragraph.getRuns()) {
+                    List<XWPFPicture> pictures = run.getEmbeddedPictures();
+                    for (XWPFPicture picture : pictures) {
+                        try {
+                            byte[] imageData = picture.getPictureData().getData();
+                            BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageData));
+                            
+                            if (image != null) {
+                                String imageText = tesseract.doOCR(image);
+                                if (imageText != null && !imageText.trim().isEmpty()) {
+                                    fullText.append("\n").append(imageText).append("\n");
+                                    log.info("Extracted text from image: {} chars", imageText.length());
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to process embedded image", e);
+                        }
+                    }
+                }
+            }
+            
+            String extractedText = fullText.toString();
+            log.info("Total extracted text length: {}", extractedText.length());
+            
+            questions = parseQuestions(extractedText);
+            
+        } catch (Exception e) {
+            log.error("DOCX extraction failed", e);
+            throw new RuntimeException("DOCX 처리 중 오류가 발생했습니다: " + e.getMessage(), e);
         }
         
         return questions;
@@ -57,58 +121,66 @@ public class OcrService {
         List<QuestionData> questions = new ArrayList<>();
         
         Pattern questionPattern = Pattern.compile(
-            "(\\d+)\\s*\\.\\s*(.+?)(?=\\n\\s*①|\\n\\s*\\d+\\s*\\.|$)",
+            "(\\d+)\\.\\s*(.+?)(?=(?:\\d+\\.|$))",
             Pattern.DOTALL
         );
         
         Matcher matcher = questionPattern.matcher(text);
         
         while (matcher.find()) {
-            int questionNumber = Integer.parseInt(matcher.group(1));
-            String questionContent = matcher.group(2).trim();
-            
-            QuestionData question = new QuestionData();
-            question.setQuestionNumber(questionNumber);
-            
-            if (questionContent.contains("①")) {
-                parseMultipleChoice(question, questionContent);
-            } else {
-                question.setQuestionType("subjective");
-                question.setQuestionText(questionContent);
+            try {
+                int questionNumber = Integer.parseInt(matcher.group(1).trim());
+                String fullContent = matcher.group(2).trim();
+                
+                if (fullContent.length() < 10) continue;
+                
+                QuestionData question = new QuestionData();
+                question.setQuestionNumber(questionNumber);
+                question.setQuestionType("multiple_choice");
+                question.setPoints(10);
+                question.setCorrectAnswer("A");
+                
+                if (fullContent.contains("1)") || fullContent.contains("①")) {
+                    int optionStart = fullContent.indexOf("1)");
+                    if (optionStart == -1) optionStart = fullContent.indexOf("①");
+                    
+                    if (optionStart > 0) {
+                        String questionText = fullContent.substring(0, optionStart).trim();
+                        String optionsText = fullContent.substring(optionStart).trim();
+                        
+                        question.setQuestionText(questionText);
+                        
+                        String[] options = new String[4];
+                        Pattern numberPattern = Pattern.compile("(\\d+)\\)\\s*([^\\d)]+?)(?=\\d+\\)|$)", Pattern.DOTALL);
+                        Matcher numberMatcher = numberPattern.matcher(optionsText);
+                        
+                        while (numberMatcher.find()) {
+                            int optNum = Integer.parseInt(numberMatcher.group(1).trim());
+                            String optText = numberMatcher.group(2).trim();
+                            
+                            if (optNum >= 1 && optNum <= 4) {
+                                options[optNum - 1] = optText;
+                            }
+                        }
+                        
+                        question.setOptionA(options[0] != null ? options[0] : "");
+                        question.setOptionB(options[1] != null ? options[1] : "");
+                        question.setOptionC(options[2] != null ? options[2] : "");
+                        question.setOptionD(options[3] != null ? options[3] : "");
+                    }
+                } else {
+                    question.setQuestionText(fullContent);
+                    question.setQuestionType("subjective");
+                }
+                
+                questions.add(question);
+                
+            } catch (Exception e) {
+                log.warn("Failed to parse question", e);
             }
-            
-            questions.add(question);
         }
         
         return questions;
-    }
-
-    private void parseMultipleChoice(QuestionData question, String content) {
-        question.setQuestionType("multiple_choice");
-        
-        String[] parts = content.split("①");
-        if (parts.length > 0) {
-            question.setQuestionText(parts[0].trim());
-        }
-        
-        if (parts.length > 1) {
-            String optionsText = "①" + parts[1];
-            
-            Pattern optionPattern = Pattern.compile("([①②③④⑤])\\s*([^①②③④⑤]+)");
-            Matcher optionMatcher = optionPattern.matcher(optionsText);
-            
-            int optionIndex = 0;
-            while (optionMatcher.find() && optionIndex < 4) {
-                String optionText = optionMatcher.group(2).trim();
-                switch (optionIndex) {
-                    case 0: question.setOptionA(optionText); break;
-                    case 1: question.setOptionB(optionText); break;
-                    case 2: question.setOptionC(optionText); break;
-                    case 3: question.setOptionD(optionText); break;
-                }
-                optionIndex++;
-            }
-        }
     }
 
     public static class QuestionData {
