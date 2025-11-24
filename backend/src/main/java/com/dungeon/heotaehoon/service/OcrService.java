@@ -38,7 +38,7 @@ public class OcrService {
             PDFRenderer pdfRenderer = new PDFRenderer(document);
             Tesseract tesseract = new Tesseract();
             
-            tesseract.setDatapath("/usr/share/tessdata");
+            tesseract.setDatapath("/usr/local/share/tessdata");
             tesseract.setLanguage("kor+eng");
             
             StringBuilder fullText = new StringBuilder();
@@ -74,7 +74,7 @@ public class OcrService {
             
             StringBuilder fullText = new StringBuilder();
             Tesseract tesseract = new Tesseract();
-            tesseract.setDatapath("/usr/share/tessdata");
+            tesseract.setDatapath("/usr/local/share/tessdata");
             tesseract.setLanguage("kor+eng");
             
             for (XWPFParagraph paragraph : document.getParagraphs()) {
