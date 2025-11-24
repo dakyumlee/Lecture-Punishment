@@ -1,7 +1,7 @@
 FROM ghcr.io/cirruslabs/flutter:stable AS build
 
 ARG BACKEND_URL
-ENV BACKEND_URL=${BACKEND_URL:-https://lecture-punishment-production.up.railway.app}
+ENV BACKEND_URL=${BACKEND_URL:-https://lecture-punishment-production.up.railway.app/api}
 
 WORKDIR /app
 

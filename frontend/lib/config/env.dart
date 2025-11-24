@@ -1,5 +1,4 @@
 class Env {
-  static const String apiUrl = 'https://lecture-punishment-production.up.railway.app';
-  
-  static const String baseUrl = apiUrl;
+  static const String apiUrl = 'http://localhost:8080/api';
+  static const String baseUrl = 'http://localhost:8080/api';
 }
