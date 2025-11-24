@@ -11,6 +11,9 @@ RUN apt-get update && \
     apt-get install -y tesseract-ocr tesseract-ocr-kor tesseract-ocr-eng && \
     rm -rf /var/lib/apt/lists/*
 
+RUN find /usr/share -name "tessdata" -type d && \
+    ls -la /usr/share/tesseract-ocr/ || true
+
 ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata
 
 COPY --from=build /app/target/*.jar app.jar
