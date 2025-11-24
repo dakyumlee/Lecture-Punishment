@@ -33,7 +33,7 @@ public class OcrService {
         log.info("Starting OCR extraction for file: {}", file.getOriginalFilename());
         
         try (InputStream inputStream = file.getInputStream();
-             PDDocument document = PDDocument.load(inputStream)) {
+            PDDocument document = PDDocument.load(inputStream)) {
             
             PDFRenderer pdfRenderer = new PDFRenderer(document);
             Tesseract tesseract = new Tesseract();
@@ -70,7 +70,7 @@ public class OcrService {
         log.info("Starting DOCX extraction for file: {}", file.getOriginalFilename());
         
         try (InputStream inputStream = file.getInputStream();
-             XWPFDocument document = new XWPFDocument(inputStream)) {
+            XWPFDocument document = new XWPFDocument(inputStream)) {
             
             StringBuilder fullText = new StringBuilder();
             Tesseract tesseract = new Tesseract();
